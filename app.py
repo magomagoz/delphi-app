@@ -152,13 +152,14 @@ def calcola_pronostico_streamlit(nome_input):
             else: st.code(f"{r['s']} | Q: {q:.2f}")
 
 # --- APP LAYOUT ---
+st.set_page_config(page_title="Delphi Predictor Pro Max", layout="wide", page_icon="🏆")
 st.title("🏆 Delphi Predictor Pro Max") # <--- TITOLO RIPRISTINATO
-st.set_page_config(page_title="Delphi Pro", layout="wide")
+
 tab1, tab2 = st.tabs(["🎯 Analisi Match", "⚙️ Gestione Sistema"])
 
 with tab1:
     search = st.text_input("Cerca squadra:")
-    if st.button("Analizza", type="primary"): calcola_pronostico_streamlit(search)
+    if st.button("Analizza Match", type="primary"): calcola_pronostico_streamlit(search)
 
 with tab2:
     if os.path.exists(FILE_DB):
@@ -168,4 +169,3 @@ with tab2:
         st.warning("⚠️ Database non ancora creato.")
     
     if st.button("🌐 Aggiorna Dati Ora"): aggiorna_con_api()
-
