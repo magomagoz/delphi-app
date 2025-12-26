@@ -180,12 +180,6 @@ def calcola_pronostico_streamlit(nome_input):
         with cols[idx % 3]:
             if q >= 3.0: st.success(f"**{r['s']}**\n\nQ: {q:.2f} 🔥")
             else: st.code(f"{r['s']} | Q: {q:.2f}")
-            with cgng:
-        qg, qng = stima_quota(p_gol), stima_quota(1-p_gol)
-        if qg >= 3.0: st.success(f"💎 GOL: {qg:.2f}")
-        else: st.info(f"GOL: {qg:.2f}")
-        if qng >= 3.0: st.success(f"💎 NOGOL: {qng:.2f}")
-        else: st.info(f"NOGOL: {qng:.2f}")
 
 # --- MAIN ---
 st.set_page_config(page_title="Delphi Pro", layout="wide")
