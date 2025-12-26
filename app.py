@@ -136,7 +136,7 @@ def calcola_pronostico_streamlit(nome_input):
     'Probabilità': [f"{p1/total_p:.1%}", f"{px/total_p:.1%}", f"{p2/total_p:.1%}"],
     'Quota': [stima_quota(p1/total_p), stima_quota(px/total_p), stima_quota(p2/total_p)]
 })
-st.table(prob_df)
+    st.table(prob_df)
 
     st.subheader("⏱️ Top 3 RE 1° Tempo")
     c1t = st.columns(3)
