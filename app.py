@@ -137,47 +137,50 @@ def calcola_pronostico_streamlit(nome_input):
 })
     st.table(prob_df)
 
-    st.subheader("⏱️ Top 3 RE 1° Tempo")
-    c1t = st.columns(3)
-    for idx, r in enumerate(top_re_1t):
-        q = stima_quota(r['p']/total_p_1t)
-        if q >= 3.0: c1t[idx].success(f"**{r['s']}**\n\nQ: {q:.2f} 🔥")
-        else: c1t[idx].info(f"**{r['s']}**\n\nQ: {q:.2f}")
-
+    # --- 3. SOMME GOL ---
     st.divider()
+    st.subheader("⚽ Analisi Somme Gol")
     csgf, csgc, csgo = st.columns(3)
+    
     with csgf:
         st.write("**Top 3 SGF**")
         for k, v in top_sgf:
             q = stima_quota(v/total_p)
-            st.success(f"💎 {k if k<5 else '>4'} G: {q:.2f}") if q >= 3.0 else st.write(f"{k if k<5 else '>4'} G: {q:.2f}")
+            label = f"{k if k<5 else '>4'} G: {q:.2f}"
+            if q >= 3.0:
+                st.success(f"💎 {label}")
+            else:
+                st.write(label)
+            
     with csgc:
         st.write("**Top 2 SGC**")
         for k, v in top_sgc:
             q = stima_quota(v/total_p)
-            st.success(f"💎 {k} G: {q:.2f}") if q >= 3.0 else st.write(f"{k} G: {q:.2f}")
+            label = f"{k} G: {q:.2f}"
+            if q >= 3.0:
+                st.success(f"💎 {label}")
+            else:
+                st.write(label)
+
     with csgo:
         st.write("**Top 2 SGO**")
         for k, v in top_sgo:
             q = stima_quota(v/total_p)
-            st.success(f"💎 {k} G: {q:.2f}") if q >= 3.0 else st.write(f"{k} G: {q:.2f}")
+            label = f"{k} G: {q:.2f}"
+            if q >= 3.0:
+                st.success(f"💎 {label}")
+            else:
+                st.write(label)
 
+    # --- 4. RISULTATI ESATTI FINALI ---
     st.divider()
     st.subheader("🎯 Top 6 Risultati Esatti Finale")
+    
     re_cols = st.columns(3)
     for idx, r in enumerate(top_re):
         q = stima_quota(r['p']/total_p)
         with re_cols[idx % 3]:
-            st.success(f"**{r['s']}**\n\nQ: {q:.2f} 🔥") if q >= 3.0 else st.code(f"{r['s']} | Q: {q:.2f}")
-
-# --- INTERFACCIA ---
-st.set_page_config(page_title="Delphi Pro", layout="wide")
-st.title("🏆 Delphi Predictor Pro Max")
-tab1, tab2 = st.tabs(["🎯 Analisi", "⚙️ Gestione"])
-
-with tab1:
-    search = st.text_input("Cerca Squadra:")
-    if st.button("Analizza"): calcola_pronostico_streamlit(search)
-
-with tab2:
-    if st.button("🌐 Aggiorna Dati API"): aggiorna_con_api()
+            if q >= 3.0:
+                st.success(f"**{r['s']}**\n\nQ: {q:.2f} 🔥")
+            else:
+                st.code(f"{r['s']} | Q: {q:.2f}")
