@@ -165,6 +165,16 @@ def calcola_pronostico_streamlit(nome_input):
     top_re_1t = sorted(re_1t, key=lambda x: x['p'], reverse=True)[:3]
 
     # --- OUTPUT STREAMLIT ---
+    st.header(f"{casa} vs {fuori}")
+    st.info(f"🏆 {m['League']} | 👮 Arbitro: {arbitro}")
+    
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Vittoria Casa (1)", f"{(p1/total_p):.1%}", f"Quota: {stima_quota(p1/total_p)}")
+    c2.metric("Pareggio (X)", f"{(px/total_p):.1%}", f"Quota: {stima_quota(px/total_p)}")
+    c3.metric("Vittoria Ospite (2)", f"{(p2/total_p):.1%}", f"Quota: {stima_quota(p2/total_p)}")
+
+    
+    # --- OUTPUT STREAMLIT ---
     st.subheader("⚽️ Pronostico 1° Tempo")
     col1, col2, col3 = st.columns(3)
     col1.metric("1 (1°T)", f"{(p1_1t/total_p_1t):.1%}")
@@ -176,15 +186,6 @@ def calcola_pronostico_streamlit(nome_input):
     for idx, r in enumerate(top_re_1t):
         re_cols[idx].info(f"**{r['s']}** ({r['p']/total_p_1t:.1%})")
 
-    # --- OUTPUT STREAMLIT ---
-    st.header(f"{casa} vs {fuori}")
-    st.info(f"🏆 {m['League']} | 👮 Arbitro: {arbitro}")
-    
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Vittoria Casa (1)", f"{(p1/total_p):.1%}", f"Quota: {stima_quota(p1/total_p)}")
-    c2.metric("Pareggio (X)", f"{(px/total_p):.1%}", f"Quota: {stima_quota(px/total_p)}")
-    c3.metric("Vittoria Ospite (2)", f"{(p2/total_p):.1%}", f"Quota: {stima_quota(p2/total_p)}")
-    
     # Salva in cronologia
     report_text = f"Predizione 1X2: {p1/total_p:.1%} - {px/total_p:.1%} - {p2/total_p:.1%}"
     salva_report_permanente(report_text, f"{casa} vs {fuori}")
@@ -192,7 +193,7 @@ def calcola_pronostico_streamlit(nome_input):
 # --- INTERFACCIA PRINCIPALE STREAMLIT ---
 
 st.set_page_config(page_title="Delphi Predictor Pro", page_icon="🏆")
-st.title("🏆 Delphi Predictor Pro Max")
+st.title("🏆 DELPHI PREDICTOR PRO MAX 🏆")
 
 tab1, tab2, tab3 = st.tabs(["🎯 Pronostico", "📊 Statistiche", "⚙️ Gestione"])
 
