@@ -32,7 +32,6 @@ def analizza_severita_arbitro(df, nome_arbitro):
     return round(max(0.8, min(1.3, media_gol_totale / media_gol_arbitro)), 2)
 
 # --- FUNZIONE AUSILIARIA PER LE STATISTICHE ---
-# Questa funzione serve per calcolare le probabilità nel passato per il test statistico
 def get_prediction_data(df_storico, casa, fuori, arbitro):
     avg_g = max(1.1, df_storico['FTHG'].mean())
     molt_arbitro = analizza_severita_arbitro(df_storico, arbitro)
@@ -103,42 +102,33 @@ def mostra_statistiche():
 
     for i in range(tot):
         my_bar.progress((i + 1) / tot, text=progress_text)
-        # Prende il match e simula di non conoscere il risultato
         m = giocate.iloc[-(i+1)]
         storico = giocate.iloc[:-(i+1)]
-        
         if storico.empty: continue
         
-        # Calcola previsione
         data = get_prediction_data(storico, m['HomeTeam'], m['AwayTeam'], m['Referee'])
-        
-        # Dati reali
         real_h = int(float(m['FTHG']))
         real_a = int(float(m['FTAG']))
         real_sum = real_h + real_a
         
-        # 1. Verifica SGF (Somma Gol Finale)
+        # 1. Verifica SGF
         pred_sgf = max(data['sgf'], key=data['sgf'].get)
         if pred_sgf == min(real_sum, 5): hits['SGF'] += 1
         
-        # 2. Verifica Under/Over 2.5
+        # 2. Verifica U/O 2.5
         prob_u25 = data['p_u25'] / data['total_p']
-        # Se prob U2.5 > 50% e è finito Under, oppure prob U2.5 <= 50% e è finito Over
-        if (prob_u25 > 0.5 and real_sum < 2.5) or (prob_u25 <= 0.5 and real_sum > 2.5): 
-            hits['UO'] += 1
+        if (prob_u25 > 0.5 and real_sum < 2.5) or (prob_u25 <= 0.5 and real_sum > 2.5): hits['UO'] += 1
             
-        # 3. Verifica Gol/NoGol
+        # 3. Verifica G/NG
         prob_gol = data['p_gol'] / data['total_p']
         is_gol = (real_h > 0 and real_a > 0)
-        if (prob_gol > 0.5 and is_gol) or (prob_gol <= 0.5 and not is_gol):
-            hits['GNG'] += 1
+        if (prob_gol > 0.5 and is_gol) or (prob_gol <= 0.5 and not is_gol): hits['GNG'] += 1
             
-        # 4. Verifica Top 6 Risultati Esatti
+        # 4. Verifica RE
         top6_re = [x['s'] for x in sorted(data['re'], key=lambda x: x['p'], reverse=True)[:6]]
         if f"{real_h}-{real_a}" in top6_re: hits['RE'] += 1
 
     my_bar.empty()
-    
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("SGF (Top 1)", f"{(hits['SGF']/tot):.0%}")
     c2.metric("U/O 2.5", f"{(hits['UO']/tot):.0%}")
@@ -162,11 +152,9 @@ def calcola_pronostico_streamlit(nome_input):
         st.warning(f"Nessun match per '{nome_input}'"); return
 
     m = match.iloc[0]; casa, fuori = m['HomeTeam'], m['AwayTeam']
-    
-    # AGGIUNTA ALLA CRONOLOGIA (Senza duplicati)
     entry = f"{casa} vs {fuori}"
     if entry not in st.session_state.cronologia:
-        st.session_state.cronologia.insert(0, entry) # Inserisce in alto
+        st.session_state.cronologia.insert(0, entry)
 
     giocate = df[df['Status'] == 'FINISHED'].copy()
     arbitro = m.get('Referee', 'N.D.')
@@ -184,11 +172,11 @@ def calcola_pronostico_streamlit(nome_input):
     exp_h = (att_h * dif_a / avg_g) * (2 - molt_arbitro)
     exp_a = (att_a * dif_h / avg_g) * (2 - molt_arbitro)
 
-    # Poisson & Mercati
+    # Poisson Finale
     p_u25, p_gol = 0, 0
     total_p = 0
     sgf, sgc, sgo = {i:0 for i in range(6)}, {i:0 for i in range(6)}, {i:0 for i in range(6)}
-    re_finali = [] # Lista per i Risultati Esatti
+    re_finali = []
     
     for i in range(7):
         for j in range(7):
@@ -201,11 +189,21 @@ def calcola_pronostico_streamlit(nome_input):
             sgo[min(j, 5)] += prob
             re_finali.append({'s': f"{i}-{j}", 'p': prob})
 
+    # Poisson 1° Tempo (Stima ~42% exp goals)
+    exp_h_1t, exp_a_1t = exp_h * 0.42, exp_a * 0.42
+    re_1t, total_p_1t = [], 0
+    for i in range(4):
+        for j in range(4):
+            prob_1t = poisson_probability(i, exp_h_1t) * poisson_probability(j, exp_a_1t)
+            total_p_1t += prob_1t
+            re_1t.append({'s': f"{i}-{j}", 'p': prob_1t})
+
+    # Ordinamenti
     top_sgf = sorted(sgf.items(), key=lambda x: x[1], reverse=True)[:3]
     top_sgc = sorted(sgc.items(), key=lambda x: x[1], reverse=True)[:2]
     top_sgo = sorted(sgo.items(), key=lambda x: x[1], reverse=True)[:2]
-    # Ordinamento Top 6 Risultati Esatti
     top_re = sorted(re_finali, key=lambda x: x['p'], reverse=True)[:6]
+    top_re_1t = sorted(re_1t, key=lambda x: x['p'], reverse=True)[:3]
 
     # --- UI ---
     st.header(f"🏟️ {casa} vs {fuori}")
@@ -238,6 +236,18 @@ def calcola_pronostico_streamlit(nome_input):
             if q >= 3.0: st.success(label)
             else: st.info(label)
 
+    # --- RE 1° TEMPO ---
+    st.divider()
+    st.subheader("⏱️ Top 3 RE 1° Tempo")
+    c1t = st.columns(3)
+    for idx, r in enumerate(top_re_1t):
+        q = stima_quota(r['p']/total_p_1t)
+        if q >= 3.0:
+            c1t[idx].success(f"**{r['s']}**\n\nQ: {q:.2f} 🔥")
+        else:
+            c1t[idx].info(f"**{r['s']}**\n\nQ: {q:.2f}")
+
+    # --- MERCATI ---
     st.divider()
     st.subheader("🏁 Mercati Classici")
     cuo, cgng = st.columns(2)
@@ -254,8 +264,9 @@ def calcola_pronostico_streamlit(nome_input):
         if qng >= 3.0: st.success(f"💎 NOGOL: {qng:.2f}")
         else: st.info(f"NOGOL: {qng:.2f}")
         
+    # --- RE FINALE ---
     st.divider()
-    st.subheader("🎯 Top 6 Risultati Esatti")
+    st.subheader("🎯 Top 6 RE Finale")
     cols_re = st.columns(3)
     for idx, r in enumerate(top_re):
         q = stima_quota(r['p']/total_p)
@@ -266,30 +277,24 @@ def calcola_pronostico_streamlit(nome_input):
 # --- MAIN ---
 st.set_page_config(page_title="Delphi Pro", layout="wide")
 st.title("🏆 Delphi Predictor Pro Max")
-# Definizione Tabs (Analisi, Statistiche, Gestione)
 t1, t2, t3 = st.tabs(["🎯 Analisi", "📊 Statistiche", "⚙️ Gestione"])
 
 with t1:
     col_input, col_hist = st.columns([2, 1])
-    
     with col_input:
         search = st.text_input("Squadra:")
         if st.button("Analizza Match", type="primary"):
             if search: calcola_pronostico_streamlit(search)
-    
     with col_hist:
         st.write("📜 **Cronologia**")
         if st.session_state.cronologia:
             for item in st.session_state.cronologia:
-                # Se clicchi sulla squadra nella cronologia, la analizza di nuovo
                 if st.button(item, key=item):
                     calcola_pronostico_streamlit(item.split(" vs ")[0])
-            
             st.divider()
-            # CANCELLAZIONE CON WARNING
             if st.button("🗑️ Svuota Cronologia"):
-                st.warning("Sei sicuro di voler cancellare tutto?")
-                if st.button("Sì, conferma cancellazione"):
+                st.warning("Confermi?")
+                if st.button("Sì, svuota"):
                     st.session_state.cronologia = []
                     st.rerun()
         else:
