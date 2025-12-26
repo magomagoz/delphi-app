@@ -168,61 +168,66 @@ def calcola_pronostico_streamlit(nome_input):
     st.header(f"🏟️ {casa} vs {fuori}")
     st.caption(f"🏆 {m['League']} | 📅 {m['Date']} | 👮 Arbitro: {arbitro}")
 
-    # --- 1. GRAFICO FINALE ---
+    # 1. Grafico 1X2
     df_pie_finale = pd.DataFrame({
         'Esito': ['1', 'X', '2'],
         'Probabilità': [p1/total_p, px/total_p, p2/total_p]
     })
     fig_finale = px.pie(df_pie_finale, values='Probabilità', names='Esito', 
-                         title='Tendenza 1X2 Finale',
                          color_discrete_sequence=['#2ecc71', '#f1c40f', '#e74c3c'], hole=0.4)
     st.plotly_chart(fig_finale, use_container_width=True)
 
-    # --- 2. PRIMO TEMPO (Solo 3 RE) ---
-    st.markdown("---")
+    # 2. PRIMO TEMPO (Top 3 RE)
     st.subheader("⏱️ Top 3 Risultati Esatti 1° Tempo")
-    col_1t = st.columns(3)
+    c1t = st.columns(3)
     for idx, r in enumerate(top_re_1t):
         p_re_1t = r['p']/total_p_1t
-        col_1t[idx].metric(f"Esito: {r['s']}", f"{p_re_1t:.1%}", f"Quota: {stima_quota(p_re_1t)}")
+        q_calcolata = stima_quota(p_re_1t)
+        # Se quota >= 3 usiamo un box verde (success), altrimenti azzurro (info)
+        if q_calcolata >= 3.0:
+            c1t[idx].success(f"**{r['s']}**\n\nQ: {q_calcolata:.2f} 🔥")
+        else:
+            c1t[idx].info(f"**{r['s']}**\n\nQ: {q_calcolata:.2f}")
 
-    # --- 3. SOMME GOL (SGF, SGC, SGO) ---
-    st.markdown("---")
+    # 3. SOMME GOL
+    st.divider()
     st.subheader("⚽ Analisi Somme Gol")
+    csgf, csgc, csgo = st.columns(3)
     
-    c_sgf, c_sgc, c_sgo = st.columns(3)
-    
-    with c_sgf:
-        st.write("**Top 3 Somma Gol (SGF)**")
+    with csgf:
+        st.write("**Top 3 SGF**")
         for k, v in top_sgf:
-            p_k = v/total_p
-            st.info(f"**{k if k<5 else '>4'} Gol**: {p_k:.1%} (Q: {stima_quota(p_k)})")
+            p_k, q_k = v/total_p, stima_quota(v/total_p)
+            label = f"{k if k<5 else '>4'} Gol: {q_k:.2f}"
+            if q_k >= 3.0: st.success(f"💎 {label}")
+            else: st.write(label)
             
-    with c_sgc:
-        st.write("**Top 2 Gol Casa (SGC)**")
+    with csgc:
+        st.write("**Top 2 SGC (Casa)**")
         for k, v in top_sgc:
-            p_k = v/total_p
-            st.success(f"**{k} Gol**: {p_k:.1%} (Q: {stima_quota(p_k)})")
+            p_k, q_k = v/total_p, stima_quota(v/total_p)
+            label = f"{k} Gol: {q_k:.2f}"
+            if q_k >= 3.0: st.success(f"💎 {label}")
+            else: st.write(label)
 
-    with c_sgo:
-        st.write("**Top 2 Gol Ospite (SGO)**")
+    with csgo:
+        st.write("**Top 2 SGO (Ospite)**")
         for k, v in top_sgo:
-            p_k = v/total_p
-            st.warning(f"**{k} Gol**: {p_k:.1%} (Q: {stima_quota(p_k)})")
+            p_k, q_k = v/total_p, stima_quota(v/total_p)
+            label = f"{k} Gol: {q_k:.2f}"
+            if q_k >= 3.0: st.success(f"💎 {label}")
+            else: st.write(label)
 
-    # --- 4. TOP 6 RISULTATI ESATTI FINALI ---
-    st.markdown("---")
-    st.subheader("🎯 Top 6 Risultati Esatti (RE) Finale")
+    # 4. RISULTATI ESATTI FINALI
+    st.divider()
+    st.subheader("🎯 Top 6 Risultati Esatti Finale")
     
-    # Dividiamo i 6 RE in due righe da 3 per leggibilità su mobile
-    re_row1 = st.columns(3)
-    re_row2 = st.columns(3)
-    
+    # Usiamo una griglia semplice per evitare errori di layout
+    re_cols = st.columns(3)
     for idx, r in enumerate(top_re):
-        p_re = r['p']/total_p
-        target_col = re_row1[idx] if idx < 3 else re_row2[idx-3]
-        target_col.code(f"{r['s']} \n{p_re:.1%} \nQ: {stima_quota(p_re)}")
-
-    # Sezione Alert (Late Goal)
-    if zc_h > 60 or zc_a > 60:
-        st.warning(f"⚠️ **ATTENZIONE:** Alta probabilità di GOL nel finale (80'+)! Indice: {max(zc_h, zc_a):.0f}%")
+        p_re, q_re = r['p']/total_p, stima_quota(r['p']/total_p)
+        with re_cols[idx % 3]:
+            if q_re >= 3.0:
+                st.success(f"**{r['s']}**\n\nQ: {q_re:.2f} 🔥")
+            else:
+                st.code(f"{r['s']} | Q: {q_re:.2f}")
