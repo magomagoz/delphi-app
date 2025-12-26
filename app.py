@@ -169,7 +169,7 @@ def calcola_pronostico_streamlit(nome_input):
     st.subheader("🏁 Mercati Classici")
     cuo, cgng = st.columns(2)
     with cuo:
-        qu, qo = stima_quota(p_u25), stima_quota(1-p_u25)
+        qu, qo = stima_quota(p_under25), stima_quota(1-p_under25)
         if qu >= 3.0: st.success(f"💎 U2.5: {qu:.2f}")
         else: st.info(f"U2.5: {qu:.2f}")
         if qo >= 3.0: st.success(f"💎 O2.5: {qo:.2f}")
