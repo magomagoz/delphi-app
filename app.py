@@ -59,7 +59,7 @@ def aggiorna_con_api():
 
 def calcola_pronostico_streamlit(nome_input):
     if not os.path.exists(FILE_DB):
-        st.error("Database non trovato. Aggiorna i dati prima."); return
+        st.error("Database non trovato. Vai in 'Gestione' e aggiorna i dati."); return
     
     df = pd.read_csv(FILE_DB)
     df['FTHG'] = pd.to_numeric(df['FTHG'], errors='coerce').fillna(0)
@@ -89,7 +89,7 @@ def calcola_pronostico_streamlit(nome_input):
     exp_h = (att_h * dif_a / avg_g) * (2 - molt_arbitro)
     exp_a = (att_a * dif_h / avg_g) * (2 - molt_arbitro)
 
-    # LOOP POISSON FINALE
+    # --- POISSON FINALE ---
     p1, px, p2, total_p = 0, 0, 0, 0
     sgf, sgc, sgo = {i:0 for i in range(6)}, {i:0 for i in range(6)}, {i:0 for i in range(6)}
     re_finali = []
@@ -109,7 +109,7 @@ def calcola_pronostico_streamlit(nome_input):
             else: sgo[5] += prob
             re_finali.append({'s': f"{i}-{j}", 'p': prob})
 
-    # LOOP 1° TEMPO
+    # --- POISSON 1° TEMPO ---
     exp_h_1t, exp_a_1t = exp_h * 0.45, exp_a * 0.45
     re_1t, total_p_1t = [], 0
     for i in range(4):
@@ -124,63 +124,81 @@ def calcola_pronostico_streamlit(nome_input):
     top_sgo = sorted(sgo.items(), key=lambda x: x[1], reverse=True)[:2]
     top_re = sorted(re_finali, key=lambda x: x['p'], reverse=True)[:6]
 
-    # --- OUTPUT ---
+    # --- VISUALIZZAZIONE ---
     st.header(f"🏟️ {casa} vs {fuori}")
-    # st.plotly_chart(px.pie(values=[p1, px, p2], names=['1', 'X', '2'], color_discrete_sequence=['#2ecc71', '#f1c40f', '#e74c3c'], hole=0.4), use_container_width=True)
+    st.caption(f"🏆 {m['League']} | 📅 {m['Date']} | 👮 Arbitro: {arbitro}")
 
-    # Sostituisci la parte del grafico con questa se Plotly dà ancora errori:
     st.subheader("📊 Probabilità 1X2 Finale")
     prob_df = pd.DataFrame({
-    'Segno': ['1', 'X', '2'],
-    'Probabilità': [f"{p1/total_p:.1%}", f"{px/total_p:.1%}", f"{p2/total_p:.1%}"],
-    'Quota': [stima_quota(p1/total_p), stima_quota(px/total_p), stima_quota(p2/total_p)]
-})
+        'Segno': ['1', 'X', '2'],
+        'Probabilità': [f"{p1/total_p:.1%}", f"{px/total_p:.1%}", f"{p2/total_p:.1%}"],
+        'Quota': [stima_quota(p1/total_p), stima_quota(px/total_p), stima_quota(p2/total_p)]
+    })
     st.table(prob_df)
 
-    # --- 3. SOMME GOL ---
+    st.subheader("⏱️ Top 3 RE 1° Tempo")
+    c1t = st.columns(3)
+    for idx, r in enumerate(top_re_1t):
+        q = stima_quota(r['p']/total_p_1t)
+        if q >= 3.0:
+            c1t[idx].success(f"**{r['s']}**\n\nQ: {q:.2f} 🔥")
+        else:
+            c1t[idx].info(f"**{r['s']}**\n\nQ: {q:.2f}")
+
     st.divider()
     st.subheader("⚽ Analisi Somme Gol")
     csgf, csgc, csgo = st.columns(3)
-    
     with csgf:
         st.write("**Top 3 SGF**")
         for k, v in top_sgf:
             q = stima_quota(v/total_p)
             label = f"{k if k<5 else '>4'} G: {q:.2f}"
-            if q >= 3.0:
-                st.success(f"💎 {label}")
-            else:
-                st.write(label)
-            
+            if q >= 3.0: st.success(f"💎 {label}")
+            else: st.write(label)
     with csgc:
         st.write("**Top 2 SGC**")
         for k, v in top_sgc:
             q = stima_quota(v/total_p)
             label = f"{k} G: {q:.2f}"
-            if q >= 3.0:
-                st.success(f"💎 {label}")
-            else:
-                st.write(label)
-
+            if q >= 3.0: st.success(f"💎 {label}")
+            else: st.write(label)
     with csgo:
         st.write("**Top 2 SGO**")
         for k, v in top_sgo:
             q = stima_quota(v/total_p)
             label = f"{k} G: {q:.2f}"
-            if q >= 3.0:
-                st.success(f"💎 {label}")
-            else:
-                st.write(label)
+            if q >= 3.0: st.success(f"💎 {label}")
+            else: st.write(label)
 
-    # --- 4. RISULTATI ESATTI FINALI ---
     st.divider()
     st.subheader("🎯 Top 6 Risultati Esatti Finale")
-    
     re_cols = st.columns(3)
     for idx, r in enumerate(top_re):
         q = stima_quota(r['p']/total_p)
         with re_cols[idx % 3]:
-            if q >= 3.0:
-                st.success(f"**{r['s']}**\n\nQ: {q:.2f} 🔥")
-            else:
-                st.code(f"{r['s']} | Q: {q:.2f}")
+            if q >= 3.0: st.success(f"**{r['s']}**\n\nQ: {q:.2f} 🔥")
+            else: st.code(f"{r['s']} | Q: {q:.2f}")
+
+# --- INTERFACCIA PRINCIPALE ---
+st.set_page_config(page_title="Delphi Pro", layout="wide")
+st.title("🏆 Delphi Predictor Pro Max")
+
+tab1, tab2 = st.tabs(["🎯 Analisi Match", "⚙️ Gestione"])
+
+with tab1:
+    search = st.text_input("Inserisci nome squadra (es: Milan, Real, Arsenal):")
+    if st.button("Analizza Match", type="primary"):
+        if search:
+            calcola_pronostico_streamlit(search)
+        else:
+            st.warning("Inserisci il nome di una squadra!")
+
+with tab2:
+    st.subheader("Configurazione Sistema")
+    if st.button("🌐 Aggiorna Database API"):
+        aggiorna_con_api()
+    
+    if st.button("🗑️ Svuota Cronologia"):
+        if os.path.exists(FILE_REPORT):
+            os.remove(FILE_REPORT)
+            st.success("Cronologia eliminata.")
