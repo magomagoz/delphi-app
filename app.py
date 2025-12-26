@@ -171,7 +171,17 @@ def calcola_pronostico_streamlit(nome_input):
     with cuo:
         qu, qo = stima_quota(p_u25), stima_quota(1-p_u25)
         if qu >= 3.0: st.success(f"💎 U2.5: {qu:.2f}")
+        else: st.info(f"U2.5: {qu:.2f}")
+        if qo >= 3.0: st.success(f"💎 O2.5: {qo:.2f}")
+        else: st.info(f"O2.5: {qo:.2f}")
+    with cgng:
+        qg, qng = stima_quota(p_gol), stima_quota(1-p_gol)
+        if qg >= 3.0: st.success(f"💎 GOL: {qg:.2f}")
+        else: st.info(f"GOL: {qg:.2f}")
+        if qng >= 3.0: st.success(f"💎 NOGOL: {qng:.2f}")
+        else: st.info(f"NOGOL: {qng:.2f}")
 
+    
     st.divider()
     st.subheader("🎯 Top 6 RE Finale")
     cols = st.columns(3)
