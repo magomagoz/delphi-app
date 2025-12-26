@@ -70,13 +70,14 @@ def calcola_pronostico_streamlit(nome_input):
                 df['AwayTeam'].str.contains(nome_input, case=False, na=False))]
     
     if match.empty:
-        st.warning(f"Nessun match imminente per '{nome_input}'"); return
+        st.warning(f"Nessun prossimo match per '{nome_input}'"); return
 
     m = match.iloc[0]; casa, fuori = m['HomeTeam'], m['AwayTeam']
     giocate = df[df['Status'] == 'FINISHED'].copy()
     avg_g = max(1.1, giocate['FTHG'].mean())
     arbitro = m.get('Referee', 'N.D.')
     molt_arbitro = analizza_severita_arbitro(giocate, arbitro)
+    avg_g = max(1.1, giocate['FTHG'].mean())
 
     def get_stats(team):
         t = giocate[(giocate['HomeTeam'] == team) | (giocate['AwayTeam'] == team)].tail(15)
@@ -89,6 +90,11 @@ def calcola_pronostico_streamlit(nome_input):
     exp_h = (att_h * dif_a / avg_g) * (2 - molt_arbitro)
     exp_a = (att_a * dif_h / avg_g) * (2 - molt_arbitro)
 
+
+    
+    
+    
+    
     # --- POISSON FINALE ---
     p1, px, p2, total_p = 0, 0, 0, 0
     sgf, sgc, sgo = {i:0 for i in range(6)}, {i:0 for i in range(6)}, {i:0 for i in range(6)}
@@ -124,9 +130,16 @@ def calcola_pronostico_streamlit(nome_input):
     top_sgo = sorted(sgo.items(), key=lambda x: x[1], reverse=True)[:2]
     top_re = sorted(re_finali, key=lambda x: x['p'], reverse=True)[:6]
 
+
+
+
+
+    
     # --- VISUALIZZAZIONE ---
     st.header(f"🏟️ {casa} vs {fuori}")
     st.caption(f"🏆 {m['League']} | 📅 {m['Date']} | 👮 Arbitro: {arbitro}")
+    st.info(f"👮 **Arbitro:** {arbitro} | 📈 **Impatto:** {molt_arbitro}x")
+
 
     st.subheader("📊 Probabilità 1X2 Finale")
     prob_df = pd.DataFrame({
@@ -145,39 +158,50 @@ def calcola_pronostico_streamlit(nome_input):
         else:
             c1t[idx].info(f"**{r['s']}**\n\nQ: {q:.2f}")
 
-    st.divider()
-    st.subheader("⚽ Analisi Somme Gol")
-    csgf, csgc, csgo = st.columns(3)
-    with csgf:
-        st.write("**Top 3 SGF**")
-        for k, v in top_sgf:
+
+    st.subheader("📊 Analisi Somme Gol")
+    c_sgf, c_sgc, c_sgo = st.columns(3)
+    
+    with c_sgf:
+        st.write("**Top 3 Somma Gol (SGF)**")
+        for i, (k, v) in enumerate(top_sgf):
             q = stima_quota(v/total_p)
-            label = f"{k if k<5 else '>4'} G: {q:.2f}"
-            if q >= 3.0: st.success(f"💎 {label}")
-            else: st.write(label)
-    with csgc:
-        st.write("**Top 2 SGC**")
+            txt = f"{k if k<5 else '>4'} Gol: {q:.2f}"
+            if i == 0: # Il primo SGF ha il contorno
+                with st.container(border=True):
+                    st.write(f"🎯 **{txt}**")
+            else:
+                st.write(txt)
+
+    with c_sgc:
+        st.write("**Top 2 Casa (SGC)**")
         for k, v in top_sgc:
             q = stima_quota(v/total_p)
-            label = f"{k} G: {q:.2f}"
-            if q >= 3.0: st.success(f"💎 {label}")
-            else: st.write(label)
-    with csgo:
-        st.write("**Top 2 SGO**")
+            if q >= 3.0: st.success(f"💎 {k} Gol: {q:.2f}")
+            else: st.write(f"{k} Gol: {q:.2f}")
+
+    with c_sgo:
+        st.write("**Top 2 Ospite (SGO)**")
         for k, v in top_sgo:
             q = stima_quota(v/total_p)
-            label = f"{k} G: {q:.2f}"
-            if q >= 3.0: st.success(f"💎 {label}")
-            else: st.write(label)
+            if q >= 3.0: st.success(f"💎 {k} Gol: {q:.2f}")
+            else: st.write(f"{k} Gol: {q:.2f}")
+
 
     st.divider()
     st.subheader("🎯 Top 6 Risultati Esatti Finale")
-    re_cols = st.columns(3)
+    cols = st.columns(3)
     for idx, r in enumerate(top_re):
         q = stima_quota(r['p']/total_p)
-        with re_cols[idx % 3]:
+        with cols[idx % 3]:
             if q >= 3.0: st.success(f"**{r['s']}**\n\nQ: {q:.2f} 🔥")
             else: st.code(f"{r['s']} | Q: {q:.2f}")
+
+
+
+
+
+
 
 # --- INTERFACCIA PRINCIPALE ---
 st.set_page_config(page_title="Delphi Pro", layout="wide")
@@ -202,3 +226,21 @@ with tab2:
         if os.path.exists(FILE_REPORT):
             os.remove(FILE_REPORT)
             st.success("Cronologia eliminata.")
+
+
+
+
+
+
+# --- APP LAYOUT ---
+st.set_page_config(page_title="Delphi Pro", layout="wide")
+tab1, tab2 = st.tabs(["🎯 Analisi", "⚙️ Gestione"])
+
+with tab1:
+    search = st.text_input("Squadra:")
+    if st.button("Analizza Match", type="primary"):
+        calcola_pronostico_streamlit(search)
+
+with tab2:
+    if st.button("🌐 Aggiorna Database API"):
+        aggiorna_con_api()
