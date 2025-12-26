@@ -175,57 +175,64 @@ def calcola_pronostico_streamlit(nome_input):
 
     
     # --- OUTPUT STREAMLIT ---
-    st.subheader("⚽️ Pronostico 1° Tempo")
-    col1, col2, col3 = st.columns(3)
-    col1.metric("1 (1°T)", f"{(p1_1t/total_p_1t):.1%}")
-    col2.metric("X (1°T)", f"{(px_1t/total_p_1t):.1%}")
-    col3.metric("2 (1°T)", f"{(p2_1t/total_p_1t):.1%}")
+    st.header(f"🏟️ {casa} vs {fuori}")
+    st.caption(f"🏆 {m['League']} | 📅 {m['Date']} | 👮 Arbitro: {arbitro}")
 
-    st.write("**Top 3 Risultati Esatti 1° Tempo:**")
-    re_cols = st.columns(3)
+    # --- 1. GRAFICO FINALE ---
+    df_pie_finale = pd.DataFrame({
+        'Esito': ['1', 'X', '2'],
+        'Probabilità': [p1/total_p, px/total_p, p2/total_p]
+    })
+    fig_finale = px.pie(df_pie_finale, values='Probabilità', names='Esito', 
+                         title='Tendenza 1X2 Finale',
+                         color_discrete_sequence=['#2ecc71', '#f1c40f', '#e74c3c'], hole=0.4)
+    st.plotly_chart(fig_finale, use_container_width=True)
+
+    # --- 2. PRIMO TEMPO (Solo 3 RE) ---
+    st.markdown("---")
+    st.subheader("⏱️ Top 3 Risultati Esatti 1° Tempo")
+    col_1t = st.columns(3)
     for idx, r in enumerate(top_re_1t):
-        re_cols[idx].info(f"**{r['s']}** ({r['p']/total_p_1t:.1%})")
+        p_re_1t = r['p']/total_p_1t
+        col_1t[idx].metric(f"Esito: {r['s']}", f"{p_re_1t:.1%}", f"Quota: {stima_quota(p_re_1t)}")
 
-    # Salva in cronologia
-    report_text = f"Predizione 1X2: {p1/total_p:.1%} - {px/total_p:.1%} - {p2/total_p:.1%}"
-    salva_report_permanente(report_text, f"{casa} vs {fuori}")
-
-# --- INTERFACCIA PRINCIPALE STREAMLIT ---
-
-st.set_page_config(page_title="Delphi Predictor Pro", page_icon="🏆")
-st.title("🏆 DELPHI PREDICTOR PRO MAX 🏆")
-
-tab1, tab2, tab3 = st.tabs(["🎯 Pronostico", "📊 Statistiche", "⚙️ Gestione"])
-
-with tab1:
-    search = st.text_input("Inserisci nome squadra:", placeholder="Es: Inter, Man City...")
-    if st.button("🔍 Analizza Match"):
-        calcola_pronostico_streamlit(search)
-
-with tab2:
-    st.subheader("Performance Modello")
-    if os.path.exists(FILE_REPORT):
-        with open(FILE_REPORT, 'r') as f:
-            st.text_area("Cronologia Analisi:", f.read(), height=300)
-    else:
-        st.write("Cronologia vuota.")
-
-with tab3:
-    st.subheader("⚙️ Manutenzione Sistema")
+    # --- 3. SOMME GOL (SGF, SGC, SGO) ---
+    st.markdown("---")
+    st.subheader("⚽ Analisi Somme Gol")
     
-    col_a, col_b = st.columns(2)
+    c_sgf, c_sgc, c_sgo = st.columns(3)
     
-    with col_a:
-        if st.button("🌐 Aggiorna Database API", use_container_width=True):
-            aggiorna_con_api()
+    with c_sgf:
+        st.write("**Top 3 Somma Gol (SGF)**")
+        for k, v in top_sgf:
+            p_k = v/total_p
+            st.info(f"**{k if k<5 else '>4'} Gol**: {p_k:.1%} (Q: {stima_quota(p_k)})")
             
-        if st.button("🧹 Pulisci Duplicati Cronologia", use_container_width=True):
-            rimuovi_duplicati_cronologia()
+    with c_sgc:
+        st.write("**Top 2 Gol Casa (SGC)**")
+        for k, v in top_sgc:
+            p_k = v/total_p
+            st.success(f"**{k} Gol**: {p_k:.1%} (Q: {stima_quota(p_k)})")
+
+    with c_sgo:
+        st.write("**Top 2 Gol Ospite (SGO)**")
+        for k, v in top_sgo:
+            p_k = v/total_p
+            st.warning(f"**{k} Gol**: {p_k:.1%} (Q: {stima_quota(p_k)})")
+
+    # --- 4. TOP 6 RISULTATI ESATTI FINALI ---
+    st.markdown("---")
+    st.subheader("🎯 Top 6 Risultati Esatti (RE) Finale")
     
-    with col_b:
-        if st.button("🗑️ Svuota Tutta la Cronologia", type="secondary", use_container_width=True):
-            if os.path.exists(FILE_REPORT):
-                os.remove(FILE_REPORT)
-                st.success("Cronologia svuotata!")
-            else:
-                st.warning("Cronologia già vuota.")
+    # Dividiamo i 6 RE in due righe da 3 per leggibilità su mobile
+    re_row1 = st.columns(3)
+    re_row2 = st.columns(3)
+    
+    for idx, r in enumerate(top_re):
+        p_re = r['p']/total_p
+        target_col = re_row1[idx] if idx < 3 else re_row2[idx-3]
+        target_col.code(f"{r['s']} \n{p_re:.1%} \nQ: {stima_quota(p_re)}")
+
+    # Sezione Alert (Late Goal)
+    if zc_h > 60 or zc_a > 60:
+        st.warning(f"⚠️ **ATTENZIONE:** Alta probabilità di GOL nel finale (80'+)! Indice: {max(zc_h, zc_a):.0f}%")
