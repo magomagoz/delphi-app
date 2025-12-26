@@ -13,7 +13,6 @@ FILE_DB = 'database_pro_2025.csv'
 FILE_REPORT = 'Report_Simulazioni.txt'
 
 # --- LOGICA MATEMATICA ---
-
 def stima_quota(prob):
     if prob <= 0.001: return 99.00
     return round(1 / prob, 2)
@@ -23,15 +22,14 @@ def poisson_probability(actual, average):
     return (math.pow(average, actual) * math.exp(-average)) / math.factorial(actual)
 
 def analizza_severita_arbitro(df, nome_arbitro):
-    if nome_arbitro == 'N.D.' or df.empty: return 1.0
-    partite_arbitro = df[(df['Referee'] == nome_arbitro) & (df['Status'] == 'FINISHED')]
-    if len(partite_arbitro) < 3: return 1.0
+    if not nome_arbitro or nome_arbitro == 'N.D.' or df.empty: return 1.0
+    partite_arbitro = df[df['Referee'].str.contains(str(nome_arbitro), na=False, case=False)]
+    if len(partite_arbitro) < 2: return 1.0
     media_gol_arbitro = (partite_arbitro['FTHG'] + partite_arbitro['FTAG']).mean()
     media_gol_totale = (df['FTHG'] + df['FTAG']).mean()
     return round(max(0.8, min(1.3, media_gol_totale / media_gol_arbitro)), 2)
 
 # --- FUNZIONI DI AZIONE ---
-
 def aggiorna_con_api():
     headers = {'X-Auth-Token': API_TOKEN}
     leagues = {
@@ -50,10 +48,10 @@ def aggiorna_con_api():
                     home = m['homeTeam']['shortName'] or m['homeTeam']['name']
                     away = m['awayTeam']['shortName'] or m['awayTeam']['name']
                     ref = m['referees'][0].get('name', 'N.D.') if m.get('referees') else 'N.D.'
-                    rows.append([name, m['utcDate'][:10], home, away, m['status'], m['score']['fullTime']['home'], m['score']['fullTime']['away'], ref, m.get('odds', {}).get('homeWin', 1.0), m.get('odds', {}).get('draw', 1.0), m.get('odds', {}).get('awayWin', 1.0)])
+                    rows.append([name, m['utcDate'][:10], home, away, m['status'], m['score']['fullTime']['home'], m['score']['fullTime']['away'], ref])
                 time.sleep(1.2)
             progress_bar.progress((i + 1) / len(leagues))
-        pd.DataFrame(rows, columns=['League', 'Date', 'HomeTeam', 'AwayTeam', 'Status', 'FTHG', 'FTAG', 'Referee', 'Odd_1', 'Odd_X', 'Odd_2']).to_csv(FILE_DB, index=False)
+        pd.DataFrame(rows, columns=['League', 'Date', 'HomeTeam', 'AwayTeam', 'Status', 'FTHG', 'FTAG', 'Referee']).to_csv(FILE_DB, index=False)
         st.success("Database Aggiornato!")
     except Exception as e: st.error(f"Errore API: {e}")
 
@@ -74,7 +72,6 @@ def calcola_pronostico_streamlit(nome_input):
 
     m = match.iloc[0]; casa, fuori = m['HomeTeam'], m['AwayTeam']
     giocate = df[df['Status'] == 'FINISHED'].copy()
-    avg_g = max(1.1, giocate['FTHG'].mean())
     arbitro = m.get('Referee', 'N.D.')
     molt_arbitro = analizza_severita_arbitro(giocate, arbitro)
     avg_g = max(1.1, giocate['FTHG'].mean())
@@ -90,13 +87,9 @@ def calcola_pronostico_streamlit(nome_input):
     exp_h = (att_h * dif_a / avg_g) * (2 - molt_arbitro)
     exp_a = (att_a * dif_h / avg_g) * (2 - molt_arbitro)
 
-
-    
-    
-    
-    
-    # --- POISSON FINALE ---
+    # --- POISSON E MERCATI ---
     p1, px, p2, total_p = 0, 0, 0, 0
+    p_under25, p_gol = 0, 0
     sgf, sgc, sgo = {i:0 for i in range(6)}, {i:0 for i in range(6)}, {i:0 for i in range(6)}
     re_finali = []
     
@@ -107,12 +100,13 @@ def calcola_pronostico_streamlit(nome_input):
             if i > j: p1 += prob
             elif i == j: px += prob
             else: p2 += prob
-            if (i+j) < 5: sgf[i+j] += prob
-            else: sgf[5] += prob
-            if i < 5: sgc[i] += prob
-            else: sgc[5] += prob
-            if j < 5: sgo[j] += prob
-            else: sgo[5] += prob
+            
+            if (i+j) < 2.5: p_under25 += prob
+            if i > 0 and j > 0: p_gol += prob
+            
+            sgf[min(i+j, 5)] += prob
+            sgc[min(i, 5)] += prob
+            sgo[min(j, 5)] += prob
             re_finali.append({'s': f"{i}-{j}", 'p': prob})
 
     # --- POISSON 1° TEMPO ---
@@ -130,16 +124,10 @@ def calcola_pronostico_streamlit(nome_input):
     top_sgo = sorted(sgo.items(), key=lambda x: x[1], reverse=True)[:2]
     top_re = sorted(re_finali, key=lambda x: x['p'], reverse=True)[:6]
 
-
-
-
-
-    
     # --- VISUALIZZAZIONE ---
     st.header(f"🏟️ {casa} vs {fuori}")
-    st.caption(f"🏆 {m['League']} | 📅 {m['Date']} | 👮 Arbitro: {arbitro}")
-    st.info(f"👮 **Arbitro:** {arbitro} | 📈 **Impatto:** {molt_arbitro}x")
-
+    st.caption(f"🏆 {m['League']} | 📅 {m['Date']}")
+    st.info(f"👮 **Arbitro:** {arbitro} | 📈 **Impatto severità:** {molt_arbitro}x")
 
     st.subheader("📊 Probabilità 1X2 Finale")
     prob_df = pd.DataFrame({
@@ -153,40 +141,43 @@ def calcola_pronostico_streamlit(nome_input):
     c1t = st.columns(3)
     for idx, r in enumerate(top_re_1t):
         q = stima_quota(r['p']/total_p_1t)
-        if q >= 3.0:
-            c1t[idx].success(f"**{r['s']}**\n\nQ: {q:.2f} 🔥")
-        else:
-            c1t[idx].info(f"**{r['s']}**\n\nQ: {q:.2f}")
+        if q >= 3.0: c1t[idx].success(f"**{r['s']}**\n\nQ: {q:.2f} 🔥")
+        else: c1t[idx].info(f"**{r['s']}**\n\nQ: {q:.2f}")
 
-
-    st.subheader("📊 Analisi Somme Gol")
+    st.subheader("⚽ Analisi Somme Gol")
     c_sgf, c_sgc, c_sgo = st.columns(3)
-    
     with c_sgf:
-        st.write("**Top 3 Somma Gol (SGF)**")
+        st.write("**Top 3 SGF**")
         for i, (k, v) in enumerate(top_sgf):
             q = stima_quota(v/total_p)
             txt = f"{k if k<5 else '>4'} Gol: {q:.2f}"
-            if i == 0: # Il primo SGF ha il contorno
-                with st.container(border=True):
-                    st.write(f"🎯 **{txt}**")
-            else:
-                st.write(txt)
-
+            if i == 0:
+                with st.container(border=True): st.write(f"🎯 **{txt}**")
+            else: st.write(txt)
     with c_sgc:
-        st.write("**Top 2 Casa (SGC)**")
+        st.write("**Top 2 SGC**")
         for k, v in top_sgc:
             q = stima_quota(v/total_p)
             if q >= 3.0: st.success(f"💎 {k} Gol: {q:.2f}")
             else: st.write(f"{k} Gol: {q:.2f}")
-
     with c_sgo:
-        st.write("**Top 2 Ospite (SGO)**")
+        st.write("**Top 2 SGO**")
         for k, v in top_sgo:
             q = stima_quota(v/total_p)
             if q >= 3.0: st.success(f"💎 {k} Gol: {q:.2f}")
             else: st.write(f"{k} Gol: {q:.2f}")
 
+    st.divider()
+    st.subheader("🏁 Mercati Classici")
+    cuo, cgng = st.columns(2)
+    with cuo:
+        qu, qo = stima_quota(p_under25), stima_quota(1-p_under25)
+        st.success(f"💎 U2.5: {qu:.2f}") if qu >= 3.0 else st.info(f"U2.5: {qu:.2f}")
+        st.success(f"💎 O2.5: {qo:.2f}") if qo >= 3.0 else st.info(f"O2.5: {qo:.2f}")
+    with cgng:
+        qg, qng = stima_quota(p_gol), stima_quota(1-p_gol)
+        st.success(f"💎 GOL: {qg:.2f}") if qg >= 3.0 else st.info(f"GOL: {qg:.2f}")
+        st.success(f"💎 NOGOL: {qng:.2f}") if qng >= 3.0 else st.info(f"NOGOL: {qng:.2f}")
 
     st.divider()
     st.subheader("🎯 Top 6 Risultati Esatti Finale")
@@ -197,50 +188,28 @@ def calcola_pronostico_streamlit(nome_input):
             if q >= 3.0: st.success(f"**{r['s']}**\n\nQ: {q:.2f} 🔥")
             else: st.code(f"{r['s']} | Q: {q:.2f}")
 
-
-
-
-
-
-
 # --- INTERFACCIA PRINCIPALE ---
-st.set_page_config(page_title="Delphi Pro", layout="wide")
-st.title("🏆 Delphi Predictor Pro 🏆")
+st.set_page_config(page_title="Delphi Predictor Pro Max", layout="wide", page_icon="🏆")
+st.title("🏆 Delphi Predictor Pro Max")
 
 tab1, tab2 = st.tabs(["🎯 Analisi Match", "⚙️ Gestione"])
 
 with tab1:
-    search = st.text_input("Inserisci nome squadra (es: Milan, Real, Arsenal):")
+    search = st.text_input("Inserisci nome squadra:")
     if st.button("Analizza Match", type="primary"):
-        if search:
-            calcola_pronostico_streamlit(search)
-        else:
-            st.warning("Inserisci il nome di una squadra!")
+        if search: calcola_pronostico_streamlit(search)
+        else: st.warning("Inserisci il nome di una squadra!")
 
 with tab2:
-    st.subheader("Configurazione Sistema")
+    st.subheader("⚙️ Gestione Sistema")
+    if os.path.exists(FILE_DB):
+        mod_time = datetime.fromtimestamp(os.path.getmtime(FILE_DB)).strftime('%d/%m/%Y %H:%M')
+        st.write(f"📂 **Ultimo aggiornamento database:** {mod_time}")
+    
     if st.button("🌐 Aggiorna Database API"):
         aggiorna_con_api()
     
-    if st.button("🗑️ Svuota Cronologia"):
+    if st.button("🗑️ Svuota Cronologia Report"):
         if os.path.exists(FILE_REPORT):
             os.remove(FILE_REPORT)
             st.success("Cronologia eliminata.")
-
-
-
-
-
-
-# --- APP LAYOUT ---
-st.set_page_config(page_title="Delphi Pro", layout="wide")
-tab1, tab2 = st.tabs(["🎯 Analisi", "⚙️ Gestione"])
-
-with tab1:
-    search = st.text_input("Squadra:")
-    if st.button("Analizza Match", type="primary"):
-        calcola_pronostico_streamlit(search)
-
-with tab2:
-    if st.button("🌐 Aggiorna Database API"):
-        aggiorna_con_api()
