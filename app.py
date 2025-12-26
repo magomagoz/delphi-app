@@ -5,6 +5,7 @@ import requests
 import os
 import re
 import time
+import plotly.express as px
 from datetime import datetime
 
 # --- CONFIGURAZIONE ---
