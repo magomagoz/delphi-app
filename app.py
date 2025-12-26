@@ -5,7 +5,6 @@ import requests
 import os
 import re
 import time
-import plotly.express as px # Fondamentale per i grafici
 from datetime import datetime
 
 # --- CONFIGURAZIONE ---
@@ -127,7 +126,16 @@ def calcola_pronostico_streamlit(nome_input):
 
     # --- OUTPUT ---
     st.header(f"🏟️ {casa} vs {fuori}")
-    st.plotly_chart(px.pie(values=[p1, px, p2], names=['1', 'X', '2'], color_discrete_sequence=['#2ecc71', '#f1c40f', '#e74c3c'], hole=0.4), use_container_width=True)
+    # st.plotly_chart(px.pie(values=[p1, px, p2], names=['1', 'X', '2'], color_discrete_sequence=['#2ecc71', '#f1c40f', '#e74c3c'], hole=0.4), use_container_width=True)
+
+    # Sostituisci la parte del grafico con questa se Plotly dà ancora errori:
+    st.subheader("📊 Probabilità 1X2 Finale")
+    prob_df = pd.DataFrame({
+    'Segno': ['1', 'X', '2'],
+    'Probabilità': [f"{p1/total_p:.1%}", f"{px/total_p:.1%}", f"{p2/total_p:.1%}"],
+    'Quota': [stima_quota(p1/total_p), stima_quota(px/total_p), stima_quota(p2/total_p)]
+})
+st.table(prob_df)
 
     st.subheader("⏱️ Top 3 RE 1° Tempo")
     c1t = st.columns(3)
