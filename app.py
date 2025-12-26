@@ -165,16 +165,6 @@ def calcola_pronostico_streamlit(nome_input):
     top_re_1t = sorted(re_1t, key=lambda x: x['p'], reverse=True)[:3]
 
     # --- OUTPUT STREAMLIT ---
-    st.header(f"{casa} vs {fuori}")
-    st.info(f"🏆 {m['League']} | 👮 Arbitro: {arbitro}")
-    
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Vittoria Casa (1)", f"{(p1/total_p):.1%}", f"Quota: {stima_quota(p1/total_p)}")
-    c2.metric("Pareggio (X)", f"{(px/total_p):.1%}", f"Quota: {stima_quota(px/total_p)}")
-    c3.metric("Vittoria Ospite (2)", f"{(p2/total_p):.1%}", f"Quota: {stima_quota(p2/total_p)}")
-
-    
-    # --- OUTPUT STREAMLIT ---
     st.header(f"🏟️ {casa} vs {fuori}")
     st.caption(f"🏆 {m['League']} | 📅 {m['Date']} | 👮 Arbitro: {arbitro}")
 
