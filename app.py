@@ -229,7 +229,7 @@ st.title("Delphi Predictor Pro")
 t1, t2 = st.tabs(["🎯 Analisi", "⚙️ Gestione"])
 
 with t1:
-    col_input, col_hist = st.columns([2, 1])
+    col_input = st.columns([1])
     with col_input:
         search = st.text_input("Squadra:")
         if st.button("Analizza Match", type="primary"):
