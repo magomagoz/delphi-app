@@ -10,7 +10,6 @@ from datetime import datetime
 API_TOKEN = 'c7a609a0580f4200add2751d787b3c68'
 FILE_DB = 'database_pro_2025.csv'
 
-
 # --- LOGICA MATEMATICA ---
 def stima_quota(prob):
     if prob <= 0.001: return 99.00
@@ -28,34 +27,6 @@ def analizza_severita_arbitro(df, nome_arbitro):
     media_gol_totale = (df['FTHG'] + df['FTAG']).mean()
     return round(max(0.8, min(1.3, media_gol_totale / media_gol_arbitro)), 2)
 
-# --- FUNZIONE AUSILIARIA PER LE STATISTICHE ---
-def get_prediction_data(df_storico, casa, fuori, arbitro):
-    avg_g = max(1.1, df_storico['FTHG'].mean())
-    molt_arbitro = analizza_severita_arbitro(df_storico, arbitro)
-    
-    def get_stats(team):
-        t = df_storico[(df_storico['HomeTeam'] == team) | (df_storico['AwayTeam'] == team)].tail(15)
-        if t.empty: return 1.4, 1.4
-        att = t.apply(lambda r: float(r['FTHG']) if r['HomeTeam']==team else float(r['FTAG']), axis=1).mean()
-        dif = t.apply(lambda r: float(r['FTAG']) if r['HomeTeam']==team else float(r['FTHG']), axis=1).mean()
-        return att, dif
-
-    att_h, dif_h = get_stats(casa)
-    att_a, dif_a = get_stats(fuori)
-    exp_h = (att_h * dif_a / avg_g) * (2 - molt_arbitro)
-    exp_a = (att_a * dif_h / avg_g) * (2 - molt_arbitro)
-    
-    res = {'total_p': 0, 'p_u25': 0, 'p_gol': 0, 'sgf': {i:0 for i in range(6)}, 're': []}
-    for i in range(7):
-        for j in range(7):
-            prob = poisson_probability(i, exp_h) * poisson_probability(j, exp_a)
-            res['total_p'] += prob
-            if (i+j) < 2.5: res['p_u25'] += prob
-            if i > 0 and j > 0: res['p_gol'] += prob
-            res['sgf'][min(i+j, 5)] += prob
-            res['re'].append({'s': f"{i}-{j}", 'p': prob})
-    return res
-
 def controlla_fatica(df, squadra, data_match):
     try:
         data_m = pd.to_datetime(data_match)
@@ -71,21 +42,19 @@ def calcola_late_goal_index(casa, fuori):
     val = (len(casa) + len(fuori)) % 15
     return round(val * 0.12, 2)
 
-# --- FUNZIONE AGGIORNAMENTO API (Modificata con testo dinamico) ---
+# --- FUNZIONE AGGIORNAMENTO API ---
 def aggiorna_con_api():
     headers = {'X-Auth-Token': API_TOKEN}
     leagues = {'WC': 'FIFA World Cup', 'SA':'Serie A', 'PL':'Premier League', 'ELC': 'Championship', 'PD':'La Liga', 'BL1':'Bundesliga', 'FL1':'Ligue 1', 'DED': 'Eredivisie',  'CL':'UEFA Champions League', 'EC': 'UEFA Europa League', 'PPL': 'Primeira Liga', 'BSA': 'Campeonato Brasileiro'}
     
     st.info("Inizio connessione API...")
     progress_bar = st.progress(0)
-    status_text = st.empty() # Creiamo uno spazio vuoto per il testo dinamico
+    status_text = st.empty()
     
     rows = []
     try:
         for i, (code, name) in enumerate(leagues.items()):
-            # AGGIORNA IL TESTO QUI
             status_text.text(f"📥 Scaricando dati: {name}...")
-            
             r = requests.get(f"https://api.football-data.org/v4/competitions/{code}/matches", headers=headers, timeout=10)
             if r.status_code == 200:
                 for m in r.json().get('matches', []):
@@ -93,24 +62,53 @@ def aggiorna_con_api():
                     away = m['awayTeam']['shortName'] or m['awayTeam']['name']
                     ref = m['referees'][0].get('name', 'N.D.') if m.get('referees') else 'N.D.'
                     rows.append([name, m['utcDate'][:10], home, away, m['status'], m['score']['fullTime']['home'], m['score']['fullTime']['away'], ref])
-            
             time.sleep(1.2)
             progress_bar.progress((i + 1) / len(leagues))
         
         pd.DataFrame(rows, columns=['League', 'Date', 'HomeTeam', 'AwayTeam', 'Status', 'FTHG', 'FTAG', 'Referee']).to_csv(FILE_DB, index=False)
-        
         status_text.text("✅ Salvataggio completato!")
-        time.sleep(1)
-        status_text.empty() # Pulisce il testo alla fine
         st.success("Database Aggiornato con successo!")
-        
     except Exception as e: 
-        st.error(f"Errore durante l'aggiornamento: {e}")
+        st.error(f"Errore: {e}")
 
+# --- FUNZIONE DI ANALISI PRINCIPALE ---
+def calcola_pronostico_streamlit(nome_input):
+    if not os.path.exists(FILE_DB):
+        st.error("Database non trovato."); return
+    
+    df = pd.read_csv(FILE_DB)
+    df['FTHG'] = pd.to_numeric(df['FTHG'], errors='coerce').fillna(0)
+    df['FTAG'] = pd.to_numeric(df['FTAG'], errors='coerce').fillna(0)
+    
+    match = df[df['Status'].isin(['TIMED', 'SCHEDULED', 'LIVE', 'IN_PLAY', 'POSTPONED']) & 
+               (df['HomeTeam'].str.contains(nome_input, case=False, na=False) | 
+                df['AwayTeam'].str.contains(nome_input, case=False, na=False))]
+    
+    if match.empty:
+        st.warning(f"Nessun match programmato trovato per '{nome_input}'"); return
+
+    m = match.iloc[0]
+    casa, fuori = m['HomeTeam'], m['AwayTeam']
+    giocate = df[df['Status'] == 'FINISHED'].copy()
+    arbitro = m.get('Referee', 'N.D.')
+    molt_arbitro = analizza_severita_arbitro(giocate, arbitro)
+    
+    # Calcolo medie Poisson
+    avg_g = max(1.1, giocate['FTHG'].mean())
+    def get_stats(team):
+        t = giocate[(giocate['HomeTeam'] == team) | (giocate['AwayTeam'] == team)].tail(15)
+        if t.empty: return 1.4, 1.4
+        att = t.apply(lambda r: float(r['FTHG']) if r['HomeTeam']==team else float(r['FTAG']), axis=1).mean()
+        dif = t.apply(lambda r: float(r['FTAG']) if r['HomeTeam']==team else float(r['FTHG']), axis=1).mean()
+        return att, dif
+
+    att_h, dif_h = get_stats(casa)
+    att_a, dif_a = get_stats(fuori)
+    exp_h = (att_h * dif_a / avg_g) * (2 - molt_arbitro)
+    exp_a = (att_a * dif_h / avg_g) * (2 - molt_arbitro)
 
     # Poisson Finale
-    p_u25, p_gol = 0, 0
-    total_p = 0
+    p_u25, p_gol, total_p = 0, 0, 0
     sgf, sgc, sgo = {i:0 for i in range(6)}, {i:0 for i in range(6)}, {i:0 for i in range(6)}
     re_finali = []
     
@@ -125,7 +123,7 @@ def aggiorna_con_api():
             sgo[min(j, 5)] += prob
             re_finali.append({'s': f"{i}-{j}", 'p': prob})
 
-    # Poisson 1° Tempo (Stima ~42% exp goals)
+    # Poisson 1° Tempo
     exp_h_1t, exp_a_1t = exp_h * 0.42, exp_a * 0.42
     re_1t, total_p_1t = [], 0
     for i in range(4):
@@ -159,9 +157,9 @@ def aggiorna_con_api():
 
     st.divider()
     st.subheader("⚽ Analisi Somme Gol")
-    c_sgf, c_sgc, c_sgo = st.columns(3)
+    c_sgf_col, c_sgc_col, c_sgo_col = st.columns(3)
 
-    with c_sgf:
+    with c_sgf_col:
         st.write("**Top 3 SGF**")
         for i, (k, v) in enumerate(top_sgf):
             q = stima_quota(v/total_p)
@@ -169,76 +167,64 @@ def aggiorna_con_api():
             if q >= 3.0: st.success(label)
             else: st.info(label)
 
-    with c_sgc:
+    with c_sgc_col:
         st.write("**Top 2 SGC**")
         for k, v in top_sgc:
             q = stima_quota(v/total_p)
-            label = f"💎 {k} G: {q:.2f}"
-            if q >= 3.0: st.success(label)
-            else: st.info(label)
+            st.info(f"💎 {k} G: {q:.2f}")
 
-    with c_sgo:
+    with c_sgo_col:
         st.write("**Top 2 SGO**")
         for k, v in top_sgo:
             q = stima_quota(v/total_p)
-            label = f"💎 {k} G: {q:.2f}"
-            if q >= 3.0: st.success(label)
-            else: st.info(label)
+            st.info(f"💎 {k} G: {q:.2f}")
 
-    # --- RE 1° TEMPO ---
     st.divider()
     st.subheader("⏱️ Top 3 RE 1° Tempo")
-    c1t = st.columns(3)
+    c1t_cols = st.columns(3)
     for idx, r in enumerate(top_re_1t):
         q = stima_quota(r['p']/total_p_1t)
-        if q >= 3.0:
-            c1t[idx].success(f"**{r['s']}**\n\nQ: {q:.2f} 🔥")
-        else:
-            c1t[idx].info(f"**{r['s']}**\n\nQ: {q:.2f}")
+        if q >= 3.0: c1t_cols[idx].success(f"**{r['s']}**\n\nQ: {q:.2f} 🔥")
+        else: c1t_cols[idx].info(f"**{r['s']}**\n\nQ: {q:.2f}")
 
-    # --- MERCATI ---
     st.divider()
     st.subheader("🏁 Mercati Classici")
     cuo, cgng = st.columns(2)
     with cuo:
-        qu, qo = stima_quota(p_u25), stima_quota(1-p_u25)
-        if qu >= 3.0: st.success(f"💎 U2.5: {qu:.2f}")
-        else: st.info(f"U2.5: {qu:.2f}")
-        if qo >= 3.0: st.success(f"💎 O2.5: {qo:.2f}")
-        else: st.info(f"O2.5: {qo:.2f}")
+        st.info(f"U2.5: {stima_quota(p_u25/total_p):.2f} | O2.5: {stima_quota(1-p_u25/total_p):.2f}")
     with cgng:
-        qg, qng = stima_quota(p_gol), stima_quota(1-p_gol)
-        if qg >= 3.0: st.success(f"💎 GOL: {qg:.2f}")
-        else: st.info(f"GOL: {qg:.2f}")
-        if qng >= 3.0: st.success(f"💎 NOGOL: {qng:.2f}")
-        else: st.info(f"NOGOL: {qng:.2f}")
+        st.info(f"GOL: {stima_quota(p_gol/total_p):.2f} | NOGOL: {stima_quota(1-p_gol/total_p):.2f}")
         
-    # --- RE FINALE ---
     st.divider()
     st.subheader("🎯 Top 6 RE Finale")
     cols_re = st.columns(3)
     for idx, r in enumerate(top_re):
         q = stima_quota(r['p']/total_p)
         with cols_re[idx % 3]:
-            if q >= 3.0: st.success(f"**{r['s']}**\n\nQ: {q:.2f} 🔥")
+            if q >= 3.0: st.success(f"**{r['s']}** (Q: {q:.2f}) 🔥")
             else: st.code(f"{r['s']} | Q: {q:.2f}")
 
-# --- MAIN ---
+# --- MAIN APP ---
 st.set_page_config(page_title="Delphi Pro", layout="wide")
-st.title("Delphi Predictor Pro")
-t1, t2 = st.tabs(["🎯 Analisi", "⚙️ Gestione"])
+st.title("Delphi Predictor Pro Max")
 
-with t1:
-    # Creiamo un'unica colonna che occupa tutta la larghezza per la ricerca
-    search = st.text_input("Inserisci il nome di una squadra per analizzare il match:")
-    
+tab_analisi, tab_gestione = st.tabs(["🎯 Analisi Match", "⚙️ Gestione Database"])
+
+with tab_analisi:
+    search_query = st.text_input("Inserisci il nome della squadra (es. Inter, Milan, Real):")
     if st.button("Analizza Match", type="primary"):
-        if search:
-            calcola_pronostico_streamlit(search)
+        if search_query:
+            calcola_pronostico_streamlit(search_query)
         else:
-            st.warning("Per favore, inserisci il nome di una squadra.")
+            st.warning("Inserisci il nome di una squadra per procedere.")
 
-with t2:
+with tab_gestione:
+    st.subheader("Controllo Dati")
     if os.path.exists(FILE_DB):
-        st.write(f"📂 Ultimo DB: {datetime.fromtimestamp(os.path.getmtime(FILE_DB)).strftime('%d/%m/%Y %H:%M')}")
-    if st.button("🌐 Aggiorna Database"): aggiorna_con_api()
+        file_time = datetime.fromtimestamp(os.path.getmtime(FILE_DB)).strftime('%d/%m/%Y %H:%M')
+        st.write(f"📂 **Ultimo aggiornamento database:** {file_time}")
+    else:
+        st.error("⚠️ Database non presente. Effettua un aggiornamento.")
+    
+    if st.button("🌐 Aggiorna Database via API"):
+        aggiorna_con_api()
