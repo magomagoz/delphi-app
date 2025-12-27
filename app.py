@@ -172,10 +172,10 @@ def calcola_pronostico_streamlit(nome_input):
     f_h, f_a = controlla_fatica(df, casa, m['Date']), controlla_fatica(df, fuori, m['Date'])
     if f_h or f_a:
         st.warning(f"⚠️ **Fatica Coppa:** {'Casa' if f_h else ''} {'&' if f_h and f_a else ''} {'Fuori' if f_a else ''}")
-
+    
     lg_idx = calcola_late_goal_index(casa, fuori)
-    st.info(f"⏳ Indice Late Goal: {lg_idx}")
-    if lg_idx > 1.2: st.error("🔥 **ALTA PROBABILITÀ LATE GOAL (80'+)**")
+    st.metric("⏳ Indice Late Goal", f"{lg_idx}")
+    if lg_idx > 1.2: st.error("🔥 ** ALTA PROBABILITÀ LATE GOAL (80'+) **")
 
     # Calcolo Poisson 1T
     exp_h_1t, exp_a_1t = (data['total_p'] * 0) , (data['total_p'] * 0) # Placeholder per logica interna
