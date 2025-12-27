@@ -229,11 +229,14 @@ st.title("Delphi Predictor Pro")
 t1, t2 = st.tabs(["🎯 Analisi", "⚙️ Gestione"])
 
 with t1:
-    col_input = st.columns([1])
+    # Opzione A: Assegnazione diretta (nota la virgola dopo col_input)
+    col_input, = st.columns([1]) 
+    
     with col_input:
         search = st.text_input("Squadra:")
         if st.button("Analizza Match", type="primary"):
-            if search: calcola_pronostico_streamlit(search)
+            if search: 
+                calcola_pronostico_streamlit(search)
 
 with t2:
     if os.path.exists(FILE_DB):
