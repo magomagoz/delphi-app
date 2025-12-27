@@ -45,6 +45,7 @@ def get_prediction_data(df_storico, casa, fuori, arbitro):
 
     att_h, dif_h = get_stats(casa)
     att_a, dif_a = get_stats(fuori)
+
     exp_h = (att_h * dif_a / avg_g) * (2 - molt_arbitro)
     exp_a = (att_a * dif_h / avg_g) * (2 - molt_arbitro)
     
