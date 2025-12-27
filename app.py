@@ -59,14 +59,21 @@ def get_prediction_data(df_storico, casa, fuori, arbitro):
             res['re'].append({'s': f"{i}-{j}", 'p': prob})
     return res
 
-# --- FUNZIONE AGGIORNAMENTO API ---
+# --- FUNZIONE AGGIORNAMENTO API (Modificata con testo dinamico) ---
 def aggiorna_con_api():
     headers = {'X-Auth-Token': API_TOKEN}
     leagues = {'SA':'Serie A', 'PL':'Premier League', 'PD':'La Liga', 'BL1':'Bundesliga', 'FL1':'Ligue 1', 'CL':'Champions League'}
+    
+    st.info("Inizio connessione API...")
     progress_bar = st.progress(0)
+    status_text = st.empty() # Creiamo uno spazio vuoto per il testo dinamico
+    
     rows = []
     try:
         for i, (code, name) in enumerate(leagues.items()):
+            # AGGIORNA IL TESTO QUI
+            status_text.text(f"📥 Scaricando dati: {name}...")
+            
             r = requests.get(f"https://api.football-data.org/v4/competitions/{code}/matches", headers=headers, timeout=10)
             if r.status_code == 200:
                 for m in r.json().get('matches', []):
@@ -74,11 +81,19 @@ def aggiorna_con_api():
                     away = m['awayTeam']['shortName'] or m['awayTeam']['name']
                     ref = m['referees'][0].get('name', 'N.D.') if m.get('referees') else 'N.D.'
                     rows.append([name, m['utcDate'][:10], home, away, m['status'], m['score']['fullTime']['home'], m['score']['fullTime']['away'], ref])
+            
             time.sleep(1.2)
             progress_bar.progress((i + 1) / len(leagues))
+        
         pd.DataFrame(rows, columns=['League', 'Date', 'HomeTeam', 'AwayTeam', 'Status', 'FTHG', 'FTAG', 'Referee']).to_csv(FILE_DB, index=False)
-        st.success("Database Aggiornato!")
-    except Exception as e: st.error(f"Errore: {e}")
+        
+        status_text.text("✅ Salvataggio completato!")
+        time.sleep(1)
+        status_text.empty() # Pulisce il testo alla fine
+        st.success("Database Aggiornato con successo!")
+        
+    except Exception as e: 
+        st.error(f"Errore durante l'aggiornamento: {e}")
 
 # --- FUNZIONE STATISTICHE ---
 def mostra_statistiche():
@@ -276,7 +291,7 @@ def calcola_pronostico_streamlit(nome_input):
 
 # --- MAIN ---
 st.set_page_config(page_title="Delphi Pro", layout="wide")
-st.title("🏆 Delphi Predictor Pro 🏆")
+st.title("🏆 Delphi Predictor Pro Max")
 t1, t2, t3 = st.tabs(["🎯 Analisi", "📊 Statistiche", "⚙️ Gestione"])
 
 with t1:
