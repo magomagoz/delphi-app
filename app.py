@@ -10,9 +10,6 @@ from datetime import datetime
 API_TOKEN = 'c7a609a0580f4200add2751d787b3c68'
 FILE_DB = 'database_pro_2025.csv'
 
-# Inizializzazione Cronologia nello stato della sessione
-if 'cronologia' not in st.session_state:
-    st.session_state.cronologia = []
 
 # --- LOGICA MATEMATICA ---
 def stima_quota(prob):
@@ -110,97 +107,6 @@ def aggiorna_con_api():
     except Exception as e: 
         st.error(f"Errore durante l'aggiornamento: {e}")
 
-# --- FUNZIONE STATISTICHE ---
-def mostra_statistiche():
-    if not os.path.exists(FILE_DB):
-        st.warning("Database non trovato."); return
-    df = pd.read_csv(FILE_DB)
-    giocate = df[df['Status'] == 'FINISHED'].copy()
-    
-    if len(giocate) < 10:
-        st.info("Dati insufficienti per le statistiche (servono almeno 10 match conclusi).")
-        return
-
-    st.subheader("📈 Performance Storica (Backtesting)")
-    st.caption("Analisi basata sugli ultimi 50 match presenti nel database.")
-    
-    tot = min(50, len(giocate))
-    hits = {'SGF': 0, 'UO': 0, 'GNG': 0, 'RE': 0}
-    
-    progress_text = "Analisi in corso..."
-    my_bar = st.progress(0, text=progress_text)
-
-    for i in range(tot):
-        my_bar.progress((i + 1) / tot, text=progress_text)
-        m = giocate.iloc[-(i+1)]
-        storico = giocate.iloc[:-(i+1)]
-        if storico.empty: continue
-        
-        data = get_prediction_data(storico, m['HomeTeam'], m['AwayTeam'], m['Referee'])
-        real_h = int(float(m['FTHG']))
-        real_a = int(float(m['FTAG']))
-        real_sum = real_h + real_a
-        
-        # 1. Verifica SGF
-        pred_sgf = max(data['sgf'], key=data['sgf'].get)
-        if pred_sgf == min(real_sum, 5): hits['SGF'] += 1
-        
-        # 2. Verifica U/O 2.5
-        prob_u25 = data['p_u25'] / data['total_p']
-        if (prob_u25 > 0.5 and real_sum < 2.5) or (prob_u25 <= 0.5 and real_sum > 2.5): hits['UO'] += 1
-            
-        # 3. Verifica G/NG
-        prob_gol = data['p_gol'] / data['total_p']
-        is_gol = (real_h > 0 and real_a > 0)
-        if (prob_gol > 0.5 and is_gol) or (prob_gol <= 0.5 and not is_gol): hits['GNG'] += 1
-            
-        # 4. Verifica RE
-        top6_re = [x['s'] for x in sorted(data['re'], key=lambda x: x['p'], reverse=True)[:6]]
-        if f"{real_h}-{real_a}" in top6_re: hits['RE'] += 1
-
-    my_bar.empty()
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("SGF (Top 1)", f"{(hits['SGF']/tot):.0%}")
-    c2.metric("U/O 2.5", f"{(hits['UO']/tot):.0%}")
-    c3.metric("GOL/NO GOL", f"{(hits['GNG']/tot):.0%}")
-    c4.metric("RE (in Top 6)", f"{(hits['RE']/tot):.0%}")
-
-# --- CALCOLO E VISUALIZZAZIONE ---
-def calcola_pronostico_streamlit(nome_input):
-    if not os.path.exists(FILE_DB):
-        st.error("Database non trovato."); return
-    
-    df = pd.read_csv(FILE_DB)
-    df['FTHG'] = pd.to_numeric(df['FTHG'], errors='coerce').fillna(0)
-    df['FTAG'] = pd.to_numeric(df['FTAG'], errors='coerce').fillna(0)
-    
-    match = df[df['Status'].isin(['TIMED', 'SCHEDULED', 'LIVE', 'IN_PLAY', 'POSTPONED']) & 
-               (df['HomeTeam'].str.contains(nome_input, case=False, na=False) | 
-                df['AwayTeam'].str.contains(nome_input, case=False, na=False))]
-    
-    if match.empty:
-        st.warning(f"Nessun match per '{nome_input}'"); return
-
-    m = match.iloc[0]; casa, fuori = m['HomeTeam'], m['AwayTeam']
-    entry = f"{casa} vs {fuori}"
-    if entry not in st.session_state.cronologia:
-        st.session_state.cronologia.insert(0, entry)
-
-    giocate = df[df['Status'] == 'FINISHED'].copy()
-    arbitro = m.get('Referee', 'N.D.')
-    molt_arbitro = analizza_severita_arbitro(giocate, arbitro)
-    avg_g = max(1.1, giocate['FTHG'].mean())
-
-    def get_stats(team):
-        t = giocate[(giocate['HomeTeam'] == team) | (giocate['AwayTeam'] == team)].tail(15)
-        if t.empty: return 1.4, 1.4
-        att = t.apply(lambda r: float(r['FTHG']) if r['HomeTeam']==team else float(r['FTAG']), axis=1).mean()
-        dif = t.apply(lambda r: float(r['FTAG']) if r['HomeTeam']==team else float(r['FTHG']), axis=1).mean()
-        return att, dif
-
-    att_h, dif_h = get_stats(casa); att_a, dif_a = get_stats(fuori)
-    exp_h = (att_h * dif_a / avg_g) * (2 - molt_arbitro)
-    exp_a = (att_a * dif_h / avg_g) * (2 - molt_arbitro)
 
     # Poisson Finale
     p_u25, p_gol = 0, 0
