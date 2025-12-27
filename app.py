@@ -41,7 +41,7 @@ def get_prediction_data(df_storico, casa, fuori, arbitro):
         if t.empty: return 1.4, 1.4
         att = t.apply(lambda r: float(r['FTHG']) if r['HomeTeam']==team else float(r['FTAG']), axis=1).mean()
         dif = t.apply(lambda r: float(r['FTAG']) if r['HomeTeam']==team else float(r['FTHG']), axis=1).mean()
-        return att, dif
+    return att, dif
 
     att_h, dif_h = get_stats(casa)
     att_a, dif_a = get_stats(fuori)
