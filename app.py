@@ -291,7 +291,7 @@ def calcola_pronostico_streamlit(nome_input):
 
 # --- MAIN ---
 st.set_page_config(page_title="Delphi Pro", layout="wide")
-st.title("🏆 Delphi Predictor Pro Max")
+st.title("🏆 Delphi Predictor Pro 🏆")
 t1, t2, t3 = st.tabs(["🎯 Analisi", "📊 Statistiche", "⚙️ Gestione"])
 
 with t1:
