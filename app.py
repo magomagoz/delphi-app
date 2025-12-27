@@ -238,61 +238,19 @@ def calcola_pronostico_streamlit(nome_input):
     # --- UI RENDERING ---
     st.header(f"🏟️ {casa} vs {fuori}")
     st.info(f"🏆 {m['League']}    |    📅 {m['Date']}")
-    
-    c_info1, c_info2 = st.columns(2)
-    with c_info1:
-        st.info(f"👮 **Arbitro:** {arbitro} | 📈 **Impatto:** {molt_arbitro}x")
+    st.info(f"👮 **Arbitro:** {arbitro} | 📈 **Impatto:** {molt_arbitro}x")
         f_h, f_a = controlla_fatica(df, casa, m['Date']), controlla_fatica(df, fuori, m['Date'])
         if f_h or f_a:
             st.warning(f"⚠️ **Fatica Coppa:** {'Casa' if f_h else ''} {'&' if f_h and f_a else ''} {'Fuori' if f_a else ''}")
-    
-    with c_info2:
+
+    st.info(f"⏳ Indice Late Goal", f"{lg_idx}")
         lg_idx = calcola_late_goal_index(casa, fuori)
-        st.metric("⏳ Indice Late Goal", f"{lg_idx}")
         if lg_idx > 1.2: st.error("🔥 **ALTA PROBABILITÀ LATE GOAL (80'+)**")
 
-    st.divider()
-    st.subheader("⚽ Analisi Somme Gol")
-    c_sgf, c_sgc, c_sgo = st.columns(3)
-
-    with c_sgf:
-        st.write("**Top 3 SGF**")
-        for i, (k, v) in enumerate(top_sgf):
-            q = stima_quota(v/total_p)
-            label = f"{'🎯' if i==0 else '💎'} {k if k<5 else '>4'} G: {q:.2f}"
-            if q >= 3.0: st.success(label)
-            else: st.info(label)
-
-    with c_sgc:
-        st.write("**Top 2 SGC**")
-        for k, v in top_sgc:
-            q = stima_quota(v/total_p)
-            label = f"💎 {k} G: {q:.2f}"
-            if q >= 3.0: st.success(label)
-            else: st.info(label)
-
-    with c_sgo:
-        st.write("**Top 2 SGO**")
-        for k, v in top_sgo:
-            q = stima_quota(v/total_p)
-            label = f"💎 {k} G: {q:.2f}"
-            if q >= 3.0: st.success(label)
-            else: st.info(label)
-
-    # --- RE 1° TEMPO ---
-    st.divider()
-    st.subheader("⏱️ Top 3 RE 1° Tempo")
-    c1t = st.columns(3)
-    for idx, r in enumerate(top_re_1t):
-        q = stima_quota(r['p']/total_p_1t)
-        if q >= 3.0:
-            c1t[idx].success(f"**{r['s']}**\n\nQ: {q:.2f} 🔥")
-        else:
-            c1t[idx].info(f"**{r['s']}**\n\nQ: {q:.2f}")
 
     # --- MERCATI ---
     st.divider()
-    st.subheader("🏁 Mercati Classici")
+    st.subheader("🏁 Under/Over 2,5 & Gol/Nogol")
     cuo, cgng = st.columns(2)
     with cuo:
         qu, qo = stima_quota(p_u25), stima_quota(1-p_u25)
@@ -306,10 +264,49 @@ def calcola_pronostico_streamlit(nome_input):
         else: st.info(f"GOL: {qg:.2f}")
         if qng >= 3.0: st.success(f"💎 NOGOL: {qng:.2f}")
         else: st.info(f"NOGOL: {qng:.2f}")
+
+    # --- RE 1° TEMPO ---
+    st.divider()
+    st.subheader("⏱️ Top 3 Risultati Esatti 1° Tempo")
+    c1t = st.columns(3)
+    for idx, r in enumerate(top_re_1t):
+        q = stima_quota(r['p']/total_p_1t)
+        if q >= 3.0:
+            c1t[idx].success(f"**{r['s']}**\n\nQ: {q:.2f} 🔥")
+        else:
+            c1t[idx].info(f"**{r['s']}**\n\nQ: {q:.2f}")
         
+    st.divider()
+    st.subheader("⚽ Analisi Gol")
+    c_sgf, c_sgc, c_sgo = st.columns(3)
+
+    with c_sgf:
+        st.write("** Top 3 Somma Gol Finale **")
+        for i, (k, v) in enumerate(top_sgf):
+            q = stima_quota(v/total_p)
+            label = f"{'🎯' if i==0 else '💎'} {k if k<5 else '>4'} G: {q:.2f}"
+            if q >= 3.0: st.success(label)
+            else: st.info(label)
+
+    with c_sgc:
+        st.write("** Top 2 Somma Gol Casa **")
+        for k, v in top_sgc:
+            q = stima_quota(v/total_p)
+            label = f"💎 {k} G: {q:.2f}"
+            if q >= 3.0: st.success(label)
+            else: st.info(label)
+
+    with c_sgo:
+        st.write("** Top 2 Somma Gol Ospite **")
+        for k, v in top_sgo:
+            q = stima_quota(v/total_p)
+            label = f"💎 {k} G: {q:.2f}"
+            if q >= 3.0: st.success(label)
+            else: st.info(label)
+
     # --- RE FINALE ---
     st.divider()
-    st.subheader("🎯 Top 6 RE Finale")
+    st.subheader("🎯 Top 6 Risultati Esatti Finale")
     cols_re = st.columns(3)
     for idx, r in enumerate(top_re):
         q = stima_quota(r['p']/total_p)
