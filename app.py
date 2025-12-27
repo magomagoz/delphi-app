@@ -193,25 +193,7 @@ def calcola_pronostico_streamlit(nome_input):
 
 # --- MAIN ---
 st.set_page_config(page_title="Delphi Pro", layout="wide")
-st.title("Delphi Predictor Pro")
-
-
-# --- UI RENDERING ---
-st.header(f"🏟️ {casa} vs {fuori}")
-st.info(f"🏆 {m['League']}    |    📅 {m['Date']}")
-st.info(f"👮 **Arbitro:** {arbitro} | 📈 **Impatto:** {molt_arbitro}x")
-
-# Correzione Indentazione Fatica di Coppa
-f_h, f_a = controlla_fatica(df, casa, m['Date']), controlla_fatica(df, fuori, m['Date'])
-if f_h or f_a:
-    st.warning(f"⚠️ **Fatica Coppa:** {'Casa' if f_h else ''} {'&' if f_h and f_a else ''} {'Fuori' if f_a else ''}")
-
-# Correzione Indentazione e Logica Late Goal
-lg_idx = calcola_late_goal_index(casa, fuori)
-st.info(f"⏳ Indice Late Goal: {lg_idx}")
-if lg_idx > 1.2: 
-    st.error("🔥 **ALTA PROBABILITÀ LATE GOAL (80'+)**")
-
+st.title("🏆 Delphi Predictor Pro 🏆")
 t1, t2 = st.tabs(["🎯 Analisi", "⚙️ Gestione"])
 
 with t1:
