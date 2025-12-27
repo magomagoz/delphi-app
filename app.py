@@ -319,8 +319,8 @@ def calcola_pronostico_streamlit(nome_input):
 
 # --- MAIN ---
 st.set_page_config(page_title="Delphi Pro", layout="wide")
-st.title("Delphi Predictor")
-t1, t2, t3 = st.tabs(["🎯 Analisi", "📊 Statistiche", "⚙️ Gestione"])
+st.title("Delphi Predictor Pro")
+t1, t2, t3 = st.tabs(["🎯 Analisi", "⚙️ Gestione"])
 
 with t1:
     col_input, col_hist = st.columns([2, 1])
@@ -344,9 +344,6 @@ with t1:
             st.caption("Nessuna ricerca recente.")
 
 with t2:
-    mostra_statistiche()
-
-with t3:
     if os.path.exists(FILE_DB):
         st.write(f"📂 Ultimo DB: {datetime.fromtimestamp(os.path.getmtime(FILE_DB)).strftime('%d/%m/%Y %H:%M')}")
     if st.button("🌐 Aggiorna Database"): aggiorna_con_api()
