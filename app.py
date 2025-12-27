@@ -134,7 +134,7 @@ def calcola_pronostico_streamlit(nome_input):
 
     # --- UI RENDERING ---
     st.header(f"🏟️ {casa} vs {fuori}")
-    st.subheader(f"🏆 {m['League']} | 📅 {m['Date']}")
+    st.info(f"🏆 {m['League']} | 📅 {m['Date']}")
     
     c_info1, c_info2 = st.columns(2)
     with c_info1:
@@ -178,8 +178,8 @@ def calcola_pronostico_streamlit(nome_input):
     cuo, cgng = st.columns(2)
     with cuo:
         pu, po = p_u25/total_p, 1-(p_u25/total_p)
-        st.info(f"**Under 2.5:** ➡️ {pu:.1%} (Quota: {stima_quota(pu)})")
-        st.info(f"**Over 2.5:** ➡️ {po:.1%} (Quota: {stima_quota(po)})")
+        st.info(f"**UNDER 2.5:** ➡️ {pu:.1%} (Quota: {stima_quota(pu)})")
+        st.info(f"**OVER 2.5:** ➡️ {po:.1%} (Quota: {stima_quota(po)})")
     with cgng:
         pg, png = p_gol/total_p, 1-(p_gol/total_p)
         st.info(f"**GOL:** ➡️ {pg:.1%} (Quota: {stima_quota(pg)})")
@@ -193,17 +193,17 @@ def calcola_pronostico_streamlit(nome_input):
         st.write("**Top 3 Somma Gol Finale**")
         for k, v in sorted(sgf.items(), key=lambda x: x[1], reverse=True)[:3]:
             p = v/total_p
-            st.success(f"**{k if k<5 else '>4'} G:** ➡️ {p:.1%} (Q: {stima_quota(p)})")
+            st.success(f"**{k if k<5 else '>4'} GOL:** ➡️ {p:.1%} (Q: {stima_quota(p)})")
     with c_sgc:
         st.write("**Top 2 Somma Gol Casa**")
         for k, v in sorted(sgc.items(), key=lambda x: x[1], reverse=True)[:2]:
             p = v/total_p
-            st.success(f"**{k} G:** ➡️ {p:.1%} (Q: {stima_quota(p)})")
+            st.success(f"**{k if k<2 else '>2'} GOL:** ➡️ {p:.1%} (Q: {stima_quota(p)})")
     with c_sgo:
         st.write("**Top 2 Somma Gol Ospite**")
         for k, v in sorted(sgo.items(), key=lambda x: x[1], reverse=True)[:2]:
             p = v/total_p
-            st.success(f"**{k} G:** ➡️ {p:.1%} (Q: {stima_quota(p)})")
+            st.success(f"**{k if k<2 else '>2'} GOL:** ➡️ {p:.1%} (Q: {stima_quota(p)})")
 
     # --- RISULTATI ESATTI (VERDI E BLU) ---
     st.divider()
