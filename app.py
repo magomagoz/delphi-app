@@ -234,20 +234,6 @@ with t1:
         search = st.text_input("Squadra:")
         if st.button("Analizza Match", type="primary"):
             if search: calcola_pronostico_streamlit(search)
-    with col_hist:
-        st.write("📜 **Cronologia**")
-        if st.session_state.cronologia:
-            for item in st.session_state.cronologia:
-                if st.button(item, key=item):
-                    calcola_pronostico_streamlit(item.split(" vs ")[0])
-            st.divider()
-            if st.button("🗑️ Svuota Cronologia"):
-                st.warning("Confermi?")
-                if st.button("Sì, svuota"):
-                    st.session_state.cronologia = []
-                    st.rerun()
-        else:
-            st.caption("Nessuna ricerca recente.")
 
 with t2:
     if os.path.exists(FILE_DB):
