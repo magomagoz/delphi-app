@@ -237,7 +237,7 @@ def calcola_pronostico_streamlit(nome_input):
 
     # --- UI RENDERING ---
     st.header(f"🏟️ {casa} vs {fuori}")
-    st.info(f"🏆 {m['League']} | 📅 {m['Date']}")
+    st.info(f"🏆 {m['League']}    |    📅 {m['Date']}")
     
     c_info1, c_info2 = st.columns(2)
     with c_info1:
