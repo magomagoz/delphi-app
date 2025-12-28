@@ -171,13 +171,13 @@ def calcola_pronostico_streamlit(nome_input):
 
     with c1:
         prob1 = p_1/total_p
-        st.info(f"1: 📈 {prob1:.1%} - 💰 Q: {stima_quota(prob1)}")
+        st.info(f"1:📈 {prob1:.1%} 💰 Q: {stima_quota(prob1)}")
     with cx:
         probx = p_x/total_p
-        st.info(f"X: 📈 {probx:.1%} - 💰 Q: {stima_quota(probx)}")
+        st.info(f"X:📈 {probx:.1%} 💰 Q: {stima_quota(probx)}")
     with c2:
         prob2 = p_2/total_p
-        st.info(f"2: 📈 {prob2:.1%} - 💰 Q: {stima_quota(prob2)}")
+        st.info(f"2:📈 {prob2:.1%} 💰 Q: {stima_quota(prob2)}")
         
     # --- MERCATI CLASSICI (BLU) ---
     st.divider()
@@ -185,12 +185,12 @@ def calcola_pronostico_streamlit(nome_input):
     cuo, cgng = st.columns(2)
     with cuo:
         pu, po = p_u25/total_p, 1-(p_u25/total_p)
-        st.info(f"UNDER 2.5: 📈 {pu:.1%} - 💰 Quota: {stima_quota(pu)}")
-        st.info(f"OVER 2.5: 📈 {po:.1%} - 💰 Quota: {stima_quota(po)}")
+        st.info(f"UNDER 2.5:📈 {pu:.1%} 💰 Quota: {stima_quota(pu)}")
+        st.info(f"OVER 2.5:📈 {po:.1%} 💰 Quota: {stima_quota(po)}")
     with cgng:
         pg, png = p_gol/total_p, 1-(p_gol/total_p)
-        st.info(f"GOL: 📈 {pg:.1%} - 💰 Quota: {stima_quota(pg)}")
-        st.info(f"NOGOL: 📈 {png:.1%} - 💰 Quota: {stima_quota(png)}")
+        st.info(f"GOL:📈 {pg:.1%} 💰 Quota: {stima_quota(pg)}")
+        st.info(f"NOGOL:📈 {png:.1%} 💰 Quota: {stima_quota(png)}")
 
     # --- SOMME GOL (VERDI) ---
     st.divider()
@@ -200,12 +200,12 @@ def calcola_pronostico_streamlit(nome_input):
         st.write("**Top 3 Somma Gol Finale**")
         for k, v in sorted(sgf.items(), key=lambda x: x[1], reverse=True)[:3]:
             p = v/total_p
-            st.success(f"**{k if k<5 else '>4'}** GOL: 📈 {p:.1%} - 💰 Q: {stima_quota(p)}")
+            st.success(f"**{k if k<5 else '>4'}** GOL:📈 {p:.1%} 💰 Q: {stima_quota(p)}")
     with c_sgc:
         st.write("**Top 2 Somma Gol Casa**")
         for k, v in sorted(sgc.items(), key=lambda x: x[1], reverse=True)[:2]:
             p = v/total_p
-            st.success(f"**{k if k<2 else '>2'}** GOL: 📈 {p:.1%} - 💰 Q: {stima_quota(p)}")
+            st.success(f"**{k if k<2 else '>2'}** GOL:📈 {p:.1%} 💰 Q: {stima_quota(p)}")
     with c_sgo:
         st.write("**Top 2 Somma Gol Ospite**")
         for k, v in sorted(sgo.items(), key=lambda x: x[1], reverse=True)[:2]:
