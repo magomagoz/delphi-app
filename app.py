@@ -7,6 +7,13 @@ import time
 from datetime import datetime
 
 # --- CONFIGURAZIONE ---
+st.set_page_config(page_title="Delphi Pro", layout="wide")
+
+# --- BANNER IDENTITARIO ---
+st.image("banner.png", use_container_width=True)
+st.title("Delphi Predictor Pro Max") # Il titolo ora apparirà sotto l'immagine
+
+# --- CONFIGURAZIONE ---
 API_TOKEN = 'c7a609a0580f4200add2751d787b3c68'
 FILE_DB = 'database_pro_2025.csv'
 
