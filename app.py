@@ -150,11 +150,40 @@ def calcola_pronostico_streamlit(nome_input):
         if f_h or f_a:
             st.warning(f"⚠️ **Fatica Coppa:** {'Casa' if f_h else ''} {'&' if f_h and f_a else ''} {'Fuori' if f_a else ''}")
     
-    with c_info2:
+# --- 1. STILE PER IL PULSANTE BLU ---
+st.markdown("""
+    <style>
+        /* Questo seleziona il pulsante all'interno di Streamlit */
+        div.stButton > button:first-child {
+            background-color: #007BFF; /* Blu elettrico */
+            color: white;
+            border-radius: 8px;
+            border: none;
+            height: 3em;
+            width: 100%;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        /* Effetto quando ci passi sopra col dito/mouse */
+        div.stButton > button:hover {
+            background-color: #0056b3;
+            color: white;
+            border: none;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+# --- 2. IL TUO CODICE DENTRO IL PULSANTE ---
+with c_info2:
+    if st.button("🔍 CALCOLA LATE GOAL"):
         lg_idx = calcola_late_goal_index(casa, fuori)
         st.metric(f"⏳ Indice Late Goal", f"{lg_idx}")
-        if lg_idx > 1.2: st.error("🔥 **ALTA PROBABILITÀ GOAL (80'+)**")
+        
+        if lg_idx > 1.2: 
+            st.error("🔥 **ALTA PROBABILITÀ GOAL (80'+)**")
 
+    
+    
     # --- ESITO FINALE 1X2 (BLU) ---
     st.divider()
     st.subheader("🏁 Esito Finale 1X2")
