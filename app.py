@@ -147,7 +147,6 @@ def calcola_pronostico_streamlit(nome_input):
     if f_h or f_a:
         st.warning(f"⚠️ **Fatica Coppa:** {'Casa' if f_h else ''} {'&' if f_h and f_a else ''} {'Fuori' if f_a else ''}")
 
-with c_info2:
     lg_idx = calcola_late_goal_index(casa, fuori)
     
     # LOGICA A 3 COLORI:
