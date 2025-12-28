@@ -7,13 +7,13 @@ import time
 from datetime import datetime
 
 # In alternativa al file locale, puoi usare un URL
-st.image("https://images.unsplash.com/photo-1574629810360-7efbbe195018?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80", use_container_width=True)
+# st.image("https://images.unsplash.com/photo-1574629810360-7efbbe195018?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80", use_container_width=True)
 
 # --- CONFIGURAZIONE ---
 # st.set_page_config(page_title="Delphi Pro", layout="wide")
 
 # --- BANNER IDENTITARIO ---
-# st.image("Banner.png", use_container_width=True)
+st.image("Banner.png", use_container_width=True)
 # st.title("Delphi Predictor") # Il titolo ora apparirà sotto l'immagine
 
 # --- CONFIGURAZIONE ---
@@ -231,8 +231,8 @@ def calcola_pronostico_streamlit(nome_input):
             st.info(f"**{r['s']}** ➡️ {p:.1%} (Q: {stima_quota(p)})")
 
 # --- MAIN APP ---
-st.set_page_config(page_title="Delphi Pro", layout="wide")
-st.title("Delphi Predictor")
+# st.set_page_config(page_title="Delphi Pro", layout="wide")
+# st.title("Delphi Predictor")
 tab_analisi, tab_gestione = st.tabs(["🎯 Analisi Match", "⚙️ Gestione"])
 
 with tab_analisi:
