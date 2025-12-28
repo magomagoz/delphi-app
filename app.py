@@ -5,6 +5,50 @@ import requests
 import os
 import time
 from datetime import datetime
+import streamlit as st
+from datetime import datetime
+import pytz # Opzionale per fuso orario italiano
+
+def mostra_info_evento(fixture_data):
+    """
+    Funzione per formattare data e ora dall'API
+    Assumendo che fixture_data sia nel formato ISO: 2024-05-12T21:00:00+00:00
+    """
+    try:
+        # 1. Parsing della data
+        dt_utc = datetime.fromisoformat(fixture_data.replace('Z', '+00:00'))
+        
+        # 2. Converti in ora italiana (Europe/Rome)
+        fuso_orario_ita = pytz.timezone('Europe/Rome')
+        dt_ita = dt_utc.astimezone(fuso_orario_ita)
+        
+        # 3. Formattazione richiesta: gg/mm/aaaa e HH:MM
+        data_ita = dt_ita.strftime("%d/%m/%Y")
+        ora_ita = dt_ita.strftime("%H:%M")
+        
+        # 4. Visualizzazione con stile professionale per iPhone Pro Max
+        st.markdown(f"""
+            <div style="
+                background-color: #343A40; 
+                color: #FFFFFF; 
+                padding: 12px; 
+                border-radius: 10px; 
+                text-align: center;
+                border: 1px solid #495057;
+                margin-bottom: 20px;
+            ">
+                <span style="font-size: 14px; opacity: 0.8; text-transform: uppercase;">Inizio Evento</span><br>
+                <span style="font-size: 20px; font-weight: bold;">📅 {data_ita} &nbsp;&nbsp; 🕒 {ora_ita}</span>
+            </div>
+        """, unsafe_allow_html=True)
+        
+    except Exception as e:
+        st.error(f"Errore formattazione data: {e}")
+
+# --- ESEMPIO DI CHIAMATA ---
+# Se la tua API restituisce 'match_date', la passi alla funzione:
+# mostra_info_evento(match_date)
+
 
 st.image("banner1.png")
 
@@ -152,15 +196,15 @@ def calcola_pronostico_streamlit(nome_input):
     # LOGICA A 3 COLORI:
     if lg_idx > 1.2:
         #badge_color = "#FF4B4B"  # Rosso (Pericolo/Alta Probabilità)
-        label_text = "🔥 ALTA"
+        label_text = "🔥🔥🔥 ALTO 🔥🔥🔥"
     elif lg_idx > 1.0:
         #badge_color = "#CC9900"  # Giallo Scuro (Attenzione)
-        label_text = "⚠️ MEDIA"
+        label_text = "⚠️⚠️⚠️ MEDIO ⚠️⚠️⚠️"
     else:
         #badge_color = "#007BFF"  # Blu (Normale)
-        label_text = "✅ BASSA"
+        label_text = "✅✅✅ BASSO ✅✅✅"
 
-    st.info(f"⏳ **Indice Late Goal: ({label_text})**")
+    st.info(f"⏳ **Indice Gol nel finale: ({label_text})**")
     
     # --- ESITO FINALE 1X2 (BLU) ---
     st.divider()
