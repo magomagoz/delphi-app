@@ -6,10 +6,6 @@ import os
 import time
 from datetime import datetime
 
-# st.title("🔮 Delphi Oracle")
-
-import streamlit as st
-
 # 1. Configurazione Pagina (IMPORTANTE: layout="wide")
 st.set_page_config(page_title="Delphi Pro", layout="wide", initial_sidebar_state="collapsed")
 
@@ -62,7 +58,7 @@ st.markdown("""
 st.image("banner.png")
 
 # 4. Titolo
-st.title("🔮 Delphi Oracle")
+st.title("🔮 Delphi Oracle 🔮")
 
 # --- IL RESTO DEL TUO CODICE ---
 
