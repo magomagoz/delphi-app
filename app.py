@@ -1,17 +1,16 @@
 import streamlit as st
-
-st.set_page_config(page_title="Delphi Predictor Pro", layout="wide")
-
-# Banner Identitario
-st.image("banner.png", use_container_width=True)
-st.markdown("---")
-
 import pandas as pd
 import math
 import requests
 import os
 import time
 from datetime import datetime
+
+st.set_page_config(page_title="Delphi Predictor Pro", layout="wide")
+
+# Banner Identitario
+st.image("Banner.png", use_container_width=True)
+st.markdown("---")
 
 # --- CONFIGURAZIONE ---
 API_TOKEN = 'c7a609a0580f4200add2751d787b3c68'
