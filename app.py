@@ -6,55 +6,6 @@ import os
 import time
 from datetime import datetime
 
-# 1. Configurazione Pagina (IMPORTANTE: layout="wide")
-st.set_page_config(page_title="Delphi Pro", layout="wide", initial_sidebar_state="collapsed")
-
-# 2. IL TRUCCO DEFINITIVO PER IL FULL-WIDTH SU MOBILE
-st.markdown("""
-    <style>
-        /* 1. Elimina lo spazio vuoto in cima alla pagina */
-        .main .block-container {
-            padding-top: 0rem !important;
-            # padding-left: 0rem !important; # Facoltativo su alcuni device
-            # padding-right: 0rem !important; # Facoltativo su alcuni device
-        }
-
-        /* 2. Nasconde l'header standard di Streamlit (le tre righe in alto a destra) */
-        header[data-testid="stHeader"] {
-            display: none;
-        }
-
-        /* 3. FORZA BRUTA sull'immagine per uscire dai bordi */
-        /* Questo selettore trova il contenitore dell'immagine */
-        [data-testid="stImage"] {
-            width: 100vw !important;             /* Larghezza = 100% della finestra */
-            position: relative !important;
-            left: 50% !important;
-            right: 50% !important;
-            margin-left: -50vw !important;       /* Trucco per centrare e allargare */
-            margin-right: -50vw !important;
-            margin-top: -1rem !important;        /* Tira su l'immagine al massimo */
-        }
-
-        /* 4. Assicura che l'immagine riempia il suo nuovo contenitore allargato */
-        [data-testid="stImage"] img {
-            width: 100% !important;
-            height: auto !important;
-            object-fit: cover !important; /* Taglia leggermente i bordi se necessario per riempire */
-            display: block !important;
-        }
-        
-        /* 5. Ridà un po' di margine al titolo sotto, altrimenti si attacca al banner */
-        h1 {
-            margin-top: 1rem !important;
-            padding-left: 1rem !important; /* Per non toccare il bordo su iPhone */
-            padding-right: 1rem !important;
-        }
-    </style>
-    """, unsafe_allow_html=True)
-
-# 3. Caricamento Banner
-# Non serve 'use_container_width' perché il CSS sopra lo forza già
 st.image("banner.png")
 
 # 4. Titolo
