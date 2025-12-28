@@ -6,12 +6,7 @@ import os
 import time
 from datetime import datetime
 
-# Sostituisci la riga del banner con questa per testare subito:
-st.image("https://img.freepik.com/premium-photo/futuristic-soccer-stadium-with-holographic-data-digital-analytics-concept_853677-40508.jpg", use_container_width=True)
-
-
-
-# st.image("banner.png")
+st.image("banner.png")
 
 # 4. Titolo
 st.title("🔮 Delphi Oracle")
