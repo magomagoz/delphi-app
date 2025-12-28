@@ -62,7 +62,7 @@ st.markdown("""
 st.image("banner.png")
 
 # 4. Titolo
-st.title("🔮 Delphi Predictor")
+st.title("🔮 Delphi Oracle")
 
 # --- IL RESTO DEL TUO CODICE ---
 
