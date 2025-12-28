@@ -163,8 +163,8 @@ def calcola_pronostico_streamlit(nome_input):
             color: white;
             padding: 10px 20px;
             text-align: center;
-            border-radius: 8px;
-            font-size: 22px;
+            border-radius: 10px;
+            font-size: 26px;
             font-weight: bold;
             box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
             margin-bottom: 10px;
