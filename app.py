@@ -10,10 +10,11 @@ from datetime import datetime
 # st.image("https://images.unsplash.com/photo-1574629810360-7efbbe195018?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80", use_container_width=True)
 
 # --- CONFIGURAZIONE ---
-st.set_page_config(page_title="Delphi Pro", layout="wide")
+# st.set_page_config(page_title="Delphi Pro", layout="wide")
 
 # --- BANNER IDENTITARIO ---
-st.image(banner.png", use_container_width=True)
+# Riga corretta:
+st.image("banner.png", use_container_width=True)
 # st.title("Delphi Predictor") # Il titolo ora apparirà sotto l'immagine
 
 # --- CONFIGURAZIONE ---
