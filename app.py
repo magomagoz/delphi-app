@@ -141,7 +141,7 @@ def calcola_pronostico_streamlit(nome_input):
 
     # --- UI RENDERING ---
     st.header(f"🏟️ {casa} vs {fuori}")
-    st.info(f"🏆 {m['League']} | 📅 {m['Date']}")
+    st.info(f"🏆 **Lega**: {m['League']} | 📅 **Data**: {m['Date']}")
     
     c_info1, c_info2 = st.columns(2)
     with c_info1:
@@ -152,7 +152,7 @@ def calcola_pronostico_streamlit(nome_input):
     
     with c_info2:
         lg_idx = calcola_late_goal_index(casa, fuori)
-        st.metric("⏳ Indice Late Goal", f"{lg_idx}")
+        st.metric("⏳ **Indice Late Goal**" f"{lg_idx}")
         if lg_idx > 1.2: st.error("🔥 **ALTA PROBABILITÀ GOAL (80'+)**")
 
     # --- ESITO FINALE 1X2 (BLU) ---
@@ -220,12 +220,12 @@ def calcola_pronostico_streamlit(nome_input):
         st.write("**Top 6 Risultati Esatti Finali**")
         for r in sorted(re_finali, key=lambda x: x['p'], reverse=True)[:6]:
             p = r['p']/total_p
-            st.success(f"**{r['s']}** 📈 {p:.1%} 💰Q: {stima_quota(p)}")
+            st.success(f"**{r['s']}**: 📈 {p:.1%} 💰Q: {stima_quota(p)}")
     with cre2:
         st.write("**Top 3 Risultati Esatti 1° Tempo**")
         for r in sorted(re_1t, key=lambda x: x['p'], reverse=True)[:3]:
             p = r['p']/total_p_1t
-            st.info(f"**{r['s']}** 📈 {p:.1%} 💰Q: {stima_quota(p)}")
+            st.info(f"**{r['s']}**: 📈 {p:.1%} 💰Q: {stima_quota(p)}")
 
 # --- MAIN APP ---
 # st.set_page_config(page_title="Delphi Pro", layout="wide")
