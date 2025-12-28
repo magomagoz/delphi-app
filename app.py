@@ -6,16 +6,41 @@ import os
 import time
 from datetime import datetime
 
-# In alternativa al file locale, puoi usare un URL
-# st.image("https://images.unsplash.com/photo-1574629810360-7efbbe195018?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80", use_container_width=True)
+import streamlit as st
 
-# --- CONFIGURAZIONE ---
-# st.set_page_config(page_title="Delphi Pro", layout="wide")
+st.set_page_config(page_title="Delphi Pro", layout="wide")
 
-# --- BANNER IDENTITARIO ---
-# Riga corretta:
+# --- CSS PER RIMUOVERE SPAZIO BIANCO E RENDERE IL BANNER FULL-WIDTH ---
+st.markdown("""
+    <style>
+        /* Rimuove i margini superiori della pagina */
+        .block-container {
+            padding-top: 0rem;
+            padding-bottom: 0rem;
+            padding-left: 0rem;
+            padding-right: 0rem;
+        }
+        /* Rimuove lo spazio extra attorno alle immagini */
+        [data-testid="stImage"] {
+            margin-top: -20px;
+        }
+        /* Opzionale: Nasconde il menu in alto per un look più pulito */
+        #MainMenu {visibility: hidden;}
+        header {visibility: hidden;}
+        footer {visibility: hidden;}
+    </style>
+    """, unsafe_allow_html=True)
+
+# --- CARICAMENTO BANNER ---
 st.image("banner.png", use_container_width=True)
-# st.title("Delphi Predictor") # Il titolo ora apparirà sotto l'immagine
+
+# --- TITOLO E CONTENUTO ---
+# Aggiungiamo un po' di padding manuale solo per il testo 
+# così non tocca i bordi dello schermo dell'iPhone
+st.markdown('<div style="padding: 0px 20px;">', unsafe_allow_html=True)
+st.title("🔮 Delphi Predictor Pro Max")
+# ... tutto il resto del tuo codice qui ...
+st.markdown('</div>', unsafe_allow_html=True)
 
 # --- CONFIGURAZIONE ---
 API_TOKEN = 'c7a609a0580f4200add2751d787b3c68'
