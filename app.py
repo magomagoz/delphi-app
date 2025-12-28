@@ -6,7 +6,7 @@ import os
 import time
 from datetime import datetime
 
-st.image("banner.png")
+st.image("banner1.png")
 
 # 4. Titolo
 st.title("🔮 Delphi Oracle")
