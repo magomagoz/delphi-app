@@ -150,32 +150,17 @@ def calcola_pronostico_streamlit(nome_input):
     lg_idx = calcola_late_goal_index(casa, fuori)
     
     # LOGICA A 3 COLORI:
-    if lg_idx > 1.5:
-        badge_color = "#FF4B4B"  # Rosso (Pericolo/Alta Probabilità)
+    if lg_idx > 1.2:
+        #badge_color = "#FF4B4B"  # Rosso (Pericolo/Alta Probabilità)
         label_text = "🔥 ALTA"
-    elif lg_idx > 1.1:
-        badge_color = "#CC9900"  # Giallo Scuro (Attenzione)
+    elif lg_idx > 1.0:
+        #badge_color = "#CC9900"  # Giallo Scuro (Attenzione)
         label_text = "⚠️ MEDIA"
     else:
-        badge_color = "#007BFF"  # Blu (Normale)
+        #badge_color = "#007BFF"  # Blu (Normale)
         label_text = "✅ BASSA"
 
-    st.write(f"⏳ **Indice Late Goal ({label_text})**")
-    
-    st.markdown(f"""
-        <div style="
-            background-color: {badge_color};
-            color: white;
-            padding: 10px 20px;
-            text-align: center;
-            border-radius: 8px;
-            font-size: 22px;
-            font-weight: bold;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-        ">
-            {lg_idx}
-        </div>
-    """, unsafe_allow_html=True)
+    st.info(f"⏳ **Indice Late Goal: ({label_text})**")
     
     # --- ESITO FINALE 1X2 (BLU) ---
     st.divider()
