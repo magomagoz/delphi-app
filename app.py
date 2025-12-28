@@ -6,6 +6,24 @@ import os
 import time
 from datetime import datetime
 
+# --- CSS PER IL BADGE BLU (DA METTERE UNA SOLA VOLTA IN ALTO O QUI) ---
+st.markdown("""
+    <style>
+        .blue-badge {
+            background-color: #007BFF;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            border-radius: 8px;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: block;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
 st.image("banner1.png")
 
 # 4. Titolo
@@ -150,37 +168,24 @@ def calcola_pronostico_streamlit(nome_input):
         if f_h or f_a:
             st.warning(f"⚠️ **Fatica Coppa:** {'Casa' if f_h else ''} {'&' if f_h and f_a else ''} {'Fuori' if f_a else ''}")
     
-# --- 1. STILE PER IL PULSANTE BLU ---
-st.markdown("""
-    <style>
-        /* Questo seleziona il pulsante all'interno di Streamlit */
-        div.stButton > button:first-child {
-            background-color: #007BFF; /* Blu elettrico */
-            color: white;
-            border-radius: 8px;
-            border: none;
-            height: 3em;
-            width: 100%;
-            font-weight: bold;
-            transition: all 0.3s ease;
-        }
-        /* Effetto quando ci passi sopra col dito/mouse */
-        div.stButton > button:hover {
-            background-color: #0056b3;
-            color: white;
-            border: none;
-        }
-    </style>
-    """, unsafe_allow_html=True)
-
-# --- 2. IL TUO CODICE DENTRO IL PULSANTE ---
-with c_info2:
-    if st.button("🔍 CALCOLA LATE GOAL"):
+# --- LOGICA IN c_info2 ---
+    with c_info2:
         lg_idx = calcola_late_goal_index(casa, fuori)
-        st.metric(f"⏳ Indice Late Goal", f"{lg_idx}")
-        
+    
+    # Titolo della metrica
+    st.write("⏳ **Indice Late Goal**")
+    
+    # Il "Finto Pulsante" Blu con il valore dinamico
+    st.markdown(f'<div class="blue-badge">{lg_idx}</div>', unsafe_allow_html=True)
+    
+    # Messaggio di allerta se la probabilità è alta
         if lg_idx > 1.2: 
             st.error("🔥 **ALTA PROBABILITÀ GOAL (80'+)**")
+    
+
+
+
+    
 # with c_info2:
 #        lg_idx = calcola_late_goal_index(casa, fuori)
 #        st.metric(f"⏳ Indice Late Goal", f"{lg_idx}")
