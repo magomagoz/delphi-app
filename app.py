@@ -141,8 +141,8 @@ def calcola_pronostico_streamlit(nome_input):
 
     # --- UI RENDERING ---
     st.header(f"🏟️ {casa} vs {fuori}")
-    st.info(f"🏆 **Lega**: {m['League']} | 📅 **Data**: {m['Date']}")
-    st.info(f"👮 **Arbitro:** {arbitro} | 📈 **Impatto:** {molt_arbitro}x")
+    st.info(f"🏆 **Lega: {m['League']}** | 📅 **Data**: {m['Date']}**")
+    st.info(f"👮 **Arbitro: {arbitro}** | 📈 **Impatto: {molt_arbitro}x**")
     f_h, f_a = controlla_fatica(df, casa, m['Date']), controlla_fatica(df, fuori, m['Date'])
     if f_h or f_a:
         st.warning(f"⚠️ **Fatica Coppa:** {'Casa' if f_h else ''} {'&' if f_h and f_a else ''} {'Fuori' if f_a else ''}")
@@ -151,7 +151,7 @@ def calcola_pronostico_streamlit(nome_input):
     
     # LOGICA A 3 COLORI:
     if lg_idx > 1.2:
-        badge_color = "#FF4B4B"  # Rosso (Pericolo/Alta Probabilità)
+        #badge_color = "#FF4B4B"  # Rosso (Pericolo/Alta Probabilità)
         label_text = "🔥 ALTA"
     elif lg_idx > 1.0:
         #badge_color = "#CC9900"  # Giallo Scuro (Attenzione)
