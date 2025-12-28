@@ -141,7 +141,7 @@ def calcola_pronostico_streamlit(nome_input):
 
     # --- UI RENDERING ---
     st.header(f"🏟️ {casa} vs {fuori}")
-    st.info(f"🏆 **Lega: {m['League']}** | 📅 **Data**: {m['Date']}**")
+    st.info(f"🏆 **Lega: {m['League']}** | 📅 **Data: {m['Date']}**")
     st.info(f"👮 **Arbitro: {arbitro}** | 📈 **Impatto: {molt_arbitro}x**")
     f_h, f_a = controlla_fatica(df, casa, m['Date']), controlla_fatica(df, fuori, m['Date'])
     if f_h or f_a:
