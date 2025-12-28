@@ -8,8 +8,6 @@ from datetime import datetime
 
 # st.title("🔮 Delphi Predictor Pro Max")
 
-import streamlit as st
-
 # 1. Configurazione Pagina (Wide mode è fondamentale)
 st.set_page_config(page_title="Delphi Predictor Pro", layout="wide", initial_sidebar_state="collapsed")
 
