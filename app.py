@@ -175,7 +175,7 @@ def calcola_pronostico_streamlit(nome_input):
     
     # 4. Messaggio di avviso extra (solo se alto)
     if lg_idx > 1.2: 
-        st.warning(f"🔥 **POTENZIALE LATE GOAL RILEVATO**")
+        st.warning(f"🔥 **POSSIBILE GOAL NEL FINALE (DOPO L'80° MINUTO)**")
     
     
     # --- ESITO FINALE 1X2 (BLU) ---
