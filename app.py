@@ -6,24 +6,6 @@ import os
 import time
 from datetime import datetime
 
-# --- CSS PER IL BADGE BLU (DA METTERE UNA SOLA VOLTA IN ALTO O QUI) ---
-st.markdown("""
-    <style>
-        .blue-badge {
-            background-color: #007BFF;
-            color: white;
-            padding: 10px 20px;
-            text-align: center;
-            border-radius: 8px;
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 10px;
-            display: block;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-        }
-    </style>
-    """, unsafe_allow_html=True)
-
 st.image("banner1.png")
 
 # 4. Titolo
@@ -162,17 +144,24 @@ def calcola_pronostico_streamlit(nome_input):
     st.info(f"🏆 **Lega**: {m['League']} | 📅 **Data**: {m['Date']}")
     
     c_info1, c_info2 = st.columns(2)
+    
     with c_info1:
         st.info(f"👮 **Arbitro:** {arbitro} | 📈 **Impatto:** {molt_arbitro}x")
         f_h, f_a = controlla_fatica(df, casa, m['Date']), controlla_fatica(df, fuori, m['Date'])
         if f_h or f_a:
             st.warning(f"⚠️ **Fatica Coppa:** {'Casa' if f_h else ''} {'&' if f_h and f_a else ''} {'Fuori' if f_a else ''}")
-    
-    
+
     with c_info2:
+        st.info(f"⏳ **Indice Late Goal:** {lg_idx}")
         lg_idx = calcola_late_goal_index(casa, fuori)
-        st.metric(f"⏳ Indice Late Goal", f"{lg_idx}")
-        if lg_idx > 1.2: st.error("🔥 **ALTA PROBABILITÀ GOAL (80'+)**")
+        if lg_idx > 1.2: 
+            st.error("🔥 **ALTA PROBABILITÀ GOAL (80'+)**")
+
+    #with c_info2:
+        #lg_idx = calcola_late_goal_index(casa, fuori)
+        #st.metric(f"⏳ Indice Late Goal", f"{lg_idx}")
+        #if lg_idx > 1.2: 
+            #st.error("🔥 **ALTA PROBABILITÀ GOAL (80'+)**")
 
     
     
