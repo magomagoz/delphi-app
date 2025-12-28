@@ -152,7 +152,7 @@ def calcola_pronostico_streamlit(nome_input):
     
     # 2. Definiamo il colore in base al valore
     # Se l'indice è > 1.2 diventa rosso (#FF4B4B), altrimenti resta blu (#007BFF)
-    badge_color = "#FF4B4B" if lg_idx > 1.2 else "#007BFF"
+    badge_color = "#FF4B4B" if lg_idx > 1.2 else "#F0F2F6"
     
     st.write("⏳ **Indice Late Goal**")
     
