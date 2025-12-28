@@ -6,7 +6,7 @@ import os
 import time
 from datetime import datetime
 
-# st.title("🔮 Delphi Predictor")
+# st.title("🔮 Delphi Oracle")
 
 import streamlit as st
 
