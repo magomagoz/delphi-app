@@ -6,39 +6,58 @@ import os
 import time
 from datetime import datetime
 
-st.set_page_config(page_title="Delphi Pro", layout="wide")
+# st.title("🔮 Delphi Predictor Pro Max")
 
-# --- CSS PER RIMUOVERE SPAZIO BIANCO E RENDERE IL BANNER FULL-WIDTH ---
+import streamlit as st
+
+# 1. Configurazione Pagina (Wide mode è fondamentale)
+st.set_page_config(page_title="Delphi Predictor Pro", layout="wide", initial_sidebar_state="collapsed")
+
+# 2. CSS Magic per Banner Responsivo e Full-Width
 st.markdown("""
     <style>
-        /* Rimuove i margini superiori della pagina */
+        /* Rimuove i margini interni della pagina Streamlit */
         .block-container {
             padding-top: 0rem;
             padding-bottom: 0rem;
             padding-left: 0rem;
             padding-right: 0rem;
         }
-        /* Rimuove lo spazio extra attorno alle immagini */
-        [data-testid="stImage"] {
-            margin-top: -20px;
+
+        /* Forza l'immagine a coprire l'intera larghezza e adatta l'altezza */
+        [data-testid="stImage"] img {
+            width: 100vw;
+            height: auto;
+            object-fit: cover;
         }
-        /* Opzionale: Nasconde il menu in alto per un look più pulito */
-        #MainMenu {visibility: hidden;}
-        header {visibility: hidden;}
-        footer {visibility: hidden;}
+        
+        /* Rimuove lo spazio bianco extra sotto l'immagine */
+        [data-testid="stImage"] {
+            margin-bottom: -30px;
+        }
+
+        /* Ridona margine al testo (altrimenti toccherebbe i bordi del telefono) */
+        .main-content {
+            padding: 20px;
+        }
     </style>
     """, unsafe_allow_html=True)
 
-# --- CARICAMENTO BANNER ---
+# 3. Caricamento Banner
+# 'use_container_width' assicura che l'immagine scali col contenitore
 st.image("banner.png", use_container_width=True)
 
-# --- TITOLO E CONTENUTO ---
-# Aggiungiamo un po' di padding manuale solo per il testo 
-# così non tocca i bordi dello schermo dell'iPhone
-st.markdown('<div style="padding: 0px 20px;">', unsafe_allow_html=True)
+# 4. Inizio Contenuto App (dentro un div con padding per la leggibilità)
+st.markdown('<div class="main-content">', unsafe_allow_html=True)
+
 st.title("🔮 Delphi Predictor Pro Max")
-# ... tutto il resto del tuo codice qui ...
+st.write("Analisi dati e previsioni basate su Algoritmo Poisson")
+
+# --- QUI CONTINUA IL TUO CODICE ---
+# ... (API, Input squadre, Calcoli) ...
+
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 # --- CONFIGURAZIONE ---
 API_TOKEN = 'c7a609a0580f4200add2751d787b3c68'
