@@ -154,24 +154,24 @@ def calcola_pronostico_streamlit(nome_input):
     # Se l'indice è > 1.2 diventa rosso (#FF4B4B), altrimenti resta blu (#007BFF)
     badge_color = "#FF4B4B" if lg_idx > 1.2 else "#FFFFFF"
     
-    st.info(f"⏳ **Indice Late Goal**")
+    st.info(f"⏳ **Indice Late Goal**: {lg_idx}")
     
     # 3. Visualizzazione del "Pulsante" dinamico
-    st.markdown(f"""
-        <div style="
-            background-color: {badge_color};
-            color: white;
-            padding: 10px 20px;
-            text-align: center;
-            border-radius: 10px;
-            font-size: 26px;
-            font-weight: bold;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-            margin-bottom: 10px;
-        ">
-            {lg_idx}
-        </div>
-    """, unsafe_allow_html=True)
+    #st.markdown(f"""
+        #<div style="
+            #background-color: {badge_color};
+            #color: white;
+            #padding: 10px 20px;
+            #text-align: center;
+            #border-radius: 10px;
+            #font-size: 26px;
+            #font-weight: bold;
+            #box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            #margin-bottom: 10px;
+        #">
+            #{lg_idx}
+        #</div>
+    #""", unsafe_allow_html=True)
     
     # 4. Messaggio di avviso extra (solo se alto)
     if lg_idx > 1.2: 
