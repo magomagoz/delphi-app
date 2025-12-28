@@ -1,4 +1,11 @@
 import streamlit as st
+
+st.set_page_config(page_title="Delphi Predictor Pro", layout="wide")
+
+# Banner Identitario
+st.image("banner.png", use_container_width=True)
+st.markdown("---")
+
 import pandas as pd
 import math
 import requests
