@@ -181,6 +181,10 @@ with c_info2:
         
         if lg_idx > 1.2: 
             st.error("🔥 **ALTA PROBABILITÀ GOAL (80'+)**")
+# with c_info2:
+#        lg_idx = calcola_late_goal_index(casa, fuori)
+#        st.metric(f"⏳ Indice Late Goal", f"{lg_idx}")
+#        if lg_idx > 1.2: st.error("🔥 **ALTA PROBABILITÀ GOAL (80'+)**")
 
     
     
