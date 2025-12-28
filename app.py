@@ -6,8 +6,6 @@ import os
 import time
 from datetime import datetime
 
-import streamlit as st
-
 st.set_page_config(page_title="Delphi Pro", layout="wide")
 
 # --- CSS PER RIMUOVERE SPAZIO BIANCO E RENDERE IL BANNER FULL-WIDTH ---
