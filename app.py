@@ -8,54 +8,63 @@ from datetime import datetime
 
 # st.title("🔮 Delphi Predictor Pro Max")
 
-# 1. Configurazione Pagina (Wide mode è fondamentale)
-st.set_page_config(page_title="Delphi Predictor Pro", layout="wide", initial_sidebar_state="collapsed")
+import streamlit as st
 
-# 2. CSS Magic per Banner Responsivo e Full-Width
+# 1. Configurazione Pagina (IMPORTANTE: layout="wide")
+st.set_page_config(page_title="Delphi Pro", layout="wide", initial_sidebar_state="collapsed")
+
+# 2. IL TRUCCO DEFINITIVO PER IL FULL-WIDTH SU MOBILE
 st.markdown("""
     <style>
-        /* Rimuove i margini interni della pagina Streamlit */
-        .block-container {
-            padding-top: 0rem;
-            padding-bottom: 0rem;
-            padding-left: 0rem;
-            padding-right: 0rem;
+        /* 1. Elimina lo spazio vuoto in cima alla pagina */
+        .main .block-container {
+            padding-top: 0rem !important;
+            # padding-left: 0rem !important; # Facoltativo su alcuni device
+            # padding-right: 0rem !important; # Facoltativo su alcuni device
         }
 
-        /* Forza l'immagine a coprire l'intera larghezza e adatta l'altezza */
+        /* 2. Nasconde l'header standard di Streamlit (le tre righe in alto a destra) */
+        header[data-testid="stHeader"] {
+            display: none;
+        }
+
+        /* 3. FORZA BRUTA sull'immagine per uscire dai bordi */
+        /* Questo selettore trova il contenitore dell'immagine */
+        [data-testid="stImage"] {
+            width: 100vw !important;             /* Larghezza = 100% della finestra */
+            position: relative !important;
+            left: 50% !important;
+            right: 50% !important;
+            margin-left: -50vw !important;       /* Trucco per centrare e allargare */
+            margin-right: -50vw !important;
+            margin-top: -1rem !important;        /* Tira su l'immagine al massimo */
+        }
+
+        /* 4. Assicura che l'immagine riempia il suo nuovo contenitore allargato */
         [data-testid="stImage"] img {
-            width: 100vw;
-            height: auto;
-            object-fit: cover;
+            width: 100% !important;
+            height: auto !important;
+            object-fit: cover !important; /* Taglia leggermente i bordi se necessario per riempire */
+            display: block !important;
         }
         
-        /* Rimuove lo spazio bianco extra sotto l'immagine */
-        [data-testid="stImage"] {
-            margin-bottom: -30px;
-        }
-
-        /* Ridona margine al testo (altrimenti toccherebbe i bordi del telefono) */
-        .main-content {
-            padding: 20px;
+        /* 5. Ridà un po' di margine al titolo sotto, altrimenti si attacca al banner */
+        h1 {
+            margin-top: 1rem !important;
+            padding-left: 1rem !important; /* Per non toccare il bordo su iPhone */
+            padding-right: 1rem !important;
         }
     </style>
     """, unsafe_allow_html=True)
 
 # 3. Caricamento Banner
-# 'use_container_width' assicura che l'immagine scali col contenitore
-st.image("banner.png", use_container_width=True)
+# Non serve 'use_container_width' perché il CSS sopra lo forza già
+st.image("banner.png")
 
-# 4. Inizio Contenuto App (dentro un div con padding per la leggibilità)
-st.markdown('<div class="main-content">', unsafe_allow_html=True)
-
+# 4. Titolo
 st.title("🔮 Delphi Predictor Pro Max")
-st.write("Analisi dati e previsioni basate su Algoritmo Poisson")
 
-# --- QUI CONTINUA IL TUO CODICE ---
-# ... (API, Input squadre, Calcoli) ...
-
-st.markdown('</div>', unsafe_allow_html=True)
-
+# --- IL RESTO DEL TUO CODICE ---
 
 # --- CONFIGURAZIONE ---
 API_TOKEN = 'c7a609a0580f4200add2751d787b3c68'
