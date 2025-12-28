@@ -174,7 +174,7 @@ def calcola_pronostico_streamlit(nome_input):
         
     # --- MERCATI CLASSICI (BLU) ---
     st.divider()
-    st.subheader("🏁 UNDER/OVER 2,5 & GOL/NOGOL)")
+    st.subheader("🥅 UNDER/OVER 2,5 & GOL/NOGOL)")
     cuo, cgng = st.columns(2)
     with cuo:
         pu, po = p_u25/total_p, 1-(p_u25/total_p)
