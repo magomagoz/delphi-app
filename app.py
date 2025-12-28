@@ -151,7 +151,7 @@ def calcola_pronostico_streamlit(nome_input):
     
     # LOGICA A 3 COLORI:
     if lg_idx > 1.2:
-        #badge_color = "#FF4B4B"  # Rosso (Pericolo/Alta Probabilità)
+        badge_color = "#FF4B4B"  # Rosso (Pericolo/Alta Probabilità)
         label_text = "🔥 ALTA"
     elif lg_idx > 1.0:
         #badge_color = "#CC9900"  # Giallo Scuro (Attenzione)
