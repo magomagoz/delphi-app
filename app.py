@@ -9,9 +9,9 @@ from datetime import datetime
 st.image("banner1.png")
 
 # 4. Titolo
-st.title("🔮 Delphi Oracle")
+st.title("Delphi Predictor")
 
-# --- IL RESTO DEL TUO CODICE ---
+# --- IL RESTO DEL TUO CODICE ---🔮
 
 # --- CONFIGURAZIONE ---
 API_TOKEN = 'c7a609a0580f4200add2751d787b3c68'
