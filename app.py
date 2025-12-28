@@ -210,7 +210,7 @@ def calcola_pronostico_streamlit(nome_input):
         st.write("**Top 2 Somma Gol Ospite**")
         for k, v in sorted(sgo.items(), key=lambda x: x[1], reverse=True)[:2]:
             p = v/total_p
-            st.success(f"**{k if k<2 else '>2'}** GOL: 📈 {p:.1%} - 💰 Q: {stima_quota(p)}")
+            st.success(f"**{k if k<2 else '>2'}** GOL:📈 {p:.1%} 💰 Q: {stima_quota(p)}")
 
     # --- RISULTATI ESATTI (VERDI E BLU) ---
     st.divider()
@@ -220,12 +220,12 @@ def calcola_pronostico_streamlit(nome_input):
         st.write("**Top 6 Risultati Esatti Finali**")
         for r in sorted(re_finali, key=lambda x: x['p'], reverse=True)[:6]:
             p = r['p']/total_p
-            st.success(f"**{r['s']}** 📈 {p:.1%} - Q: {stima_quota(p)}")
+            st.success(f"**{r['s']}** 📈 {p:.1%} 💰Q: {stima_quota(p)}")
     with cre2:
         st.write("**Top 3 Risultati Esatti 1° Tempo**")
         for r in sorted(re_1t, key=lambda x: x['p'], reverse=True)[:3]:
             p = r['p']/total_p_1t
-            st.info(f"**{r['s']}** 📈 {p:.1%} - Q: {stima_quota(p)}")
+            st.info(f"**{r['s']}** 📈 {p:.1%} 💰Q: {stima_quota(p)}")
 
 # --- MAIN APP ---
 # st.set_page_config(page_title="Delphi Pro", layout="wide")
