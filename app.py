@@ -142,20 +142,15 @@ def calcola_pronostico_streamlit(nome_input):
     # --- UI RENDERING ---
     st.header(f"🏟️ {casa} vs {fuori}")
     st.info(f"🏆 **Lega**: {m['League']} | 📅 **Data**: {m['Date']}")
-    
-    c_info1, c_info2 = st.columns(1)
-    
-    with c_info1:
-        st.info(f"👮 **Arbitro:** {arbitro} | 📈 **Impatto:** {molt_arbitro}x")
-        f_h, f_a = controlla_fatica(df, casa, m['Date']), controlla_fatica(df, fuori, m['Date'])
-        if f_h or f_a:
-            st.warning(f"⚠️ **Fatica Coppa:** {'Casa' if f_h else ''} {'&' if f_h and f_a else ''} {'Fuori' if f_a else ''}")
+    st.info(f"👮 **Arbitro:** {arbitro} | 📈 **Impatto:** {molt_arbitro}x")
+    f_h, f_a = controlla_fatica(df, casa, m['Date']), controlla_fatica(df, fuori, m['Date'])
+    if f_h or f_a:
+        st.warning(f"⚠️ **Fatica Coppa:** {'Casa' if f_h else ''} {'&' if f_h and f_a else ''} {'Fuori' if f_a else ''}")
 
-    with c_info2:
-        st.info(f"⏳ **Indice Late Goal:** {lg_idx}")
-        lg_idx = calcola_late_goal_index(casa, fuori)
-        if lg_idx > 1.2: 
-            st.warning(f"🔥 **ALTA PROBABILITÀ GOAL (80'+)**")
+    st.info(f"⏳ **Indice Late Goal:** {lg_idx}")
+    lg_idx = calcola_late_goal_index(casa, fuori)
+    if lg_idx > 1.2: 
+        st.warning(f"🔥 **ALTA PROBABILITÀ GOAL (80'+)**")
 
     #with c_info2:
         #lg_idx = calcola_late_goal_index(casa, fuori)
