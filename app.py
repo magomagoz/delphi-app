@@ -13,7 +13,7 @@ from datetime import datetime
 # st.set_page_config(page_title="Delphi Pro", layout="wide")
 
 # --- BANNER IDENTITARIO ---
-st.image(Banner.png", use_container_width=True)
+st.image(banner.png", use_container_width=True)
 # st.title("Delphi Predictor") # Il titolo ora apparirà sotto l'immagine
 
 # --- CONFIGURAZIONE ---
