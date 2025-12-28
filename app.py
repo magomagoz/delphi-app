@@ -6,7 +6,7 @@ import os
 import time
 from datetime import datetime
 
-# st.title("🔮 Delphi Predictor Pro Max")
+# st.title("🔮 Delphi Predictor")
 
 import streamlit as st
 
@@ -62,7 +62,7 @@ st.markdown("""
 st.image("banner.png")
 
 # 4. Titolo
-st.title("🔮 Delphi Predictor Pro Max")
+st.title("🔮 Delphi Predictor")
 
 # --- IL RESTO DEL TUO CODICE ---
 
