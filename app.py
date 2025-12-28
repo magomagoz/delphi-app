@@ -147,17 +147,35 @@ def calcola_pronostico_streamlit(nome_input):
     if f_h or f_a:
         st.warning(f"⚠️ **Fatica Coppa:** {'Casa' if f_h else ''} {'&' if f_h and f_a else ''} {'Fuori' if f_a else ''}")
 
+    # 1. Calcolo del valore
     lg_idx = calcola_late_goal_index(casa, fuori)
-    st.info(f"⏳ **Indice Late Goal:** {lg_idx}")
+    
+    # 2. Definiamo il colore in base al valore
+    # Se l'indice è > 1.2 diventa rosso (#FF4B4B), altrimenti resta blu (#007BFF)
+    badge_color = "#FF4B4B" if lg_idx > 1.2 else "#007BFF"
+    
+    st.write("⏳ **Indice Late Goal**")
+    
+    # 3. Visualizzazione del "Pulsante" dinamico
+    st.markdown(f"""
+        <div style="
+            background-color: {badge_color};
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            border-radius: 8px;
+            font-size: 22px;
+            font-weight: bold;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 10px;
+        ">
+            {lg_idx}
+        </div>
+    """, unsafe_allow_html=True)
+    
+    # 4. Messaggio di avviso extra (solo se alto)
     if lg_idx > 1.2: 
-        st.warning(f"🔥 **ALTA PROBABILITÀ GOAL (80'+)**")
-
-    #with c_info2:
-        #lg_idx = calcola_late_goal_index(casa, fuori)
-        #st.metric(f"⏳ Indice Late Goal", f"{lg_idx}")
-        #if lg_idx > 1.2: 
-            #st.error("🔥 **ALTA PROBABILITÀ GOAL (80'+)**")
-
+        st.warning(f"🔥 **POTENZIALE LATE GOAL RILEVATO**")
     
     
     # --- ESITO FINALE 1X2 (BLU) ---
