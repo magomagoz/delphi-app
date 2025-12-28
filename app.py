@@ -26,28 +26,8 @@ def mostra_info_evento(fixture_data):
         data_ita = dt_ita.strftime("%d/%m/%Y")
         ora_ita = dt_ita.strftime("%H:%M")
         
-        # 4. Visualizzazione con stile professionale per iPhone Pro Max
-        st.markdown(f"""
-            <div style="
-                background-color: #343A40; 
-                color: #FFFFFF; 
-                padding: 12px; 
-                border-radius: 10px; 
-                text-align: center;
-                border: 1px solid #495057;
-                margin-bottom: 20px;
-            ">
-                <span style="font-size: 14px; opacity: 0.8; text-transform: uppercase;">Inizio Evento</span><br>
-                <span style="font-size: 20px; font-weight: bold;">📅 {data_ita} &nbsp;&nbsp; 🕒 {ora_ita}</span>
-            </div>
-        """, unsafe_allow_html=True)
-        
     except Exception as e:
         st.error(f"Errore formattazione data: {e}")
-
-# --- ESEMPIO DI CHIAMATA ---
-# Se la tua API restituisce 'match_date', la passi alla funzione:
-# mostra_info_evento(match_date)
 
 
 st.image("banner1.png")
