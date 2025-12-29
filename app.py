@@ -288,7 +288,7 @@ with col_aff:
 # --- MAIN APP ---
 # st.set_page_config(page_title="Delphi Pro", layout="wide")
 # st.title("Delphi Predictor")
-tab_analisi, tab_gestione = st.tabs(["🎯 Analisi Match", "⚙️ Gestione"])
+tab_analisi, tab_gestione = st.tabs(["🎯 **Analisi Match**", "⚙️ **Gestione**"])
 
 with tab_analisi:
     search_query = st.text_input("Inserisci nome squadra:")
