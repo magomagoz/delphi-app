@@ -291,9 +291,9 @@ with col_aff:
 tab_analisi, tab_gestione = st.tabs(["🎯 **Analisi Match**", "⚙️ **Gestione**"])
 
 with tab_analisi:
-    search_query = st.text_input("Inserisci nome squadra:")
-    if st.button("Analizza Match", type="primary"):
+    search_query = st.text_input("**Inserisci nome squadra:**")
+    if st.button("**Analizza Match**", type="primary"):
         if search_query: calcola_pronostico_streamlit(search_query)
 
 with tab_gestione:
-    if st.button("🌐 Aggiorna Database"): aggiorna_con_api()
+    if st.button("🌐 **Aggiorna Database**"): aggiorna_con_api()
