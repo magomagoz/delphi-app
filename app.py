@@ -35,7 +35,7 @@ def mostra_info_evento(fixture_data):
         st.error(f"Errore formattazione data: {e}")
 
 
-st.image("banner1.png")
+st.image("banner.png")
 
 # 4. Titolo
 # st.title("Delphi Predictor")
