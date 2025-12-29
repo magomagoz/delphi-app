@@ -190,27 +190,6 @@ def calcola_pronostico_streamlit(nome_input):
         label_text = "✅✅✅ BASSO ✅✅✅"
 
     st.info(f"⏳ **Indice Gol nel finale: ({label_text})**")
-
-# --- COPIA DA QUI (SENZA SPAZI INIZIALI) ---
-fiducia_val = 85  # Inserisci la tua variabile
-affidabilita_val = 90  # Inserisci la tua variabile
-col_fid, col_aff = st.columns(2)
-with col_fid:
-    color_fid = "#1E7E34" if fiducia_val >= 70 else "#CC9900"
-    st.markdown(f"""
-<div style="background-color: {color_fid}; color: white; padding: 12px; border-radius: 12px; text-align: center;">
-<p style="margin:0; font-size: 11px; text-transform: uppercase; opacity: 0.9;">🎯 Fiducia</p>
-<p style="margin:0; font-size: 24px; font-weight: bold;">{fiducia_val}%</p>
-</div>
-""", unsafe_allow_html=True)
-with col_aff:
-    st.markdown(f"""
-<div style="background-color: #1C3D5A; color: white; padding: 12px; border-radius: 12px; text-align: center;">
-<p style="margin:0; font-size: 11px; text-transform: uppercase; opacity: 0.9;">📊 Dati</p>
-<p style="margin:0; font-size: 24px; font-weight: bold;">{affidabilita_val}%</p>
-</div>
-""", unsafe_allow_html=True)
-# --- FINE BLOCCO ---
     
     # --- ESITO FINALE 1X2 (BLU) ---
     st.divider()
@@ -283,6 +262,28 @@ with col_aff:
         for r in sorted(re_1t, key=lambda x: x['p'], reverse=True)[:3]:
             p = r['p']/total_p_1t
             st.info(f"**{r['s']}**: 📈 {p:.1%} 💰Q: {stima_quota(p)}")
+
+# --- COPIA DA QUI (SENZA SPAZI INIZIALI) ---
+fiducia_val = 85  # Inserisci la tua variabile
+affidabilita_val = 90  # Inserisci la tua variabile
+col_fid, col_aff = st.columns(2)
+with col_fid:
+    color_fid = "#1E7E34" if fiducia_val >= 70 else "#CC9900"
+    st.markdown(f"""
+<div style="background-color: {color_fid}; color: white; padding: 12px; border-radius: 12px; text-align: center;">
+<p style="margin:0; font-size: 11px; text-transform: uppercase; opacity: 0.9;">🎯 Fiducia</p>
+<p style="margin:0; font-size: 24px; font-weight: bold;">{fiducia_val}%</p>
+</div>
+""", unsafe_allow_html=True)
+with col_aff:
+    st.markdown(f"""
+<div style="background-color: #1C3D5A; color: white; padding: 12px; border-radius: 12px; text-align: center;">
+<p style="margin:0; font-size: 11px; text-transform: uppercase; opacity: 0.9;">📊 Dati</p>
+<p style="margin:0; font-size: 24px; font-weight: bold;">{affidabilita_val}%</p>
+</div>
+""", unsafe_allow_html=True)
+# --- FINE BLOCCO ---
+
 
 # --- MAIN APP ---
 # st.set_page_config(page_title="Delphi Pro", layout="wide")
