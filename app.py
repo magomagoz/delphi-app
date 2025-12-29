@@ -277,13 +277,14 @@ with col_fid:
 """, unsafe_allow_html=True)
 with col_aff:
     st.markdown(f"""
-<div style="background-color: #1C3D5A; color: white; padding: 6px; border-radius: 10px; text-align: center;">
+<div style="background-color: #1E7E34; color: white; padding: 6px; border-radius: 10px; text-align: center;">
 <p style="margin:0; font-size: 12px; font-weight: bold; text-transform: uppercase; opacity: 0.9;">📊 Affidabilità dei Dati</p>
 <p style="margin:0; font-size: 14px; font-weight: bold;">{affidabilita_val}%</p>
 </div>
 """, unsafe_allow_html=True)
 # --- FINE BLOCCO ---
 
+##1C3D5A
 
 # --- MAIN APP ---
 # st.set_page_config(page_title="Delphi Pro", layout="wide")
