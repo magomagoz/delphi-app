@@ -9,12 +9,10 @@ import streamlit as st
 from datetime import datetime
 import pytz # Opzionale per fuso orario italiano
 
-import math
-
 def poisson_probability(k, exp):
-    """Calcola la probabilità di Poisson per k eventi con media exp."""
+    """Calcola la probabilità di Poisson"""
+    if exp <= 0: return 0
     return (exp**k * math.exp(-exp)) / math.factorial(k)
-
 
 def mostra_info_evento(fixture_data):
     """
