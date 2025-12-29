@@ -186,38 +186,26 @@ def calcola_pronostico_streamlit(nome_input):
 
     st.info(f"⏳ **Indice Gol nel finale: ({label_text})**")
 
-# --- INIZIO BLOCCO INDICI DI QUALITÀ ---
-
-# Sostituisci questi calcoli con le tue formule originali di Pythonista
-# Esempio: fiducia_pronostico = calcola_fiducia() 
-fiducia_val = 85  # Inserisci qui la tua variabile
-affidabilita_val = 90  # Inserisci qui la tua variabile
-
-# Creazione di due colonne affiancate (perfette per iPhone)
+# --- COPIA DA QUI (SENZA SPAZI INIZIALI) ---
+fiducia_val = 85  # Inserisci la tua variabile
+affidabilita_val = 90  # Inserisci la tua variabile
 col_fid, col_aff = st.columns(2)
-
 with col_fid:
-    # Colore dinamico: Verde se alta, Giallo se media
     color_fid = "#1E7E34" if fiducia_val >= 70 else "#CC9900"
     st.markdown(f"""
-        <div style="background-color: {color_fid}; color: white; padding: 12px; border-radius: 12px; text-align: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1);">
-            <p style="margin:0; font-size: 11px; text-transform: uppercase; opacity: 0.9;">🎯 Fiducia Pronostico</p>
-            <p style="margin:0; font-size: 24px; font-weight: bold;">{fiducia_val}%</p>
-        </div>
-    """, unsafe_allow_html=True)
-
+<div style="background-color: {color_fid}; color: white; padding: 12px; border-radius: 12px; text-align: center;">
+<p style="margin:0; font-size: 11px; text-transform: uppercase; opacity: 0.9;">🎯 Fiducia</p>
+<p style="margin:0; font-size: 24px; font-weight: bold;">{fiducia_val}%</p>
+</div>
+""", unsafe_allow_html=True)
 with col_aff:
-    # Colore Blu Notte per i dati statistici
     st.markdown(f"""
-        <div style="background-color: #1C3D5A; color: white; padding: 12px; border-radius: 12px; text-align: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1);">
-            <p style="margin:0; font-size: 11px; text-transform: uppercase; opacity: 0.9;">📊 Affidabilità Dati</p>
-            <p style="margin:0; font-size: 24px; font-weight: bold;">{affidabilita_val}%</p>
-        </div>
-    """, unsafe_allow_html=True)
-
-st.write("") # Un po' di spazio vuoto sotto per respirare
-# --- FINE BLOCCO INDICI DI QUALITÀ ---
-    
+<div style="background-color: #1C3D5A; color: white; padding: 12px; border-radius: 12px; text-align: center;">
+<p style="margin:0; font-size: 11px; text-transform: uppercase; opacity: 0.9;">📊 Dati</p>
+<p style="margin:0; font-size: 24px; font-weight: bold;">{affidabilita_val}%</p>
+</div>
+""", unsafe_allow_html=True)
+# --- FINE BLOCCO ---
     
     # --- ESITO FINALE 1X2 (BLU) ---
     st.divider()
