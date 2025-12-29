@@ -268,17 +268,17 @@ fiducia_val = 85  # Inserisci la tua variabile
 affidabilita_val = 90  # Inserisci la tua variabile
 col_fid, col_aff = st.columns(2)
 with col_fid:
-    color_fid = "#1E7E34" if fiducia_val >= 70 else "#CC9900"
+    color_fid = "#1E7E34" if fiducia_val >= 80 else "#CC9900"
     st.markdown(f"""
 <div style="background-color: {color_fid}; color: white; padding: 6px; border-radius: 10px; text-align: center;">
-<p style="margin:0; font-size: 12px; font-weight: bold; text-transform: uppercase; opacity: 0.9;">🎯 Fiducia nel pronostico</p>
+<p style="margin:0; font-size: 12px; font-weight: bold; text-transform: uppercase; opacity: 0.8;">🎯 Fiducia nel pronostico</p>
 <p style="margin:0; font-size: 14px; font-weight: bold;">{fiducia_val}%</p>
 </div>
 """, unsafe_allow_html=True)
 with col_aff:
     st.markdown(f"""
 <div style="background-color: #1E7E34; color: white; padding: 6px; border-radius: 10px; text-align: center;">
-<p style="margin:0; font-size: 12px; font-weight: bold; text-transform: uppercase; opacity: 0.9;">📊 Affidabilità dei Dati</p>
+<p style="margin:0; font-size: 12px; font-weight: bold; text-transform: uppercase; opacity: 0.8;">📊 Affidabilità dei Dati</p>
 <p style="margin:0; font-size: 14px; font-weight: bold;">{affidabilita_val}%</p>
 </div>
 """, unsafe_allow_html=True)
