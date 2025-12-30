@@ -2,3 +2,4 @@ streamlit
 pandas
 requests
 pytz
+st-gsheets-connection
