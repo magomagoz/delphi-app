@@ -60,12 +60,15 @@ def controlla_fatica(df, squadra, data_match):
 # ==========================================
 # 3. GESTIONE CRONOLOGIA (GOOGLE SHEETS)
 # ==========================================
+
 def salva_in_cronologia(match, lg_idx, fiducia, dati):
+    if conn is None:
+        st.error("Errore: La connessione 'conn' non è attiva.")
+        return
     try:
-        # Leggiamo i dati esistenti
+        # 1. Prova a leggere il foglio (qui capiamo se il nome è giusto)
         existing_data = conn.read(worksheet="Cronologia_Delphi", ttl=0)
         
-        # Prepariamo la nuova riga con data e ora italiana
         fuso_ita = pytz.timezone('Europe/Rome')
         adesso = datetime.now(fuso_ita)
         
@@ -78,12 +81,14 @@ def salva_in_cronologia(match, lg_idx, fiducia, dati):
             "Dati": f"{dati}%"
         }])
         
-        # Uniamo e salviamo
+        # 2. Prova ad aggiornare
         updated_df = pd.concat([existing_data, nuova_riga], ignore_index=True)
-        conn.update(worksheet="Cronologia", data=updated_df)
-        st.toast("✅ Pronostico salvato in cronologia!")
+        conn.update(worksheet="Cronologia_Delphi", data=updated_df)
+        st.toast("✅ Salvato con successo!")
     except Exception as e:
-        st.sidebar.error(f"Errore salvataggio: {e}")
+        # QUESTO STAMPERÀ L'ERRORE REALE (es. "Sheet not found" o "Permission denied")
+        st.error(f"Dettaglio Errore: {e}")
+
 
 def mostra_cronologia_bella():
     try:
