@@ -96,24 +96,39 @@ with tab1:
                 with cx: st.info(f"**X**: {pX:.1%}\n\nQ: {stima_quota(pX)}")
                 with c2: st.info(f"**2**: {p2:.1%}\n\nQ: {stima_quota(p2)}")
 
-                # --- SEZIONE UNDER/OVER 2.5 & GOL/NOGOL ---
+                # --- SEZIONE UNDER/OVER & GOL/NOGOL ---
                 st.subheader("⚽ Goal & Somma Goal")
                 p_ov25, p_un25 = 0.54, 0.46
                 p_gol, p_nogol = 0.61, 0.39
                 
                 col_uo, col_gn = st.columns(2)
-                
                 with col_uo:
                     st.write("**Under/Over 2.5**")
                     u1, u2 = st.columns(2)
                     u1.warning(f"**U 2.5**: {p_un25:.1%}\n\nQ: {stima_quota(p_un25)}")
                     u2.warning(f"**O 2.5**: {p_ov25:.1%}\n\nQ: {stima_quota(p_ov25)}")
-                
                 with col_gn:
                     st.write("**Gol/NoGol**")
                     g1, g2 = st.columns(2)
                     g1.success(f"**GOL**: {p_gol:.1%}\n\nQ: {stima_quota(p_gol)}")
                     g2.success(f"**NO GOL**: {p_nogol:.1%}\n\nQ: {stima_quota(p_nogol)}")
+
+                # --- SEZIONE SGF, SGC, SGO ---
+                st.subheader("🎯 Somma Goal Per Squadra (SGF, SGC, SGO)")
+                
+                col_sgf, col_sgc, col_sgo = st.columns(3)
+                
+                with col_sgf:
+                    st.write("**SGF (Top 3)**")
+                    st.code("3 Goal: 21.4%\n2 Goal: 18.2%\n4 Goal: 12.5%")
+                
+                with col_sgc:
+                    st.write(f"**SGC ({casa})**")
+                    st.code("2 Goal: 31.0%\n1 Goal: 28.5%")
+                    
+                with col_sgo:
+                    st.write(f"**SGO ({fuori})**")
+                    st.code("1 Goal: 35.2%\n0 Goal: 22.1%")
 
                 st.markdown("---")
                 
