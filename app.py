@@ -1,4 +1,3 @@
-Allora, ripartiamo sezionando i problemi: ecco nel codice app.py: lo controlli? ‘’’import streamlit as st
 import pandas as pd
 import math
 import requests
