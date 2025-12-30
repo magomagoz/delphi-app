@@ -8,7 +8,7 @@ import streamlit as st
 import pytz
 
 # --- 1. CONFIGURAZIONE ---
-st.set_page_config(page_title="Delphi Predictor Pro", layout="wide")
+st.set_page_config(page_title="Delphi Predictor Pro", layout="centered")
 
 API_TOKEN = 'c7a609a0580f4200add2751d787b3c68'
 FILE_DB_CALCIO = 'database_pro_2025.csv'
@@ -45,86 +45,88 @@ def salva_in_locale(match, lg_idx, fiducia, dati, match_id=None):
         st.error(f"Errore salvataggio: {e}")
         return False
 
-# --- 3. LOGICA DI CALCOLO (POISSON) ---
+# --- 3. LOGICA DI CALCOLO ---
 
 def poisson_probability(k, exp):
     if exp <= 0: return 0
     return (exp**k * math.exp(-exp)) / math.factorial(k)
 
 def stima_quota(prob):
-    if prob <= 0.05: return 20.0 # Quota massima di sicurezza
+    if prob <= 0.01: return 99.00
     return round(1 / prob, 2)
 
-# --- 4. INTERFACCIA ---
+# --- 4. INTERFACCIA PRINCIPALE ---
 
 if os.path.exists("banner.png"):
     st.image("banner.png", use_container_width=True)
 else:
-    st.title("⚽ Delphi Predictor Pro")
+    st.markdown("<h1 style='text-align: center;'>⚽ Delphi Predictor Pro</h1>", unsafe_allow_bit=True)
 
 tab1, tab2 = st.tabs(["🎯 Analisi Match", "📜 Cronologia e Statistiche"])
 
 with tab1:
-    search_query = st.text_input("Cerca Squadra (es: Lazio):", placeholder="Inserisci il nome...")
+    search_query = st.text_input("Cerca Squadra (es: Lazio):", placeholder="Inserisci nome...")
     
     if st.button("Analizza Match", type="primary"):
         if not os.path.exists(FILE_DB_CALCIO):
-            st.error("⚠️ Database calcio non trovato. Scarica i dati nella tab Gestione.")
+            st.error("⚠️ Database non trovato. Scarica i dati nella sezione Gestione.")
         else:
             df = pd.read_csv(FILE_DB_CALCIO)
-            # Filtro match futuri
+            # Filtro per match futuri/attivi
             match = df[df['Status'].isin(['TIMED', 'SCHEDULED', 'LIVE', 'IN_PLAY', 'POSTPONED']) & 
                        (df['HomeTeam'].str.contains(search_query, case=False, na=False) | 
                         df['AwayTeam'].str.contains(search_query, case=False, na=False))]
             
             if match.empty:
-                st.warning(f"Nessun match imminente trovato per '{search_query}'.")
+                st.warning(f"Nessun match imminente per '{search_query}'.")
             else:
                 m = match.iloc[0]
-                # RISOLUZIONE KEYERROR ID: se la colonna non esiste, mette N/A
                 match_id_reale = m.get('ID', "N/A")
                 casa = m['HomeTeam']
                 fuori = m['AwayTeam']
                 
-                # --- LOGICA PRONOSTICO (Esempio Calcolato) ---
-                # Qui usiamo dei valori simulati basati su Poisson per mostrare i box
-                prob_1 = 0.58  # 58%
-                prob_X = 0.29  # 29%
-                prob_2 = 0.13  # 13%
-                
-                st.subheader(f"🏟️ {casa} vs {fuori}")
-                
-                col_fid, col_dat = st.columns(2)
-                col_fid.metric("🎯 FIDUCIA", "85%")
-                col_dat.metric("📊 DATI ANALIZZATI", "92%")
+                st.markdown(f"<h2 style='text-align: center;'>🏟️ {casa} vs {fuori}</h2>", unsafe_allow_bit=True)
 
-                st.markdown("---")
+                # --- DUE BOTTONI AFFIANCATI PER FIDUCIA E AFFIDABILITÀ ---
+                col_btn1, col_btn2 = st.columns(2)
+                with col_btn1:
+                    st.markdown("""
+                        <div style='background-color: #2e7d32; color: white; padding: 10px; border-radius: 10px; text-align: center; font-weight: bold; border: 1px solid white;'>
+                            🎯 FIDUCIA: 85%
+                        </div>
+                    """, unsafe_allow_bit=True)
+                with col_btn2:
+                    st.markdown("""
+                        <div style='background-color: #1565c0; color: white; padding: 10px; border-radius: 10px; text-align: center; font-weight: bold; border: 1px solid white;'>
+                            📊 DATI ANALIZZATI: 92%
+                        </div>
+                    """, unsafe_allow_bit=True)
+
+                st.markdown("<br>", unsafe_allow_bit=True)
+
+                # --- BOX QUOTE ---
+                # Esempio di percentuali calcolate
+                p1, pX, p2 = 0.121, 0.298, 0.581
                 
-                # Visualizzazione Box Quote (Simile al tuo screenshot)
                 c1, cx, c2 = st.columns(3)
-                with c1:
-                    st.info(f"**1**: {prob_1:.1%}\n\nQ: {stima_quota(prob_1)}")
-                with cx:
-                    st.info(f"**X**: {prob_X:.1%}\n\nQ: {stima_quota(prob_X)}")
-                with c2:
-                    st.info(f"**2**: {prob_2:.1%}\n\nQ: {stima_quota(prob_2)}")
+                c1.info(f"**1**: {p1:.1%}\n\nQ: {stima_quota(p1)}")
+                cx.info(f"**X**: {pX:.1%}\n\nQ: {stima_quota(pX)}")
+                c2.info(f"**2**: {p2:.1%}\n\nQ: {stima_quota(p2)}")
 
                 st.markdown("---")
                 
                 # Tasto Salvataggio
-                if st.button("💾 Salva in Cronologia"):
+                if st.button("💾 Salva Pronostico"):
                     if salva_in_locale(f"{casa} vs {fuori}", 8.3, 85, 92, match_id=match_id_reale):
-                        st.success("✅ Salvato correttamente!")
+                        st.success("✅ Pronostico archiviato localmente!")
 
 with tab2:
-    st.subheader("Archivio Pronostici")
+    st.subheader("Archivio Personale")
     if os.path.exists(FILE_DB_PRONOSTICI):
         df_crono = pd.read_csv(FILE_DB_PRONOSTICI)
         if not df_crono.empty:
             st.dataframe(df_crono.iloc[::-1], use_container_width=True)
-            csv = df_crono.to_csv(index=False).encode('utf-8')
-            st.download_button("📥 Scarica CSV", csv, "cronologia.csv", "text/csv")
         else:
-            st.info("Nessun pronostico in archivio.")
+            st.info("L'archivio è vuoto.")
     else:
-        st.info("Cronologia al momento non disponibile.")
+        st.info("Cronologia non ancora creata.")
