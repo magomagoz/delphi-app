@@ -65,7 +65,6 @@ with tab1:
             st.error("⚠️ Database non trovato. Scarica i dati nella sezione Gestione.")
         else:
             df = pd.read_csv(FILE_DB_CALCIO)
-            # Filtro match imminenti
             match = df[df['Status'].isin(['TIMED', 'SCHEDULED', 'LIVE', 'IN_PLAY', 'POSTPONED']) & 
                        (df['HomeTeam'].str.contains(search_query, case=False, na=False) | 
                         df['AwayTeam'].str.contains(search_query, case=False, na=False))]
@@ -78,38 +77,49 @@ with tab1:
                 casa = str(m['HomeTeam'])
                 fuori = str(m['AwayTeam'])
                 
-                # Titolo Match (CORRETTO unsafe_allow_html)
                 st.markdown(f"<h2 style='text-align: center;'>🏟️ {casa} vs {fuori}</h2>", unsafe_allow_html=True)
 
-                # --- I DUE TASTI AFFIANCATI (FIDUCIA E AFFIDABILITÀ) ---
+                # --- TASTI FIDUCIA E AFFIDABILITÀ ---
                 col_btn1, col_btn2 = st.columns(2)
                 with col_btn1:
-                    st.markdown(f"""
-                        <div style='background-color: #2e7d32; color: white; padding: 12px; border-radius: 10px; text-align: center; font-weight: bold; border: 1px solid #ffffff;'>
-                            🎯 FIDUCIA: 85%
-                        </div>
-                    """, unsafe_allow_html=True)
+                    st.markdown(f"<div style='background-color: #2e7d32; color: white; padding: 12px; border-radius: 10px; text-align: center; font-weight: bold; border: 1px solid #ffffff;'>🎯 FIDUCIA: 85%</div>", unsafe_allow_html=True)
                 with col_btn2:
-                    st.markdown(f"""
-                        <div style='background-color: #1565c0; color: white; padding: 12px; border-radius: 10px; text-align: center; font-weight: bold; border: 1px solid #ffffff;'>
-                            📊 AFFIDABILITÀ: 92%
-                        </div>
-                    """, unsafe_allow_html=True)
+                    st.markdown(f"<div style='background-color: #1565c0; color: white; padding: 12px; border-radius: 10px; text-align: center; font-weight: bold; border: 1px solid #ffffff;'>📊 AFFIDABILITÀ: 92%</div>", unsafe_allow_html=True)
 
                 st.markdown("<br>", unsafe_allow_html=True)
 
-                # --- BOX QUOTE ---
-                p1, pX, p2 = 0.12, 0.30, 0.58 
+                # --- SEZIONE QUOTE 1X2 ---
+                st.subheader("📊 Esito Finale 1X2")
+                p1, pX, p2 = 0.45, 0.28, 0.27 
                 c1, cx, c2 = st.columns(3)
                 with c1: st.info(f"**1**: {p1:.1%}\n\nQ: {stima_quota(p1)}")
                 with cx: st.info(f"**X**: {pX:.1%}\n\nQ: {stima_quota(pX)}")
                 with c2: st.info(f"**2**: {p2:.1%}\n\nQ: {stima_quota(p2)}")
 
+                # --- SEZIONE UNDER/OVER 2.5 & GOL/NOGOL ---
+                st.subheader("⚽ Goal & Somma Goal")
+                p_ov25, p_un25 = 0.54, 0.46
+                p_gol, p_nogol = 0.61, 0.39
+                
+                col_uo, col_gn = st.columns(2)
+                
+                with col_uo:
+                    st.write("**Under/Over 2.5**")
+                    u1, u2 = st.columns(2)
+                    u1.warning(f"**U 2.5**: {p_un25:.1%}\n\nQ: {stima_quota(p_un25)}")
+                    u2.warning(f"**O 2.5**: {p_ov25:.1%}\n\nQ: {stima_quota(p_ov25)}")
+                
+                with col_gn:
+                    st.write("**Gol/NoGol**")
+                    g1, g2 = st.columns(2)
+                    g1.success(f"**GOL**: {p_gol:.1%}\n\nQ: {stima_quota(p_gol)}")
+                    g2.success(f"**NO GOL**: {p_nogol:.1%}\n\nQ: {stima_quota(p_nogol)}")
+
                 st.markdown("---")
                 
                 if st.button("💾 Salva in Cronologia"):
                     if salva_in_locale(f"{casa} vs {fuori}", 8.3, 85, 92, match_id=match_id_reale):
-                        st.success("✅ Salvato!")
+                        st.success("✅ Salvato con successo!")
 
 with tab2:
     if os.path.exists(FILE_DB_PRONOSTICI):
