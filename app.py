@@ -286,6 +286,37 @@ with col_aff:
 
 ##1C3D5A
 
+from streamlit_gsheets import GSheetsConnection
+import pandas as pd
+
+# Creiamo la connessione
+conn = st.connection("gsheets", type=GSheetsConnection)
+
+# Esempio di funzione per salvare i dati
+def salva_in_cronologia(data, ora, match, lg_idx, fiducia, dati):
+    # Leggiamo i dati esistenti
+    existing_data = conn.read(worksheet="Foglio1", usecols=list(range(7)), ttl=5)
+    
+    # Prepariamo la nuova riga
+    nuova_riga = pd.DataFrame([{
+        "Data": data,
+        "Ora": ora,
+        "Partita": match,
+        "Indice LG": lg_idx,
+        "Fiducia": fiducia,
+        "Dati": dati
+    }])
+    
+    # Uniamo e salviamo
+    updated_df = pd.concat([existing_data, nuova_riga], ignore_index=True)
+    conn.update(worksheet="Foglio1", data=updated_df)
+    st.success("✅ Cronologia aggiornata su Google Sheets!")
+
+# Richiama la funzione quando serve:
+# salva_in_cronologia(data_ita, ora_ita, f"{casa}-{fuori}", lg_idx, fiducia_val, affidabilita_val)
+
+
+
 # --- MAIN APP ---
 # st.set_page_config(page_title="Delphi Pro", layout="wide")
 # st.title("Delphi Predictor")
