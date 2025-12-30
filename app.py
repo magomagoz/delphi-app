@@ -44,9 +44,10 @@ def salva_in_locale(match, lg_idx, fiducia, dati, match_id=None):
         st.error(f"Errore salvataggio: {e}")
         return False
 
-def stima_quota(prob):
-    if prob <= 0.01: return 99.00
-    return round(1 / prob, 2)
+def stima_quota(prob_decimal):
+    """Calcola la quota partendo da una probabilità (es: 0.45)"""
+    if prob_decimal <= 0.01: return 99.00
+    return round(1 / prob_decimal, 2)
 
 # --- 3. BANNER ---
 if os.path.exists("banner.png"):
@@ -105,38 +106,46 @@ with tab1:
                 with col_uo:
                     st.write("**Under/Over 2.5**")
                     u1, u2 = st.columns(2)
-                    u1.warning(f"**U 2.5**: {p_un25:.1%}\n\nQ: {stima_quota(p_un25)}")
-                    u2.warning(f"**O 2.5**: {p_ov25:.1%}\n\nQ: {stima_quota(p_ov25)}")
+                    u1.warning(f"**U 2.5**: {p_un25:.1%}\nQ: {stima_quota(p_un25)}")
+                    u2.warning(f"**O 2.5**: {p_ov25:.1%}\nQ: {stima_quota(p_ov25)}")
                 with col_gn:
                     st.write("**Gol/NoGol**")
                     g1, g2 = st.columns(2)
-                    g1.success(f"**GOL**: {p_gol:.1%}\n\nQ: {stima_quota(p_gol)}")
-                    g2.success(f"**NO GOL**: {p_nogol:.1%}\n\nQ: {stima_quota(p_nogol)}")
+                    g1.success(f"**GOL**: {p_gol:.1%}\nQ: {stima_quota(p_gol)}")
+                    g2.success(f"**NO GOL**: {p_nogol:.1%}\nQ: {stima_quota(p_nogol)}")
 
                 # --- SEZIONE SGF, SGC, SGO ---
                 st.subheader("🎯 Somma Goal Per Squadra (SGF, SGC, SGO)")
                 col_sgf, col_sgc, col_sgo = st.columns(3)
                 with col_sgf:
                     st.write("**SGF (Top 3)**")
-                    st.code("3 Goal: 21.4%\n2 Goal: 18.2%\n4 Goal: 12.5%")
+                    st.code(f"3 G: 21.4% (Q: {stima_quota(0.214)})\n2 G: 18.2% (Q: {stima_quota(0.182)})\n4 G: 12.5% (Q: {stima_quota(0.125)})")
                 with col_sgc:
                     st.write(f"**SGC ({casa})**")
-                    st.code("2 Goal: 31.0%\n1 Goal: 28.5%")
+                    st.code(f"2 G: 31.0% (Q: {stima_quota(0.31)})\n1 G: 28.5% (Q: {stima_quota(0.285)})")
                 with col_sgo:
                     st.write(f"**SGO ({fuori})**")
-                    st.code("1 Goal: 35.2%\n0 Goal: 22.1%")
+                    st.code(f"1 G: 35.2% (Q: {stima_quota(0.352)})\n0 G: 22.1% (Q: {stima_quota(0.221)})")
 
-                # --- NUOVA SEZIONE: RISULTATI ESATTI ---
-                st.subheader("🔢 Risultati Esatti")
+                # --- RISULTATI ESATTI ---
+                st.subheader("🔢 Risultati Esatti (Top)")
                 col_re_fin, col_re_pt = st.columns(2)
                 
                 with col_re_fin:
                     st.write("**Top 6 Risultati Finali**")
-                    st.code("1-1: 14.2%  |  2-1: 10.5%\n1-0: 9.8%   |  2-0: 8.4%\n1-2: 7.1%   |  0-0: 6.5%")
+                    st.code(
+                        f"1-1: 14.2% (Q: {stima_quota(0.142)}) | 2-1: 10.5% (Q: {stima_quota(0.105)})\n"
+                        f"1-0: 9.8%  (Q: {stima_quota(0.098)}) | 2-0: 8.4%  (Q: {stima_quota(0.084)})\n"
+                        f"1-2: 7.1%  (Q: {stima_quota(0.071)}) | 0-0: 6.5%  (Q: {stima_quota(0.065)})"
+                    )
                 
                 with col_re_pt:
                     st.write("**Top 3 Risultati 1° Tempo**")
-                    st.code("0-0: 32.4%\n1-0: 18.1%\n0-1: 15.5%")
+                    st.code(
+                        f"0-0: 32.4% (Q: {stima_quota(0.324)})\n"
+                        f"1-0: 18.1% (Q: {stima_quota(0.181)})\n"
+                        f"0-1: 15.5% (Q: {stima_quota(0.155)})"
+                    )
 
                 st.markdown("---")
                 
