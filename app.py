@@ -20,7 +20,7 @@ def inizializza_db():
         df = pd.DataFrame(columns=["Data", "Ora", "Partita", "Indice LG", "Fiducia", "Dati", "Match_ID", "Risultato", "Stato"])
         df.to_csv(FILE_DB_PRONOSTICI, index=False)
 
-# Inizializziamo subito all'avvio
+# Inizializzazione all'avvio
 inizializza_db()
 
 def salva_in_locale(match, lg_idx, fiducia, dati, match_id=None):
@@ -62,7 +62,6 @@ tab1, tab2 = st.tabs(["🎯 Analisi Match", "📜 Cronologia e Statistiche"])
 with tab1:
     search_query = st.text_input("Cerca Squadra (es: Lazio):", placeholder="Inserisci nome...")
     
-    # Se clicco il bottone, cerco il match e lo salvo nella sessione
     if st.button("Analizza Match", type="primary"):
         if not os.path.exists(FILE_DB_CALCIO):
             st.error("⚠️ Database non trovato.")
@@ -78,24 +77,23 @@ with tab1:
                 st.session_state['current_match'] = None
                 st.warning("Nessun match trovato.")
 
-    # Se c'è un match salvato nella sessione, mostro i dati
+    # Visualizzazione Risultati
     if 'current_match' in st.session_state and st.session_state['current_match'] is not None:
         m = st.session_state['current_match']
-        match_id_reale = m.get('ID', "N/A")
         casa = str(m['HomeTeam'])
         fuori = str(m['AwayTeam'])
+        mid = m.get('ID', "N/A")
         
         st.markdown(f"<h2 style='text-align: center;'>🏟️ {casa} vs {fuori}</h2>", unsafe_allow_html=True)
 
-        col_btn1, col_btn2 = st.columns(2)
-        with col_btn1:
-            st.markdown(f"<div style='background-color: #2e7d32; color: white; padding: 12px; border-radius: 10px; text-align: center; font-weight: bold; border: 1px solid #ffffff;'>🎯 FIDUCIA: 85%</div>", unsafe_allow_html=True)
-        with col_btn2:
-            st.markdown(f"<div style='background-color: #1565c0; color: white; padding: 12px; border-radius: 10px; text-align: center; font-weight: bold; border: 1px solid #ffffff;'>📊 AFFIDABILITÀ: 92%</div>", unsafe_allow_html=True)
+        # Tasti Fiducia/Affidabilità
+        c_btn1, c_btn2 = st.columns(2)
+        c_btn1.markdown(f"<div style='background-color: #2e7d32; color: white; padding: 12px; border-radius: 10px; text-align: center; font-weight: bold; border: 1px solid white;'>🎯 FIDUCIA: 85%</div>", unsafe_allow_html=True)
+        c_btn2.markdown(f"<div style='background-color: #1565c0; color: white; padding: 12px; border-radius: 10px; text-align: center; font-weight: bold; border: 1px solid white;'>📊 AFFIDABILITÀ: 92%</div>", unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # 1X2
+        # Esito 1X2
         st.subheader("📊 Esito Finale 1X2")
         p1, pX, p2 = 0.45, 0.28, 0.27 
         c1, cx, c2 = st.columns(3)
@@ -108,27 +106,27 @@ with tab1:
         p_ov25, p_un25, p_gol, p_nogol = 0.54, 0.46, 0.61, 0.39
         col_uo, col_gn = st.columns(2)
         with col_uo:
-            st.write("**U/O 2.5**")
+            st.write("**Under/Over 2.5**")
             u1, u2 = st.columns(2)
-            u1.warning(f"**U**: {p_un25:.1%}\nQ: {stima_quota(p_un25)}")
-            u2.warning(f"**O**: {p_ov25:.1%}\nQ: {stima_quota(p_ov25)}")
+            u1.warning(f"**U 2.5**: {p_un25:.1%}\nQ: {stima_quota(p_un25)}")
+            u2.warning(f"**O 2.5**: {p_ov25:.1%}\nQ: {stima_quota(p_ov25)}")
         with col_gn:
-            st.write("**G/NG**")
+            st.write("**Gol/NoGol**")
             g1, g2 = st.columns(2)
             g1.success(f"**GOL**: {p_gol:.1%}\nQ: {stima_quota(p_gol)}")
-            g2.success(f"**NO**: {p_nogol:.1%}\nQ: {stima_quota(p_nogol)}")
+            g2.success(f"**NO GOL**: {p_nogol:.1%}\nQ: {stima_quota(p_nogol)}")
 
         # SGF, SGC, SGO
-        st.subheader("🎯 Somma Goal")
+        st.subheader("🎯 Somma Goal Per Squadra")
         col_sgf, col_sgc, col_sgo = st.columns(3)
         with col_sgf:
             st.write("**SGF (Top 3)**")
             st.code(f"3 G: 21% Q:{stima_quota(0.21)}\n2 G: 18% Q:{stima_quota(0.18)}\n4 G: 12% Q:{stima_quota(0.12)}")
         with col_sgc:
-            st.write(f"SGC")
+            st.write(f"**SGC ({casa})**")
             st.code(f"2 G: 31% Q:{stima_quota(0.31)}\n1 G: 28% Q:{stima_quota(0.28)}")
         with col_sgo:
-            st.write(f"SGO")
+            st.write(f"**SGO ({fuori})**")
             st.code(f"1 G: 35% Q:{stima_quota(0.35)}\n0 G: 22% Q:{stima_quota(0.22)}")
 
         # RISULTATI ESATTI
@@ -136,30 +134,37 @@ with tab1:
         col_re_f, col_re_p = st.columns(2)
         with col_re_f:
             st.write("**Top 6 Finali**")
-            st.code(f"1-1: 14% Q:{stima_quota(0.14)} | 2-1: 10% Q:{stima_quota(0.10)}\n1-0: 9%  Q:{stima_quota(0.09)} | 2-0: 8%  Q:{stima_quota(0.08)}")
+            st.code(
+                f"1-1: 14% Q:{stima_quota(0.14)} | 2-1: 11% Q:{stima_quota(0.11)}\n"
+                f"1-0: 10% Q:{stima_quota(0.10)} | 2-0: 09% Q:{stima_quota(0.09)}\n"
+                f"1-2: 07% Q:{stima_quota(0.07)} | 0-0: 06% Q:{stima_quota(0.06)}"
+            )
         with col_re_p:
             st.write("**Top 3 1° Tempo**")
-            st.code(f"0-0: 32% Q:{stima_quota(0.32)}\n1-0: 18% Q:{stima_quota(0.18)}")
+            st.code(
+                f"0-0: 32% Q:{stima_quota(0.32)}\n"
+                f"1-0: 18% Q:{stima_quota(0.18)}\n"
+                f"0-1: 15% Q:{stima_quota(0.15)}"
+            )
 
         st.markdown("---")
         
-        # Il tasto salva ora trova sempre i dati perché sono nello session_state
         if st.button("💾 Salva in Cronologia"):
-            if salva_in_locale(f"{casa} vs {fuori}", 8.3, 85, 92, match_id=match_id_reale):
-                st.success("✅ Salvato!")
+            if salva_in_locale(f"{casa} vs {fuori}", 8.3, 85, 92, match_id=mid):
+                st.success("✅ Salvato con successo!")
                 time.sleep(1)
                 st.rerun()
 
 with tab2:
-    st.subheader("📊 Cronologia Pronostici")
+    st.subheader("📊 Archivio Pronostici")
     if os.path.exists(FILE_DB_PRONOSTICI):
         df_cronologia = pd.read_csv(FILE_DB_PRONOSTICI)
         if not df_cronologia.empty:
             st.dataframe(df_cronologia.iloc[::-1], use_container_width=True)
-            if st.button("🗑️ Cancella Cronologia"):
+            if st.button("🗑️ Svuota Tutto"):
                 os.remove(FILE_DB_PRONOSTICI)
                 st.rerun()
         else:
-            st.info("La cronologia è vuota.")
+            st.info("Cronologia vuota.")
     else:
-        st.info("Nessun dato salvato.")
+        st.info("Nessun dato presente.")
