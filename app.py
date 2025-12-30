@@ -7,8 +7,33 @@ import pytz
 # --- CONFIGURAZIONE ---
 st.set_page_config(page_title="Delphi Predictor Pro", layout="centered")
 
+API_TOKEN = 'c7a609a0580f4200add2751d787b3c68'
+#FILE_DB = 'database_pro_2025.csv'
+
 # Nome del file database locale
 DB_FILE = "database_pronostici.csv"
+
+def aggiorna_statistiche_locali():
+    if not os.path.exists(DB_FILE):
+        return
+    
+    df = pd.read_csv(DB_FILE)
+    # Filtriamo solo quelli da verificare e che hanno un Match_ID valido
+    mask = (df['Stato'] == 'Da verificare') & (df['Match_ID'] != 'N/A')
+    
+    if not df[mask].empty:
+        for idx, row in df[mask].iterrows():
+            risultato_string, esito_reale = recupera_risultato_match(row['Match_ID'])
+            
+            if risultato_string:
+                df.at[idx, 'Risultato'] = risultato_string
+                # Verifichiamo se l'indice LG (il tuo pronostico) era corretto
+                # Qui aggiungi la tua logica: es. se Indice LG > 7.0 e esito è '2'...
+                df.at[idx, 'Stato'] = "Verificato"
+        
+        df.to_csv(DB_FILE, index=False)
+        st.success("Statistiche aggiornate correttamente!")
+
 
 # --- FUNZIONI DATABASE ---
 def inizializza_db():
@@ -49,6 +74,29 @@ def salva_in_locale(match, lg_idx, fiducia, dati, match_id=None): # <--- Aggiung
 # Inizializza il file all'avvio
 inizializza_db()
 
+def aggiorna_statistiche_locali():
+    if not os.path.exists(DB_FILE):
+        return
+    
+    df = pd.read_csv(DB_FILE)
+    # Filtriamo solo quelli da verificare e che hanno un Match_ID valido
+    mask = (df['Stato'] == 'Da verificare') & (df['Match_ID'] != 'N/A')
+    
+    if not df[mask].empty:
+        for idx, row in df[mask].iterrows():
+            risultato_string, esito_reale = recupera_risultato_match(row['Match_ID'])
+            
+            if risultato_string:
+                df.at[idx, 'Risultato'] = risultato_string
+                # Verifichiamo se l'indice LG (il tuo pronostico) era corretto
+                # Qui aggiungi la tua logica: es. se Indice LG > 7.0 e esito è '2'...
+                df.at[idx, 'Stato'] = "Verificato"
+        
+        df.to_csv(DB_FILE, index=False)
+        st.success("Statistiche aggiornate correttamente!")
+
+
+
 # --- INTERFACCIA APP ---
 st.title("⚽ Delphi Predictor Pro")
 
@@ -76,3 +124,8 @@ try:
         st.info("Nessun pronostico in memoria.")
 except:
     st.info("Cronologia al momento non disponibile.")
+
+if st.button("🔄 Aggiorna Risultati e Statistiche"):
+    with st.spinner("Controllo risultati su Football-Data.org..."):
+        aggiorna_statistiche_locali()
+        st.rerun() # Ricarica l'app per mostrare i dati nuovi
