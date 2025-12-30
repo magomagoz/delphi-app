@@ -16,25 +16,34 @@ def inizializza_db():
         df = pd.DataFrame(columns=["Data", "Ora", "Partita", "Indice LG", "Fiducia", "Dati", "Match_ID", "Risultato", "Stato"])
         df.to_csv(DB_FILE, index=False)
 
-def salva_in_locale(match, lg_idx, fiducia, dati, match_id):
+def salva_in_locale(match, lg_idx, fiducia, dati, match_id=None): # <--- Aggiungi =None
     try:
-        df = pd.read_csv(DB_FILE)
+        # Se il file non esiste, lo crea con le nuove colonne
+        if not os.path.exists(DB_FILE):
+            df = pd.DataFrame(columns=["Data", "Ora", "Partita", "Indice LG", "Fiducia", "Dati", "Match_ID", "Risultato", "Stato"])
+            df.to_csv(DB_FILE, index=False)
+        
+        fuso_ita = pytz.timezone('Europe/Rome')
+        adesso = datetime.now(fuso_ita)
+        
         nuova_riga = {
-            "Data": datetime.now(pytz.timezone('Europe/Rome')).strftime("%d/%m/%Y"),
-            "Ora": datetime.now(pytz.timezone('Europe/Rome')).strftime("%H:%M"),
+            "Data": adesso.strftime("%d/%m/%Y"),
+            "Ora": adesso.strftime("%H:%M"),
             "Partita": match,
             "Indice LG": lg_idx,
             "Fiducia": f"{fiducia}%",
             "Dati": f"{dati}%",
-            "Match_ID": match_id,  # Salviamo l'ID per il controllo futuro
-            "Risultato": "N/A",
-            "Stato": "In attesa"
+            "Match_ID": match_id if match_id else "N/A",
+            "Risultato": "In attesa",
+            "Stato": "Da verificare"
         }
+        
+        df = pd.read_csv(DB_FILE)
         df = pd.concat([df, pd.DataFrame([nuova_riga])], ignore_index=True)
         df.to_csv(DB_FILE, index=False)
         return True
     except Exception as e:
-        st.error(f"Errore: {e}")
+        st.error(f"Errore tecnico salvataggio: {e}")
         return False
 
 # Inizializza il file all'avvio
