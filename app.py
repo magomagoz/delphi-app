@@ -17,17 +17,18 @@ FILE_DB_PRONOSTICI = 'database_pronostici.csv'
 # --- 2. FUNZIONI DATABASE ---
 def inizializza_db():
     if not os.path.exists(FILE_DB_PRONOSTICI):
+        # Colonne espanse per contenere tutti i pronostici
         columns = [
             "Data", "Ora", "Partita", "Fiducia", "Affidabilità", 
             "1X2", "U/O 2.5", "G/NG", "SGF", "SGC", "SGO", 
-            "Top 6 RE Finali", "Top 3 RE 1°T", "Risultato Reale", "Stato"
+            "Top 6 RE Finali", "Top 3 RE 1°T", "Match_ID", "Stato"
         ]
         df = pd.DataFrame(columns=columns)
         df.to_csv(FILE_DB_PRONOSTICI, index=False)
 
 inizializza_db()
 
-def salva_completo_in_locale(match, fid, aff, p1x2, uo, gng, sgf, sgc, sgo, re_fin, re_pt, match_id=None):
+def salva_completo_in_locale(match, fiducia, affidabilita, p1x2, uo, gng, sgf, sgc, sgo, re_fin, re_pt, match_id=None):
     try:
         fuso_ita = pytz.timezone('Europe/Rome')
         adesso = datetime.now(fuso_ita)
@@ -36,8 +37,8 @@ def salva_completo_in_locale(match, fid, aff, p1x2, uo, gng, sgf, sgc, sgo, re_f
             "Data": adesso.strftime("%d/%m/%Y"),
             "Ora": adesso.strftime("%H:%M"),
             "Partita": match,
-            "Fiducia": f"{fid}%",
-            "Affidabilità": f"{aff}%",
+            "Fiducia": f"{fiducia}%",
+            "Affidabilità": f"{affidabilita}%",
             "1X2": p1x2,
             "U/O 2.5": uo,
             "G/NG": gng,
@@ -46,8 +47,8 @@ def salva_completo_in_locale(match, fid, aff, p1x2, uo, gng, sgf, sgc, sgo, re_f
             "SGO": sgo,
             "Top 6 RE Finali": re_fin,
             "Top 3 RE 1°T": re_pt,
-            "Risultato Reale": "N/D", # Campo per il controllo futuro
-            "Stato": "In attesa"
+            "Match_ID": match_id if match_id and str(match_id) != "nan" else "N/A",
+            "Stato": "Da verificare"
         }
         
         df = pd.read_csv(FILE_DB_PRONOSTICI)
@@ -62,19 +63,13 @@ def stima_quota(prob_decimal):
     if prob_decimal <= 0.01: return 99.00
     return round(1 / prob_decimal, 2)
 
-# --- 3. LOGICA DI COLORAZIONE ---
-def colora_vincenti(val):
-    """Colora di verde se lo stato è 'Vincente'"""
-    color = 'background-color: #d4edda; color: #155724' if val == "Vincente" else ''
-    return color
-
-# --- 4. BANNER ---
+# --- 3. BANNER ---
 if os.path.exists("banner.png"):
     st.image("banner.png", use_container_width=True)
 else:
     st.markdown("<h1 style='text-align: center;'>⚽ Delphi Predictor Pro</h1>", unsafe_allow_html=True)
 
-# --- 5. TABS ---
+# --- 4. TABS ---
 tab1, tab2 = st.tabs(["🎯 Analisi Match", "📜 Cronologia e Statistiche"])
 
 with tab1:
@@ -97,19 +92,22 @@ with tab1:
 
     if 'current_match' in st.session_state and st.session_state['current_match'] is not None:
         m = st.session_state['current_match']
-        casa, fuori, mid = str(m['HomeTeam']), str(m['AwayTeam']), m.get('ID', "N/A")
+        casa = str(m['HomeTeam'])
+        fuori = str(m['AwayTeam'])
+        mid = m.get('ID', "N/A")
         
         st.markdown(f"<h2 style='text-align: center;'>🏟️ {casa} vs {fuori}</h2>", unsafe_allow_html=True)
 
-        # UI Tasti
-        c_fid, c_aff = st.columns(2)
-        fid_v, aff_v = 85, 92
-        c_fid.markdown(f"<div style='background-color:#2e7d32;color:white;padding:10px;border-radius:10px;text-align:center;'>🎯 FIDUCIA: {fid_v}%</div>", unsafe_allow_html=True)
-        c_aff.markdown(f"<div style='background-color:#1565c0;color:white;padding:10px;border-radius:10px;text-align:center;'>📊 AFFIDABILITÀ: {aff_v}%</div>", unsafe_allow_html=True)
+        c_btn1, c_btn2 = st.columns(2)
+        fid_val, aff_val = 85, 92
+        c_btn1.markdown(f"<div style='background-color: #2e7d32; color: white; padding: 12px; border-radius: 10px; text-align: center; font-weight: bold; border: 1px solid white;'>🎯 FIDUCIA: {fid_val}%</div>", unsafe_allow_html=True)
+        c_btn2.markdown(f"<div style='background-color: #1565c0; color: white; padding: 12px; border-radius: 10px; text-align: center; font-weight: bold; border: 1px solid white;'>📊 AFFIDABILITÀ: {aff_val}%</div>", unsafe_allow_html=True)
 
-        # Estrazione Valori per Cronologia (Solo i richiesti)
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # --- DATI PER DATABASE ---
         p1, pX, p2 = 0.45, 0.28, 0.27
-        res_1x2 = "1" # Il primo (più probabile)
+        txt_1x2 = f"1:{p1:.0%} X:{pX:.0%} 2:{p2:.0%}"
         
         st.subheader("📊 Esito Finale 1X2")
         c1, cx, c2 = st.columns(3)
@@ -117,70 +115,84 @@ with tab1:
         cx.info(f"**X**: {pX:.1%}\nQ: {stima_quota(pX)}")
         c2.info(f"**2**: {p2:.1%}\nQ: {stima_quota(p2)}")
 
-        p_ov, p_un, p_gol, p_nogol = 0.54, 0.46, 0.61, 0.39
-        res_uo = "OVER 2.5" if p_ov > p_un else "UNDER 2.5"
-        res_gng = "GOL" if p_gol > p_nogol else "NO GOL"
+        p_ov25, p_un25, p_gol, p_nogol = 0.54, 0.46, 0.61, 0.39
+        txt_uo = f"O:{p_ov25:.0%} U:{p_un25:.0%}"
+        txt_gng = f"G:{p_gol:.0%} NG:{p_nogol:.0%}"
 
         st.subheader("⚽ Goal & Somma Goal")
         col_uo, col_gn = st.columns(2)
         with col_uo:
-            st.write("**U/O 2.5**")
+            st.write("**Under/Over 2.5**")
             u1, u2 = st.columns(2)
-            u1.warning(f"**U**: {p_un:.1%}\nQ:{stima_quota(p_un)}")
-            u2.warning(f"**O**: {p_ov:.1%}\nQ:{stima_quota(p_ov)}")
+            u1.warning(f"**U 2.5**: {p_un25:.1%}\nQ: {stima_quota(p_un25)}")
+            u2.warning(f"**O 2.5**: {p_ov25:.1%}\nQ: {stima_quota(p_ov25)}")
         with col_gn:
-            st.write("**G/NG**")
+            st.write("**Gol/NoGol**")
             g1, g2 = st.columns(2)
-            g1.success(f"**GOL**: {p_gol:.1%}\nQ:{stima_quota(p_gol)}")
-            g2.success(f"**NO**: {p_nogol:.1%}\nQ:{stima_quota(p_nogol)}")
+            g1.success(f"**GOL**: {p_gol:.1%}\nQ: {stima_quota(p_gol)}")
+            g2.success(f"**NO GOL**: {p_nogol:.1%}\nQ: {stima_quota(p_nogol)}")
 
-        res_sgf = "3, 2, 4" # Tutti e tre
-        res_sgc = "2, 1"    # Primi due
-        res_sgo = "1, 0"    # Primi due
+        txt_sgf = "3G(21%) 2G(18%) 4G(12%)"
+        txt_sgc = "2G(31%) 1G(28%)"
+        txt_sgo = "1G(35%) 0G(22%)"
 
-        st.subheader("🎯 Somma Goal")
-        csf, csc, cso = st.columns(3)
-        csf.code(f"SGF: 3G, 2G, 4G")
-        csc.code(f"SGC: 2G, 1G")
-        cso.code(f"SGO: 1G, 0G")
+        st.subheader("🎯 Somma Goal Per Squadra")
+        col_sgf, col_sgc, col_sgo = st.columns(3)
+        with col_sgf:
+            st.write("**SGF (Top 3)**")
+            st.code(f"3 G: 21% Q:{stima_quota(0.21)}\n2 G: 18% Q:{stima_quota(0.18)}\n4 G: 12% Q:{stima_quota(0.12)}")
+        with col_sgc:
+            st.write(f"**SGC**")
+            st.code(f"2 G: 31% Q:{stima_quota(0.31)}\n1 G: 28% Q:{stima_quota(0.28)}")
+        with col_sgo:
+            st.write(f"**SGO**")
+            st.code(f"1 G: 35% Q:{stima_quota(0.35)}\n0 G: 22% Q:{stima_quota(0.22)}")
 
-        res_re_fin = "1-1, 2-1, 1-0, 2-0, 1-2, 0-0" # Tutti e 6
-        res_re_pt = "0-0, 1-0, 0-1"                # Primi 3
+        txt_re_fin = "1-1(14%), 2-1(11%), 1-0(10%), 2-0(9%), 1-2(7%), 0-0(6%)"
+        txt_re_pt = "0-0(32%), 1-0(18%), 0-1(15%)"
 
         st.subheader("🔢 Risultati Esatti")
-        cref, crept = st.columns(2)
-        cref.code(f"FIN: {res_re_fin}")
-        crept.code(f"1°T: {res_re_pt}")
+        col_re_f, col_re_p = st.columns(2)
+        with col_re_f:
+            st.write("**Top 6 Finali**")
+            st.code(f"1-1: 14% Q:{stima_quota(0.14)} | 2-1: 11% Q:{stima_quota(0.11)}\n1-0: 10% Q:{stima_quota(0.10)} | 2-0: 09% Q:{stima_quota(0.09)}\n1-2: 07% Q:{stima_quota(0.07)} | 0-0: 06% Q:{stima_quota(0.06)}")
+        with col_re_p:
+            st.write("**Top 3 1° Tempo**")
+            st.code(f"0-0: 32% Q:{stima_quota(0.32)}\n1-0: 18% Q:{stima_quota(0.18)}\n0-1: 15% Q:{stima_quota(0.15)}")
 
         st.markdown("---")
+        
         if st.button("💾 Salva in Cronologia"):
-            if salva_completo_in_locale(f"{casa}-{fuori}", fid_v, aff_v, res_1x2, res_uo, res_gng, res_sgf, res_sgc, res_sgo, res_re_fin, res_re_pt, mid):
-                st.success("✅ Salvato!")
-                time.sleep(0.5)
+            success = salva_completo_in_locale(
+                f"{casa} vs {fuori}", fid_val, aff_val, 
+                txt_1x2, txt_uo, txt_gng, txt_sgf, txt_sgc, txt_sgo, 
+                txt_re_fin, txt_re_pt, match_id=mid
+            )
+            if success:
+                st.success("✅ Pronostico completo archiviato!")
+                time.sleep(1)
                 st.rerun()
 
 with tab2:
-    st.subheader("📊 Registro Analisi")
+    st.subheader("📊 Archivio Pronostici Completo")
     if os.path.exists(FILE_DB_PRONOSTICI):
-        df_cron = pd.read_csv(FILE_DB_PRONOSTICI)
-        if not df_cron.empty:
-            # Applichiamo lo stile: se lo 'Stato' è 'Vincente', colora la riga
-            styler = df_cron.iloc[::-1].style.applymap(colora_vincenti, subset=['Stato'])
-            st.dataframe(styler, use_container_width=True)
+        df_cronologia = pd.read_csv(FILE_DB_PRONOSTICI)
+        if not df_cronologia.empty:
+            st.dataframe(df_cronologia.iloc[::-1], use_container_width=False)
             
             st.markdown("---")
-            if st.button("🗑️ Svuota Tutto"):
-                st.session_state['confirm_del'] = True
+            if st.button("🗑️ Svuota Tutto", type="secondary"):
+                st.session_state['confirm_delete'] = True
             
-            if st.session_state.get('confirm_del'):
-                st.warning("⚠️ Cancellare tutta la cronologia?")
+            if st.session_state.get('confirm_delete'):
+                st.warning("⚠️ Confermi la cancellazione totale?")
                 cy, cn = st.columns(2)
-                if cy.button("✅ SÌ"):
+                if cy.button("✅ SÌ", type="primary"):
                     os.remove(FILE_DB_PRONOSTICI)
-                    st.session_state['confirm_del'] = False
+                    st.session_state['confirm_delete'] = False
                     st.rerun()
                 if cn.button("❌ NO"):
-                    st.session_state['confirm_del'] = False
+                    st.session_state['confirm_delete'] = False
                     st.rerun()
         else:
             st.info("Cronologia vuota.")
