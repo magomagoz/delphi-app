@@ -80,14 +80,14 @@ def salva_in_cronologia(match, lg_idx, fiducia, dati):
         
         # Uniamo e salviamo
         updated_df = pd.concat([existing_data, nuova_riga], ignore_index=True)
-        conn.update(worksheet="Cronologia_Delphi", data=updated_df)
+        conn.update(worksheet="Cronologia", data=updated_df)
         st.toast("✅ Pronostico salvato in cronologia!")
     except Exception as e:
         st.sidebar.error(f"Errore salvataggio: {e}")
 
 def mostra_cronologia_bella():
     try:
-        df = conn.read(worksheet="Cronologia_Delphi", ttl=0)
+        df = conn.read(worksheet="Cronologia", ttl=0)
         if df is not None and not df.empty:
             st.subheader("📜 Ultimi Pronostici Salvati")
             # Mostra gli ultimi 10 risultati (dal più recente)
