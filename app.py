@@ -161,9 +161,22 @@ with tab2:
         df_cronologia = pd.read_csv(FILE_DB_PRONOSTICI)
         if not df_cronologia.empty:
             st.dataframe(df_cronologia.iloc[::-1], use_container_width=True)
-            if st.button("🗑️ Svuota Tutto"):
-                os.remove(FILE_DB_PRONOSTICI)
-                st.rerun()
+            
+            st.markdown("---")
+            # --- SEZIONE WARNING SVUOTA CRONOLOGIA ---
+            if st.button("🗑️ Svuota Tutto", type="secondary"):
+                st.session_state['confirm_delete'] = True
+            
+            if st.session_state.get('confirm_delete'):
+                st.warning("⚠️ Sei sicuro di voler cancellare TUTTA la cronologia? L'azione è irreversibile.")
+                col_y, col_n = st.columns(2)
+                if col_y.button("✅ SÌ, Cancella", type="primary"):
+                    os.remove(FILE_DB_PRONOSTICI)
+                    st.session_state['confirm_delete'] = False
+                    st.rerun()
+                if col_n.button("❌ NO, Annulla"):
+                    st.session_state['confirm_delete'] = False
+                    st.rerun()
         else:
             st.info("Cronologia vuota.")
     else:
