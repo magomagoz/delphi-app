@@ -290,7 +290,12 @@ from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 
 # Creiamo la connessione
-conn = st.connection("gsheets", type=GSheetsConnection)
+#conn = st.connection("gsheets", type=GSheetsConnection)
+
+# Invece di usare solo st.connection, passiamo i secrets in modo esplicito
+secrets_dict = st.secrets["connections"]["gsheets"]
+conn = st.connection("gsheets", type=GSheetsConnection, **secrets_dict)
+
 
 # Esempio di funzione per salvare i dati
 def salva_in_cronologia(data, ora, match, lg_idx, fiducia, dati):
