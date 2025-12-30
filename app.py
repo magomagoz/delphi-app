@@ -1,3 +1,4 @@
+import streamlit as st
 import pandas as pd
 import math
 import requests
@@ -5,15 +6,12 @@ import os
 import time
 from datetime import datetime
 import pytz
-# Inizio del file app.py dopo gli import
-import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 
 # 1. CONFIGURAZIONE E CONNESSIONI
 st.set_page_config(page_title="Delphi Predictor Pro", layout="centered")
 
 # Inizializzazione sicura della connessione
-# Rimuoviamo il passaggio esplicito dei secrets per evitare conflitti
 try:
     conn = st.connection("gsheets", type=GSheetsConnection)
 except Exception as e:
