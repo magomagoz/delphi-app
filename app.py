@@ -95,8 +95,8 @@ def salva_in_cronologia(data, ora, match, lg_idx, fiducia, dati):
     
     # Prepariamo la nuova riga
     nuova_riga = pd.DataFrame([{
-        "Data": datetime.now,(pytz.timezone('Europe/Rome')).strftime("%d/%m/%Y),
-        "Ora": datetime.now,(pytz.timezone('Europe/Rome')).strftime("%H:%M"),
+        #"Data": datetime.now,(pytz.timezone('Europe/Rome')).strftime("%d/%m/%Y),
+        #"Ora": datetime.now,(pytz.timezone('Europe/Rome')).strftime("%H:%M"),
         "Partita": match,
         "Indice LG": lg_idx,
         "Fiducia": f"{fiducia}%,
