@@ -25,6 +25,7 @@ def salva_in_locale(match, lg_idx, fiducia, dati, match_id=None):
         inizializza_db()
         fuso_ita = pytz.timezone('Europe/Rome')
         adesso = datetime.now(fuso_ita)
+        
         nuova_riga = {
             "Data": adesso.strftime("%d/%m/%Y"),
             "Ora": adesso.strftime("%H:%M"),
@@ -36,6 +37,7 @@ def salva_in_locale(match, lg_idx, fiducia, dati, match_id=None):
             "Risultato": "In attesa",
             "Stato": "Da verificare"
         }
+        
         df = pd.read_csv(FILE_DB_PRONOSTICI)
         df = pd.concat([df, pd.DataFrame([nuova_riga])], ignore_index=True)
         df.to_csv(FILE_DB_PRONOSTICI, index=False)
@@ -45,7 +47,6 @@ def salva_in_locale(match, lg_idx, fiducia, dati, match_id=None):
         return False
 
 def stima_quota(prob_decimal):
-    """Calcola la quota partendo da una probabilità (es: 0.45)"""
     if prob_decimal <= 0.01: return 99.00
     return round(1 / prob_decimal, 2)
 
@@ -89,19 +90,17 @@ with tab1:
 
                 st.markdown("<br>", unsafe_allow_html=True)
 
-                # --- SEZIONE QUOTE 1X2 ---
+                # --- 1X2 ---
                 st.subheader("📊 Esito Finale 1X2")
                 p1, pX, p2 = 0.45, 0.28, 0.27 
                 c1, cx, c2 = st.columns(3)
-                with c1: st.info(f"**1**: {p1:.1%}\n\nQ: {stima_quota(p1)}")
-                with cx: st.info(f"**X**: {pX:.1%}\n\nQ: {stima_quota(pX)}")
-                with c2: st.info(f"**2**: {p2:.1%}\n\nQ: {stima_quota(p2)}")
+                with c1: st.info(f"**1**: {p1:.1%}\nQ: {stima_quota(p1)}")
+                with cx: st.info(f"**X**: {pX:.1%}\nQ: {stima_quota(pX)}")
+                with c2: st.info(f"**2**: {p2:.1%}\nQ: {stima_quota(p2)}")
 
-                # --- SEZIONE UNDER/OVER & GOL/NOGOL ---
+                # --- U/O & G/NG ---
                 st.subheader("⚽ Goal & Somma Goal")
-                p_ov25, p_un25 = 0.54, 0.46
-                p_gol, p_nogol = 0.61, 0.39
-                
+                p_ov25, p_un25, p_gol, p_nogol = 0.54, 0.46, 0.61, 0.39
                 col_uo, col_gn = st.columns(2)
                 with col_uo:
                     st.write("**Under/Over 2.5**")
@@ -114,46 +113,49 @@ with tab1:
                     g1.success(f"**GOL**: {p_gol:.1%}\nQ: {stima_quota(p_gol)}")
                     g2.success(f"**NO GOL**: {p_nogol:.1%}\nQ: {stima_quota(p_nogol)}")
 
-                # --- SEZIONE SGF, SGC, SGO ---
+                # --- SGF, SGC, SGO ---
                 st.subheader("🎯 Somma Goal Per Squadra (SGF, SGC, SGO)")
                 col_sgf, col_sgc, col_sgo = st.columns(3)
                 with col_sgf:
                     st.write("**SGF (Top 3)**")
-                    st.code(f"3 G: 21.4% (Q: {stima_quota(0.214)})\n2 G: 18.2% (Q: {stima_quota(0.182)})\n4 G: 12.5% (Q: {stima_quota(0.125)})")
+                    st.code(f"3 G: 21% Q:{stima_quota(0.21)}\n2 G: 18% Q:{stima_quota(0.18)}\n4 G: 12% Q:{stima_quota(0.12)}")
                 with col_sgc:
                     st.write(f"**SGC ({casa})**")
-                    st.code(f"2 G: 31.0% (Q: {stima_quota(0.31)})\n1 G: 28.5% (Q: {stima_quota(0.285)})")
+                    st.code(f"2 G: 31% Q:{stima_quota(0.31)}\n1 G: 28% Q:{stima_quota(0.28)}")
                 with col_sgo:
                     st.write(f"**SGO ({fuori})**")
-                    st.code(f"1 G: 35.2% (Q: {stima_quota(0.352)})\n0 G: 22.1% (Q: {stima_quota(0.221)})")
+                    st.code(f"1 G: 35% Q:{stima_quota(0.35)}\n0 G: 22% Q:{stima_quota(0.22)}")
 
                 # --- RISULTATI ESATTI ---
-                st.subheader("🔢 Risultati Esatti (Top)")
-                col_re_fin, col_re_pt = st.columns(2)
-                
-                with col_re_fin:
-                    st.write("**Top 6 Risultati Finali**")
-                    st.code(
-                        f"1-1: 14.2% (Q: {stima_quota(0.142)}) | 2-1: 10.5% (Q: {stima_quota(0.105)})\n"
-                        f"1-0: 9.8%  (Q: {stima_quota(0.098)}) | 2-0: 8.4%  (Q: {stima_quota(0.084)})\n"
-                        f"1-2: 7.1%  (Q: {stima_quota(0.071)}) | 0-0: 6.5%  (Q: {stima_quota(0.065)})"
-                    )
-                
-                with col_re_pt:
-                    st.write("**Top 3 Risultati 1° Tempo**")
-                    st.code(
-                        f"0-0: 32.4% (Q: {stima_quota(0.324)})\n"
-                        f"1-0: 18.1% (Q: {stima_quota(0.181)})\n"
-                        f"0-1: 15.5% (Q: {stima_quota(0.155)})"
-                    )
+                st.subheader("🔢 Risultati Esatti")
+                col_re_f, col_re_p = st.columns(2)
+                with col_re_f:
+                    st.write("**Top 6 Finali**")
+                    st.code(f"1-1: 14% Q:{stima_quota(0.14)} | 2-1: 10% Q:{stima_quota(0.10)}\n1-0: 9%  Q:{stima_quota(0.09)} | 2-0: 8%  Q:{stima_quota(0.08)}\n1-2: 7%  Q:{stima_quota(0.07)} | 0-0: 6%  Q:{stima_quota(0.06)}")
+                with col_re_p:
+                    st.write("**Top 3 1° Tempo**")
+                    st.code(f"0-0: 32% Q:{stima_quota(0.32)}\n1-0: 18% Q:{stima_quota(0.18)}\n0-1: 15% Q:{stima_quota(0.15)}")
 
                 st.markdown("---")
                 
+                # --- FIX SALVATAGGIO ---
                 if st.button("💾 Salva in Cronologia"):
                     if salva_in_locale(f"{casa} vs {fuori}", 8.3, 85, 92, match_id=match_id_reale):
-                        st.success("✅ Salvato con successo!")
+                        st.success("✅ Salvato! Caricamento cronologia...")
+                        time.sleep(1)
+                        st.rerun() # Forza Streamlit a ricaricare i dati e mostrarli nel Tab 2
 
 with tab2:
+    st.subheader("📊 Cronologia Pronostici")
     if os.path.exists(FILE_DB_PRONOSTICI):
-        df_c = pd.read_csv(FILE_DB_PRONOSTICI)
-        st.dataframe(df_c.iloc[::-1], use_container_width=True)
+        # Leggiamo il file ogni volta che apriamo la tab
+        df_cronologia = pd.read_csv(FILE_DB_PRONOSTICI)
+        if not df_cronologia.empty:
+            st.dataframe(df_cronologia.iloc[::-1], use_container_width=True)
+            if st.button("🗑️ Cancella Cronologia"):
+                os.remove(FILE_DB_PRONOSTICI)
+                st.rerun()
+        else:
+            st.info("La cronologia è vuota.")
+    else:
+        st.info("Nessun database di cronologia trovato.")
