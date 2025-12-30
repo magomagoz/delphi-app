@@ -17,7 +17,6 @@ FILE_DB_PRONOSTICI = 'database_pronostici.csv'
 # --- 2. FUNZIONI DATABASE ---
 def inizializza_db():
     if not os.path.exists(FILE_DB_PRONOSTICI):
-        # Colonne espanse per contenere tutti i pronostici
         columns = [
             "Data", "Ora", "Partita", "Fiducia", "Affidabilità", 
             "1X2", "U/O 2.5", "G/NG", "SGF", "SGC", "SGO", 
@@ -48,7 +47,7 @@ def salva_completo_in_locale(match, fiducia, affidabilita, p1x2, uo, gng, sgf, s
             "Top 6 RE Finali": re_fin,
             "Top 3 RE 1°T": re_pt,
             "Match_ID": match_id if match_id and str(match_id) != "nan" else "N/A",
-            "Stato": "Da verificare"
+            "Stato": "In attesa" # Cambiare in "Vincente" per attivare il verde
         }
         
         df = pd.read_csv(FILE_DB_PRONOSTICI)
@@ -63,13 +62,18 @@ def stima_quota(prob_decimal):
     if prob_decimal <= 0.01: return 99.00
     return round(1 / prob_decimal, 2)
 
-# --- 3. BANNER ---
+# --- 3. LOGICA COLORAZIONE ---
+def colora_vincenti(val):
+    color = 'background-color: #d4edda; color: #155724' if val == "Vincente" else ''
+    return color
+
+# --- 4. BANNER ---
 if os.path.exists("banner.png"):
     st.image("banner.png", use_container_width=True)
 else:
     st.markdown("<h1 style='text-align: center;'>⚽ Delphi Predictor Pro</h1>", unsafe_allow_html=True)
 
-# --- 4. TABS ---
+# --- 5. TABS ---
 tab1, tab2 = st.tabs(["🎯 Analisi Match", "📜 Cronologia e Statistiche"])
 
 with tab1:
@@ -105,9 +109,9 @@ with tab1:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # --- DATI PER DATABASE ---
+        # --- PREPARAZIONE DATI PULITI PER CRONOLOGIA (SENZA %) ---
         p1, pX, p2 = 0.45, 0.28, 0.27
-        txt_1x2 = f"1:{p1:.0%} X:{pX:.0%} 2:{p2:.0%}"
+        txt_1x2_cron = "1" # Solo il primo
         
         st.subheader("📊 Esito Finale 1X2")
         c1, cx, c2 = st.columns(3)
@@ -116,8 +120,8 @@ with tab1:
         c2.info(f"**2**: {p2:.1%}\nQ: {stima_quota(p2)}")
 
         p_ov25, p_un25, p_gol, p_nogol = 0.54, 0.46, 0.61, 0.39
-        txt_uo = f"O:{p_ov25:.0%} U:{p_un25:.0%}"
-        txt_gng = f"G:{p_gol:.0%} NG:{p_nogol:.0%}"
+        txt_uo_cron = "OVER 2.5" if p_ov25 > p_un25 else "UNDER 2.5"
+        txt_gng_cron = "GOL" if p_gol > p_nogol else "NO GOL"
 
         st.subheader("⚽ Goal & Somma Goal")
         col_uo, col_gn = st.columns(2)
@@ -132,9 +136,9 @@ with tab1:
             g1.success(f"**GOL**: {p_gol:.1%}\nQ: {stima_quota(p_gol)}")
             g2.success(f"**NO GOL**: {p_nogol:.1%}\nQ: {stima_quota(p_nogol)}")
 
-        txt_sgf = "3G(21%) 2G(18%) 4G(12%)"
-        txt_sgc = "2G(31%) 1G(28%)"
-        txt_sgo = "1G(35%) 0G(22%)"
+        txt_sgf_cron = "3, 2, 4" # Tutti e tre
+        txt_sgc_cron = "2, 1"    # Primi due
+        txt_sgo_cron = "1, 0"    # Primi due
 
         st.subheader("🎯 Somma Goal Per Squadra")
         col_sgf, col_sgc, col_sgo = st.columns(3)
@@ -148,44 +152,47 @@ with tab1:
             st.write(f"**SGO**")
             st.code(f"1 G: 35% Q:{stima_quota(0.35)}\n0 G: 22% Q:{stima_quota(0.22)}")
 
-        txt_re_fin = "1-1(14%), 2-1(11%), 1-0(10%), 2-0(9%), 1-2(7%), 0-0(6%)"
-        txt_re_pt = "0-0(32%), 1-0(18%), 0-1(15%)"
+        txt_re_fin_cron = "1-1, 2-1, 1-0, 2-0, 1-2, 0-0" # Tutti e 6
+        txt_re_pt_cron = "0-0, 1-0, 0-1"                # Primi 3
 
         st.subheader("🔢 Risultati Esatti")
         col_re_f, col_re_p = st.columns(2)
         with col_re_f:
             st.write("**Top 6 Finali**")
-            st.code(f"1-1: 14% Q:{stima_quota(0.14)} | 2-1: 11% Q:{stima_quota(0.11)}\n1-0: 10% Q:{stima_quota(0.10)} | 2-0: 09% Q:{stima_quota(0.09)}\n1-2: 07% Q:{stima_quota(0.07)} | 0-0: 06% Q:{stima_quota(0.06)}")
+            st.code(f"1-1: 14% Q:7.14 | 2-1: 11% Q:9.09\n1-0: 10% Q:10.0 | 2-0: 09% Q:11.11\n1-2: 07% Q:14.29 | 0-0: 06% Q:16.67")
         with col_re_p:
             st.write("**Top 3 1° Tempo**")
-            st.code(f"0-0: 32% Q:{stima_quota(0.32)}\n1-0: 18% Q:{stima_quota(0.18)}\n0-1: 15% Q:{stima_quota(0.15)}")
+            st.code(f"0-0: 32% Q:3.12\n1-0: 18% Q:5.56\n0-1: 15% Q:6.67")
 
         st.markdown("---")
         
         if st.button("💾 Salva in Cronologia"):
             success = salva_completo_in_locale(
                 f"{casa} vs {fuori}", fid_val, aff_val, 
-                txt_1x2, txt_uo, txt_gng, txt_sgf, txt_sgc, txt_sgo, 
-                txt_re_fin, txt_re_pt, match_id=mid
+                txt_1x2_cron, txt_uo_cron, txt_gng_cron, 
+                txt_sgf_cron, txt_sgc_cron, txt_sgo_cron, 
+                txt_re_fin_cron, txt_re_pt_cron, match_id=mid
             )
             if success:
-                st.success("✅ Pronostico completo archiviato!")
+                st.success("✅ Salvato senza percentuali!")
                 time.sleep(1)
                 st.rerun()
 
 with tab2:
-    st.subheader("📊 Archivio Pronostici Completo")
+    st.subheader("📊 Archivio Pronostici")
     if os.path.exists(FILE_DB_PRONOSTICI):
         df_cronologia = pd.read_csv(FILE_DB_PRONOSTICI)
         if not df_cronologia.empty:
-            st.dataframe(df_cronologia.iloc[::-1], use_container_width=False)
+            # Applica lo stile verde se lo Stato è 'Vincente'
+            styled_df = df_cronologia.iloc[::-1].style.applymap(colora_vincenti, subset=['Stato'])
+            st.dataframe(styled_df, use_container_width=True)
             
             st.markdown("---")
             if st.button("🗑️ Svuota Tutto", type="secondary"):
                 st.session_state['confirm_delete'] = True
             
             if st.session_state.get('confirm_delete'):
-                st.warning("⚠️ Confermi la cancellazione totale?")
+                st.warning("⚠️ Confermi la cancellazione?")
                 cy, cn = st.columns(2)
                 if cy.button("✅ SÌ", type="primary"):
                     os.remove(FILE_DB_PRONOSTICI)
