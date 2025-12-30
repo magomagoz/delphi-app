@@ -315,6 +315,9 @@ def salva_in_cronologia(data, ora, match, lg_idx, fiducia, dati):
 # Richiama la funzione quando serve:
 # salva_in_cronologia(data_ita, ora_ita, f"{casa}-{fuori}", lg_idx, fiducia_val, affidabilita_val)
 
+if st.checkbox("Mostra Cronologia Recente"):
+    cronologia = conn.read(worksheet="Foglio1")
+    st.dataframe(cronologia.tail(10)) # Mostra gli ultimi 10
 
 
 # --- MAIN APP ---
