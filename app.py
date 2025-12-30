@@ -92,7 +92,7 @@ def salva_in_cronologia(match, lg_idx, fiducia, dati):
 
 def mostra_cronologia_bella():
     try:
-        df = conn.read(worksheet="Cronologia", ttl=0)
+        df = conn.read(worksheet="Cronologia_Delphi", ttl=0)
         if df is not None and not df.empty:
             st.subheader("📜 Ultimi Pronostici Salvati")
             # Mostra gli ultimi 10 risultati (dal più recente)
