@@ -115,20 +115,28 @@ with tab1:
 
                 # --- SEZIONE SGF, SGC, SGO ---
                 st.subheader("🎯 Somma Goal Per Squadra (SGF, SGC, SGO)")
-                
                 col_sgf, col_sgc, col_sgo = st.columns(3)
-                
                 with col_sgf:
                     st.write("**SGF (Top 3)**")
                     st.code("3 Goal: 21.4%\n2 Goal: 18.2%\n4 Goal: 12.5%")
-                
                 with col_sgc:
                     st.write(f"**SGC ({casa})**")
                     st.code("2 Goal: 31.0%\n1 Goal: 28.5%")
-                    
                 with col_sgo:
                     st.write(f"**SGO ({fuori})**")
                     st.code("1 Goal: 35.2%\n0 Goal: 22.1%")
+
+                # --- NUOVA SEZIONE: RISULTATI ESATTI ---
+                st.subheader("🔢 Risultati Esatti")
+                col_re_fin, col_re_pt = st.columns(2)
+                
+                with col_re_fin:
+                    st.write("**Top 6 Risultati Finali**")
+                    st.code("1-1: 14.2%  |  2-1: 10.5%\n1-0: 9.8%   |  2-0: 8.4%\n1-2: 7.1%   |  0-0: 6.5%")
+                
+                with col_re_pt:
+                    st.write("**Top 3 Risultati 1° Tempo**")
+                    st.code("0-0: 32.4%\n1-0: 18.1%\n0-1: 15.5%")
 
                 st.markdown("---")
                 
