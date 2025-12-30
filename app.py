@@ -20,6 +20,9 @@ def inizializza_db():
         df = pd.DataFrame(columns=["Data", "Ora", "Partita", "Indice LG", "Fiducia", "Dati", "Match_ID", "Risultato", "Stato"])
         df.to_csv(FILE_DB_PRONOSTICI, index=False)
 
+# --- CORREZIONE: Chiamata immediata all'avvio ---
+inizializza_db()
+
 def salva_in_locale(match, lg_idx, fiducia, dati, match_id=None):
     try:
         inizializza_db()
@@ -143,12 +146,11 @@ with tab1:
                     if salva_in_locale(f"{casa} vs {fuori}", 8.3, 85, 92, match_id=match_id_reale):
                         st.success("✅ Salvato! Caricamento cronologia...")
                         time.sleep(1)
-                        st.rerun() # Forza Streamlit a ricaricare i dati e mostrarli nel Tab 2
+                        st.rerun()
 
 with tab2:
     st.subheader("📊 Cronologia Pronostici")
     if os.path.exists(FILE_DB_PRONOSTICI):
-        # Leggiamo il file ogni volta che apriamo la tab
         df_cronologia = pd.read_csv(FILE_DB_PRONOSTICI)
         if not df_cronologia.empty:
             st.dataframe(df_cronologia.iloc[::-1], use_container_width=True)
@@ -158,4 +160,4 @@ with tab2:
         else:
             st.info("La cronologia è vuota.")
     else:
-        st.info("Nessun database di cronologia trovato.")
+        st.info("In attesa di primo salvataggio...")
