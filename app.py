@@ -1,5 +1,3 @@
-import streamlit as st
-import pandas as pd
 import math
 import requests
 import os
@@ -8,15 +6,22 @@ from datetime import datetime
 import pytz
 from streamlit_gsheets import GSheetsConnection
 
-# 1. CONFIGURAZIONE E CONNESSIONI
+import streamlit as st
+import pandas as pd
+
+# CONFIGURAZIONE PAGINA
 st.set_page_config(page_title="Delphi Predictor Pro", layout="centered")
 
-# Inizializzazione sicura della connessione
-try:
-    conn = st.connection("gsheets", type=GSheetsConnection)
-except Exception as e:
-    st.error(f"Errore di connessione a Google Sheets: {e}")
-    conn = None
+# FUNZIONE DI CONNESSIONE ROBUSTA
+def get_connection():
+    try:
+        # Proviamo a connetterci usando i secrets formattati correttamente
+        return st.connection("gsheets", type=GSheetsConnection)
+    except Exception as e:
+        st.error(f"Errore tecnico di connessione: {e}")
+        return None
+
+conn = get_connection()
 
 API_TOKEN = 'c7a609a0580f4200add2751d787b3c68'
 FILE_DB = 'database_pro_2025.csv'
