@@ -5,9 +5,22 @@ import os
 import time
 from datetime import datetime
 import streamlit as st
-from datetime import datetime
 import pytz # Opzionale per fuso orario italiano
+from streamlit_gsheets import GSheetsConnection
 
+# 1. CONFIGURAZIONE E CONNESSIONI
+st.set_page_config(page_title="Delphi Predictor Pro", layout="centered")
+
+API_TOKEN = 'c7a609a0580f4200add2751d787b3c68'
+FILE_DB = 'database_pro_2025.csv'
+
+try:
+    secrets_dict = st.secrets["connections"]["gsheets"]
+    conn = st.connection("gsheets", type=GSheetsConnection, **secrets_dict)
+except Exception as e:
+    st.error("Errore di connessione a Google Sheets. Verifica i Secrets.")
+
+# FUNZIONI CORE
 def poisson_probability(k, exp):
     """Calcola la probabilità di Poisson"""
     if exp <= 0: return 0
@@ -41,10 +54,6 @@ st.image("banner.png")
 
 # --- IL RESTO DEL TUO CODICE ---🔮
 
-# --- CONFIGURAZIONE ---
-API_TOKEN = 'c7a609a0580f4200add2751d787b3c68'
-FILE_DB = 'database_pro_2025.csv'
-
 # --- LOGICA MATEMATICA ---
 def stima_quota(prob):
     if prob <= 0.001: return 99.00
@@ -76,6 +85,51 @@ def controlla_fatica(df, squadra, data_match):
 def calcola_late_goal_index(casa, fuori):
     val = (len(casa) + len(fuori)) % 15
     return round(val * 0.12, 2)
+
+# Esempio di funzione per salvare i dati
+def salva_in_cronologia(data, ora, match, lg_idx, fiducia, dati):
+    # Leggiamo i dati esistenti
+    existing_data = conn.read(worksheet="Cronologia_Delphi", ttl=0)
+
+#  usecols=list(range(7)),
+    
+    # Prepariamo la nuova riga
+    nuova_riga = pd.DataFrame([{
+        "Data": datetime.now,(pytz.timezone('Europe/Rome')).strftime("%d/%m/%Y),
+        "Ora": datetime.now,(pytz.timezone('Europe/Rome')).strftime("%H:%M"),
+        "Partita": match,
+        "Indice LG": lg_idx,
+        "Fiducia": f"{fiducia}%,
+        "Dati": f"{dati}%"
+    }])
+    
+    # Uniamo e salviamo
+    updated_df = pd.concat([existing_data, nuova_riga], ignore_index=True)
+    conn.update(worksheet="Cronologia_Delphi", data=updated_df)
+    st.success("✅ Cronologia aggiornata su Google Sheets!")
+except Exception as e: 
+    st.sidebar.error(f"Errore salvataggio: {e}")
+
+def mostra_cronologia_bella():
+    try:
+        df = conn.read(worksheet="Cronologia_Delphi", ttl=0)
+        if df.empty:
+            st.write("Cronologia vuota.")
+            return
+
+        st.subheader("📜 Ultimi pronostici salvati")
+        for i, row in df.tail(20).iloc[::-1].iterrows():
+            with st.container():
+                st.markdown(f"""
+                <div style="background-color: #262730; padding: 15px; border-radius: 10px; border-left: 5px solid #1E7E34; margin-bottom: 10px;">
+                    <span style="font-size: 12px; color: #888;">{row['Data']} ore {row['Ora']}</span><br>
+                    <b style="font-size: 18px;">{row['Partita']}</b><br>
+                    <span style="color: #00FF00;">🎯 Fiducia: {row['Fiducia']}</span> | 
+                    <span style="color: #007BFF;">📊 Dati: {row['Dati']}</span>
+                </div>
+                """, unsafe_allow_html=True)
+    except:
+        st.write("Collega Google Sheets per vedere la cronologia.")
 
 # --- FUNZIONE AGGIORNAMENTO API ---
 def aggiorna_con_api():
@@ -281,47 +335,6 @@ with col_aff:
 <p style="margin:0; font-size: 14px; font-weight: bold;">{affidabilita_val}%</p>
 </div>
 """, unsafe_allow_html=True)
-# --- FINE BLOCCO ---
-
-##1C3D5A
-
-from streamlit_gsheets import GSheetsConnection
-import pandas as pd
-
-# Creiamo la connessione
-#conn = st.connection("gsheets", type=GSheetsConnection)
-
-# Invece di usare solo st.connection, passiamo i secrets in modo esplicito
-secrets_dict = st.secrets["connections"]["gsheets"]
-conn = st.connection("gsheets", type=GSheetsConnection, **secrets_dict)
-
-
-# Esempio di funzione per salvare i dati
-def salva_in_cronologia(data, ora, match, lg_idx, fiducia, dati):
-    # Leggiamo i dati esistenti
-    existing_data = conn.read(worksheet="Foglio1", usecols=list(range(7)), ttl=5)
-    
-    # Prepariamo la nuova riga
-    nuova_riga = pd.DataFrame([{
-        "Data": data,
-        "Ora": ora,
-        "Partita": match,
-        "Indice LG": lg_idx,
-        "Fiducia": fiducia,
-        "Dati": dati
-    }])
-    
-    # Uniamo e salviamo
-    updated_df = pd.concat([existing_data, nuova_riga], ignore_index=True)
-    conn.update(worksheet="Foglio1", data=updated_df)
-    st.success("✅ Cronologia aggiornata su Google Sheets!")
-
-# Richiama la funzione quando serve:
-# salva_in_cronologia(data_ita, ora_ita, f"{casa}-{fuori}", lg_idx, fiducia_val, affidabilita_val)
-
-if st.checkbox("Mostra Cronologia Recente"):
-    cronologia = conn.read(worksheet="Foglio1")
-    st.dataframe(cronologia.tail(10)) # Mostra gli ultimi 10
 
 
 # --- MAIN APP ---
