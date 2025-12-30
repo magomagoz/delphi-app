@@ -13,7 +13,7 @@ DB_FILE = "database_pronostici.csv"
 # --- FUNZIONI DATABASE ---
 def inizializza_db():
     if not os.path.exists(DB_FILE):
-        df = pd.DataFrame(columns=["Data", "Ora", "Partita", "Indice LG", "Fiducia", "Dati"])
+        df = pd.DataFrame(columns=["Data", "Ora", "Partita", "Indice LG", "Fiducia", "Dati", "Match_ID", "Risultato", "Stato"])
         df.to_csv(DB_FILE, index=False)
 
 def salva_in_locale(match, lg_idx, fiducia, dati, match_id):
