@@ -23,13 +23,6 @@ except Exception as e:
 API_TOKEN = 'c7a609a0580f4200add2751d787b3c68'
 FILE_DB = 'database_pro_2025.csv'
 
-# Connessione sicura a Google Sheets
-try:
-    secrets_dict = st.secrets["connections"]["gsheets"]
-    conn = st.connection("gsheets", type=GSheetsConnection, **secrets_dict)
-except Exception as e:
-    st.error(f"Errore di connessione a Google Sheets: {e}")
-
 # ==========================================
 # 2. FUNZIONI CORE (MATEMATICA E LOGICA)
 # ==========================================
