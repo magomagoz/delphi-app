@@ -77,7 +77,7 @@ else:
 tab1, tab2 = st.tabs(["🎯 Analisi del Match", "📜 Cronologia e Statistiche"])
 
 with tab1:
-    search_query = st.text_input("Cerca Squadra (es: Lazio):", placeholder="Inserisci nome...")
+    search_query = st.text_input("Cerca Squadra:", placeholder="Inserisci nome...")
     
     if st.button("Analizza Match", type="primary"):
         if not os.path.exists(FILE_DB_CALCIO):
