@@ -10,7 +10,7 @@ from datetime import datetime, date
 st.set_page_config(page_title="Delphi Predictor Pro", layout="wide") 
 
 API_TOKEN = 'c7a609a0580f4200add2751d787b3c68'
-FILE_DB_CALCIO = 'database_pro_2025.csv'
+FILE_DB = 'database_pro_2025.csv'
 FILE_DB_PRONOSTICI = 'database_pronostici.csv'
 
 # --- 2. FUNZIONI DATABASE ---
