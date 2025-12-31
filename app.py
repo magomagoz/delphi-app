@@ -10,6 +10,13 @@ import pytz
 # --- 1. CONFIGURAZIONE ---
 st.set_page_config(page_title="Delphi Predictor Pro", layout="wide") 
 
+# --- 4. BANNER ---
+if os.path.exists("banner.png"):
+    st.image("banner.png", use_container_width=True)
+else:
+    st.markdown("<h1 style='text-align: center;'>⚽ Delphi Predictor Pro</h1>", unsafe_allow_html=True)
+
+
 API_TOKEN = 'c7a609a0580f4200add2751d787b3c68'
 FILE_DB_CALCIO = 'database_pro_2025.csv'
 FILE_DB_PRONOSTICI = 'database_pronostici.csv'
