@@ -297,10 +297,13 @@ def calcola_pronostico_streamlit(nome_input):
 
 # --- MAIN ---
 st.set_page_config(page_title="Delphi Pro", layout="wide")
-t1, t2 = st.tabs(["🎯 Analisi", "⚙️ Database"])
+t1, t2, t3 = st.tabs(["🎯 Analisi", "⚙️ Database", "📜 Cronologia"])
 with t1:
     sq = st.text_input("Squadra:")
     if st.button("Analizza Match", type="primary"): 
         if sq: calcola_pronostico_streamlit(sq)
 with t2:
     if st.button("🌐 Aggiorna Database"): aggiorna_con_api()
+
+with t3:
+    if st.button("✅ Verifica pronostici vincenti"): vincente()
