@@ -227,7 +227,7 @@ def calcola_pronostico_streamlit(nome_input):
         if controlla_fatica(df, casa, data_match_str) or controlla_fatica(df, fuori, data_match_str):
             st.warning("⚠️ Possibile stanchezza da impegni ravvicinati")
     with c_inf2:
-        st.info("⏳ Late Goal Index - Parametro: {calcola_late_goal_index}")
+        st.info(f"⏳ Late Goal Index - Parametro: {calcola_late_goal_index}")
         if lg > 1.2: st.error("🔥 ALTA PROBABILITÀ LATE GOAL")
 
     # --- ESITO FINALE 1X2 (BLU) ---
