@@ -286,7 +286,6 @@ def esegui_analisi(nome_input):
     dt_event_ita = dt_event.astimezone(pytz.timezone('Europe/Rome'))
 
     return {
-            return {
         # Usiamo dt_event_ita invece di 'adesso'
         "Data": dt_event_ita.strftime("%d/%m/%Y"), 
         "Ora": dt_event_ita.strftime("%H:%M"),
