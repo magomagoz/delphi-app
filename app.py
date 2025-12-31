@@ -10,12 +10,11 @@ import pytz
 # --- 1. CONFIGURAZIONE ---
 st.set_page_config(page_title="Delphi Predictor Pro", layout="wide") 
 
-# --- 4. BANNER ---
+# --- 1.1. BANNER ---
 if os.path.exists("banner.png"):
     st.image("banner.png", use_container_width=True)
 else:
     st.markdown("<h1 style='text-align: center;'>⚽ Delphi Predictor Pro</h1>", unsafe_allow_html=True)
-
 
 API_TOKEN = 'c7a609a0580f4200add2751d787b3c68'
 FILE_DB_CALCIO = 'database_pro_2025.csv'
@@ -70,7 +69,7 @@ def salva_completo_in_locale(data_dict):
 def aggiorna_database_calcio():
     headers = {'X-Auth-Token': API_TOKEN}
     # Aggiungi qui altre leghe se vuoi (es. 'FL1' per Francia, 'BL1' per Germania)
-    competitions = ['SA', 'PL', 'PD', 'BL1', 'FL1', 'CL', 'PPL', 'DED'] 
+    competitions = ['SA', 'PL', 'ELC', 'PD', 'BL1', 'FL1', 'CL', 'PPL', 'DED', 'EC', 'WC', 'BSA'] 
     
     rows = []
     progress_bar = st.progress(0)
@@ -162,15 +161,26 @@ def analizza_severita_arbitro(df, nome_arbitro):
         return round(max(0.8, min(1.3, media_tot / media_arb)), 2)
     except: return 1.0
 
+def controlla_fatica(df, squadra, data_match):
+    try:
+        data_m = pd.to_datetime(data_match)
+        storico = df[(df['Status'] == 'FINISHED') & ((df['HomeTeam'] == squadra) | (df['AwayTeam'] == squadra))].copy()
+        storico['Date'] = pd.to_datetime(storico['Date'])
+        ultima_partita = storico[storico['Date'] < data_m]['Date'].max()
+        if pd.notnull(ultima_partita) and (data_m - ultima_partita).days <= 4:
+            return True
+    except: pass
+    return False
+
 def calcola_late_goal_index(casa, fuori):
     # Placeholder per logica late goal
     val = (len(str(casa)) + len(str(fuori))) % 10
-    return round(val * 0.15 + 0.5, 2)
+    return round(val * 0.10 + 0.5, 2)
 
 def esegui_analisi(nome_input):
     # Controlla DB
     if not os.path.exists(FILE_DB_CALCIO):
-        st.error("Database Calcio mancante. Aggiorna nel Tab 2."); return None
+        st.error("Database Calcio mancante. Aggiorna il DB"); return None
     
     df = pd.read_csv(FILE_DB_CALCIO)
     df['Date'] = pd.to_datetime(df['Date'])
@@ -303,7 +313,7 @@ with tab1:
     sq = st.text_input("Inserisci Squadra:")
     
     # Quando premi "Analizza", salviamo i risultati in session_state
-    if st.button("Analizza Match", type="primary"):
+    if st.button("Pronostici Match", type="primary"):
         if sq:
             risultati = esegui_analisi(sq)
             if risultati:
@@ -317,8 +327,8 @@ with tab1:
         
         st.header(f"🏟️ {d['Partita']}")
         c_inf1, c_inf2 = st.columns(2)
-        c_inf1.info(f"👮 Arbitro: {d['arbitro']} ({d['molt_arbitro']}x)")
-        c_inf2.info(f"⏳ Late Goal Index: {d['lg']}")
+        c_inf1.info(f"👮 Arbitro: {d['arbitro']} - Severità {d['molt_arbitro']}x)")
+        c_inf2.info(f"⏳ Goal nel finale (80+ minuto): {d['lg']}")
         
         c1, cx, c2 = st.columns(3)
         c1.metric("1", f"{d['p1']:.1%}", f"Consigliato: {d['1X2']}")
