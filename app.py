@@ -220,15 +220,36 @@ def calcola_pronostico_streamlit(nome_input):
     # --- UI ---
     st.header(f"🏟️ {casa} vs {fuori}")
     st.subheader(f"🏆 {m['League']}  |  📅 {data_match_str}")
+
+
+# --- ASSICURATI CHE QUESTE VARIABILI SIANO CALCOLARE PRIMA ---
+# Esempio: 
+# arbitro, molt_arbitro = "Orsato", 1.2
+# lg = 1.35
+# late_goal_val = calcola_late_goal_index(dati...) 
+
+c_inf1, c_inf2 = st.columns(2)
+
+with c_inf1:
+    # Mostra l'arbitro e la sua severità
+    st.info(f"👮 Arbitro: {arbitro}  |  Severità: {molt_arbitro}x")
     
-    c_inf1, c_inf2 = st.columns(2)
-    with c_inf1:
-        st.info(f"👮 Arbitro: {arbitro}  |  Severità: {molt_arbitro}x")
-        if controlla_fatica(df, casa, data_match_str) or controlla_fatica(df, fuori, data_match_str):
-            st.warning("⚠️ Possibile stanchezza da impegni ravvicinati")
-    with c_inf2:
-        st.info(f"⏳ Late Goal Index - Parametro: {calcola_late_goal_index}")
-        if lg > 1.2: st.error("🔥 ALTA PROBABILITÀ LATE GOAL")
+    # Controlla la fatica (Assicurati che data_match_str sia un oggetto datetime o stringa valida per la funzione)
+    fatica_casa = controlla_fatica(df, casa, data_match_str)
+    fatica_fuori = controlla_fatica(df, fuori, data_match_str)
+    
+    if fatica_casa or fatica_fuori:
+        st.warning("⚠️ Possibile stanchezza da impegni ravvicinati")
+
+with c_inf2:
+    # Qui usiamo una variabile (es. lg) che contiene il valore numerico calcolato
+    st.info(f"⏳ Late Goal Index - Parametro: {lg:.2f}")
+    
+    # Alert visivo se l'indice supera la soglia
+    if lg > 1.2: 
+        st.error("🔥 ALTA PROBABILITÀ LATE GOAL")
+
+
 
     # --- ESITO FINALE 1X2 (BLU) ---
     st.divider()
