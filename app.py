@@ -134,19 +134,8 @@ def calcola_late_goal_index(casa, fuori):
     val = (len(casa) + len(fuori)) % 15
     return round(val * 0.12, 2)
                   
-        if st.button("💾 Salva in Cronologia"):
-            success = salva_completo_in_locale(
-                f"{casa} vs {fuori}", fid_val, aff_val, 
-                txt_1x2_cron, txt_uo_cron, txt_gng_cron, 
-                txt_sgf_cron, txt_sgc_cron, txt_sgo_cron, 
-                txt_re_fin_cron, txt_re_pt_cron, match_id=mid
-            )
-            if success:
-                st.success("✅ Salvato in Cronbologia!")
-                time.sleep(1)
-                st.rerun()
-
 with tab2:
+    
     st.subheader("📊 Archivio Pronostici")
     if os.path.exists(FILE_DB_PRONOSTICI):
         df_cronologia = pd.read_csv(FILE_DB_PRONOSTICI)
