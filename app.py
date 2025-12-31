@@ -288,6 +288,7 @@ def esegui_analisi(nome_input):
         dt_event = dt_event.tz_localize('UTC')
     
     dt_event_ita = dt_event.astimezone(pytz.timezone('Europe/Rome'))
+    df_per_fatica = pd.read_csv(FILE_DB_CALCIO)
 
     return {
         # Usiamo dt_event_ita invece di 'adesso'
