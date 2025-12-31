@@ -88,7 +88,7 @@ def aggiorna_database_calcio():
                     ref = m['referees'][0]['name'] if m.get('referees') else 'N.D.'
                     # IMPORTANTE: Salviamo l'ID
                     rows.append([
-                        comp, m['utcDate'][:10], home, away, m['status'], 
+                        comp, m['utcDate'], home, away, m['status'], 
                         m['score']['fullTime']['home'], m['score']['fullTime']['away'], 
                         ref, m['id']
                     ])
@@ -275,10 +275,22 @@ def esegui_analisi(nome_input):
     
     fuso_ita = pytz.timezone('Europe/Rome')
     adesso = datetime.now(fuso_ita)
+        # --- CALCOLO DATA E ORA REALE DELL'EVENTO ---
+    # Convertiamo la stringa del DB in oggetto data
+    dt_event = pd.to_datetime(m['Date'])
+    
+    # Se la data non ha fuso orario (è UTC grezzo), glielo assegniamo e convertiamo a Roma
+    if dt_event.tzinfo is None:
+        dt_event = dt_event.tz_localize('UTC')
+    
+    dt_event_ita = dt_event.astimezone(pytz.timezone('Europe/Rome'))
 
     return {
-        "Data": adesso.strftime("%d/%m/%Y"), "Ora": adesso.strftime("%H:%M"),
-        "Partita": f"{casa}-{fuori}",
+            return {
+        # Usiamo dt_event_ita invece di 'adesso'
+        "Data": dt_event_ita.strftime("%d/%m/%Y"), 
+        "Ora": dt_event_ita.strftime("%H:%M"),
+        "Partita": f"{casa} vs. {fuori}",
         "Fiducia": f"{int(max(p1,px,p2)*100)}%", 
         "Affidabilità": f"{85 + int(molt_arbitro*2)}%",
         "1X2": res_1x2, "U/O 2.5": res_uo, "G/NG": res_gng,
