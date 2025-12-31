@@ -211,11 +211,11 @@ def esegui_analisi(nome_input):
     avg_g = max(1.1, pd.to_numeric(giocate['FTHG'], errors='coerce').mean())
     
     def get_stats(team):
-        t = giocate[(giocate['HomeTeam'] == team) | (giocate['AwayTeam'] == team)].tail(10)
+        t = giocate[(giocate['HomeTeam'] == team) | (giocate['AwayTeam'] == team)].tail(15)
         if t.empty: return 1.2, 1.2
         gf = t.apply(lambda r: r['FTHG'] if r['HomeTeam']==team else r['FTAG'], axis=1).mean()
         gs = t.apply(lambda r: r['FTAG'] if r['HomeTeam']==team else r['FTHG'], axis=1).mean()
-        return max(0.2, gf), max(0.2, gs)
+        return max(0.5, gf), max(0.5, gs)
 
     att_h, dif_h = get_stats(casa)
     att_a, dif_a = get_stats(fuori)
@@ -223,33 +223,40 @@ def esegui_analisi(nome_input):
     exp_h = (att_h * dif_a / avg_g) * (2 - molt_arbitro)
     exp_a = (att_a * dif_h / avg_g) * (2 - molt_arbitro)
     
-    # Poisson
+    # Poisson finale
     p1, px, p2, pu, pg, tot = 0,0,0,0,0,0
     sgf, sgc, sgo = {i:0 for i in range(6)}, {i:0 for i in range(6)}, {i:0 for i in range(6)}
     re_fin, re_1t = [], []
     
-    for i in range(6):
-        for j in range(6):
+    for i in range(7):
+        for j in range(7):
             prob = poisson_probability(i, exp_h) * poisson_probability(j, exp_a)
             tot += prob
+            
+            #Pronostico 1X2
             if i>j: p1+=prob
             elif i==j: px+=prob
             else: p2+=prob
+
+            #Pronostico U/O 2,5 e G/NG
             if i+j < 2.5: pu+=prob
             if i>0 and j>0: pg+=prob
-            
+
+            #Pronostico Somma Gol
             sgf[min(i+j, 5)] += prob
             sgc[min(i, 5)] += prob
             sgo[min(j, 5)] += prob
             re_fin.append({'s': f"{i}-{j}", 'p': prob})
             
     # Poisson 1T
-    eh1, ea1 = exp_h*0.4, exp_a*0.4
+    eh1, ea1 = exp_h*0.42, exp_a*0.42
+    re_1t, total_p_1t = [], 0
     for i in range(4):
         for j in range(4):
             pb = poisson_probability(i, eh1) * poisson_probability(j, ea1)
+            total_p_1t += pb
             re_1t.append({'s': f"{i}-{j}", 'p': pb})
-            
+   
     # Preparazione Dati per Session State
     p1, px, p2 = p1/tot, px/tot, p2/tot
     pu, pg = pu/tot, pg/tot
@@ -306,7 +313,7 @@ def highlight_winners(row):
     if check_in_list(row['Top 3 RE 1°T'], row['PT_Reale']): colors[12] = green
     return colors
 
-# --- 7. INTERFACCIA ---
+# --- 7. INTERFACCIA UI---
 tab1, tab2, tab3 = st.tabs(["🎯 Analisi", "⚙️ Database", "📜 Cronologia"])
 
 with tab1:
