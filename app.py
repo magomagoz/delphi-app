@@ -133,67 +133,7 @@ def analizza_severita_arbitro(df, nome_arbitro):
 def calcola_late_goal_index(casa, fuori):
     val = (len(casa) + len(fuori)) % 15
     return round(val * 0.12, 2)
-
-        
-           
-        
-        # --- PREPARAZIONE DATI PULITI PER CRONOLOGIA (SENZA %) ---
-        p1, pX, p2 = 0.45, 0.28, 0.27
-        txt_1x2_cron = "1" # Solo il primo
-        
-        st.subheader("📊 Esito Finale 1X2")
-        c1, cx, c2 = st.columns(3)
-        c1.info(f"**1**: {p1:.1%}\nQuota: {stima_quota(p1)}")
-        cx.info(f"**X**: {pX:.1%}\nQuota: {stima_quota(pX)}")
-        c2.info(f"**2**: {p2:.1%}\nQuota: {stima_quota(p2)}")
-
-        p_ov25, p_un25, p_gol, p_nogol = 0.54, 0.46, 0.61, 0.39
-        txt_uo_cron = "OVER 2.5" if p_ov25 > p_un25 else "UNDER 2.5"
-        txt_gng_cron = "GOL" if p_gol > p_nogol else "NO GOL"
-
-        st.subheader("⚽ Goal & Somma Goal")
-        col_uo, col_gn = st.columns(2)
-        with col_uo:
-            st.write("**Under/Over 2.5**")
-            u1, u2 = st.columns(2)
-            u1.warning(f"**Under 2.5**: {p_un25:.1%}\nQuota: {stima_quota(p_un25)}")
-            u2.warning(f"**Over 2.5**: {p_ov25:.1%}\nQuota: {stima_quota(p_ov25)}")
-        with col_gn:
-            st.write("**Gol/NoGol**")
-            g1, g2 = st.columns(2)
-            g1.success(f"**GOL**: {p_gol:.1%}\nQ: {stima_quota(p_gol)}")
-            g2.success(f"**NO GOL**: {p_nogol:.1%}\nQ: {stima_quota(p_nogol)}")
-
-        txt_sgf_cron = "3, 2, 4" # Tutti e tre
-        txt_sgc_cron = "2, 1"    # Primi due
-        txt_sgo_cron = "1, 0"    # Primi due
-
-        st.subheader("🎯 Somma Goal Per Squadra")
-        col_sgf, col_sgc, col_sgo = st.columns(3)
-        with col_sgf:
-            st.write("**Somma Gol Finale (Top 3)**")
-            st.code(f"3 G: 21% Q:{stima_quota(0.21)}\n2 G: 18% Q:{stima_quota(0.18)}\n4 G: 12% Q:{stima_quota(0.12)}")
-        with col_sgc:
-            st.write(f"**Somma Gol Casa**")
-            st.code(f"2 G: 31% Q:{stima_quota(0.31)}\n1 G: 28% Q:{stima_quota(0.28)}")
-        with col_sgo:
-            st.write(f"**Somma Gol Ospite**")
-            st.code(f"1 G: 35% Q:{stima_quota(0.35)}\n0 G: 22% Q:{stima_quota(0.22)}")
-
-        txt_re_fin_cron = "1-1, 2-1, 1-0, 2-0, 1-2, 0-0" # Tutti e 6
-        txt_re_pt_cron = "0-0, 1-0, 0-1"                # Primi 3
-
-        st.subheader("🔢 Risultati Esatti")
-        col_re_f, col_re_p = st.columns(2)
-        with col_re_f:
-            st.write("**Top 6 Risultati Finali**")
-            st.code(f"1-1: 14% Q:7.14 | 2-1: 11% Q:9.09\n1-0: 10% Q:10.0 | 2-0: 09% Q:11.11\n1-2: 07% Q:14.29 | 0-0: 06% Q:16.67")
-        with col_re_p:
-            st.write("**Top 3 Risultati 1° Tempo**")
-            st.code(f"0-0: 32% Q:3.12\n1-0: 18% Q:5.56\n0-1: 15% Q:6.67")
-
-        st.markdown("---")
-        
+                  
         if st.button("💾 Salva in Cronologia"):
             success = salva_completo_in_locale(
                 f"{casa} vs {fuori}", fid_val, aff_val, 
@@ -231,59 +171,6 @@ with tab2:
                     st.rerun()
         else:
             st.info("Cronologia vuota.")
-
-
-
-
-
-
-
-
-# ==========================================
-# 3. FUNZIONI DI DATABASE E CRONOLOGIA
-# ==========================================
-def salva_in_cronologia(match, lg_idx, fiducia, dati):
-    try:
-        # Legge il foglio esistente
-        existing_data = conn.read(worksheet="Foglio1", ttl=0)
-        
-        # Crea nuova riga
-        nuova_riga = pd.DataFrame([{
-            "Data": datetime.now(pytz.timezone('Europe/Rome')).strftime("%d/%m/%Y"),
-            "Ora": datetime.now(pytz.timezone('Europe/Rome')).strftime("%H:%M"),
-            "Partita": match,
-            "Indice LG": lg_idx,
-            "Fiducia": f"{fiducia}%",
-            "Dati": f"{dati}%"
-        }])
-        
-        # Aggiorna
-        updated_df = pd.concat([existing_data, nuova_riga], ignore_index=True)
-        conn.update(worksheet="Foglio1", data=updated_df)
-    except Exception as e:
-        st.sidebar.error(f"Errore salvataggio: {e}")
-
-def mostra_cronologia_bella():
-    try:
-        df = conn.read(worksheet="Foglio1", ttl=0)
-        if df.empty:
-            st.write("Cronologia vuota.")
-            return
-            
-        st.subheader("📜 Ultimi Pronostici salvati")
-        # Mostriamo gli ultimi 5 in ordine inverso (i più recenti sopra)
-        for i, row in df.tail(5).iloc[::-1].iterrows():
-            with st.container():
-                st.markdown(f"""
-                <div style="background-color: #262730; padding: 15px; border-radius: 10px; border-left: 5px solid #1E7E34; margin-bottom: 10px;">
-                    <span style="font-size: 12px; color: #888;">{row['Data']} ore {row['Ora']}</span><br>
-                    <b style="font-size: 18px;">{row['Partita']}</b><br>
-                    <span style="color: #00FF00;">🎯 Fiducia: {row['Fiducia']}</span> | 
-                    <span style="color: #007BFF;">📊 Dati: {row['Dati']}</span>
-                </div>
-                """, unsafe_allow_html=True)
-    except:
-        st.write("Collega Google Sheets per vedere la cronologia.")
 
 # ==========================================
 # 4. LOGICA DI ANALISI API E MATCH
