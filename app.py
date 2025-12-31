@@ -345,10 +345,14 @@ with tab1:
 
     if 'pronostico_corrente' in st.session_state and st.session_state['pronostico_corrente']:
         d = st.session_state['pronostico_corrente']
-        
+        df_per_fatica = pd.read_csv(FILE_DB_CALCIO) # Carichiamo il DB qui per usarlo sotto
+
         # --- UI TESTATA ---
         st.header(f"🏟️ {d['Partita']}")
         st.subheader(f"🏆 {d.get('League', 'N.D.')} | 📅 Data: {d['Data']} ore {d['Ora']}")
+
+        # TUTTO IL CODICE SUCCESSIVO (c_inf1, c_inf2, st.divider, ecc.) 
+        # DEVE ESSERE ALLINEATO QUI (indentato di 8 spazi o 2 tab)
 
 c_inf1, c_inf2 = st.columns(2)
 
