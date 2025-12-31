@@ -347,7 +347,7 @@ with tab1:
 
     
     # --- UI ---
-    st.header(f"🏟️ {home} vs {away}")
+    st.header(f"🏟️ {d[ 'Partita' ]}")
     st.subheader(f"🏆 {m['League']}  |  📅 {data_match_str}")
 
 
