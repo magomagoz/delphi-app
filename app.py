@@ -163,13 +163,17 @@ def analizza_severita_arbitro(df, nome_arbitro):
 
 def controlla_fatica(df, squadra, data_match):
     try:
-        data_m = pd.to_datetime(data_match)
-        storico = df[(df['Status'] == 'FINISHED') & ((df['HomeTeam'] == squadra) | (df['AwayTeam'] == squadra))].copy()
-        storico['Date'] = pd.to_datetime(storico['Date'])
+        data_m = pd.to_datetime(data_match).tz_localize(None)
+        storico = df[(df['Status'] == 'FINISHED') & 
+                    ((df['HomeTeam'] == squadra) | (df['AwayTeam'] == squadra))].copy()
+        if storico.empty:
+            return False
+        storico['Date'] = pd.to_datetime(storico['Date']).dt.tz_localize(None)
         ultima_partita = storico[storico['Date'] < data_m]['Date'].max()
-        if pd.notnull(ultima_partita) and (data_m - ultima_partita).days <= 4:
-            return True
-    except: pass
+        if pd.notnull(ultima_partita):
+            return (data_m - ultima_partita).days <= 4
+    except:
+        pass
     return False
 
 def calcola_late_goal_index(casa, fuori):
@@ -349,12 +353,11 @@ c_inf1, c_inf2 = st.columns(2)
 
 with c_inf1:
     st.info(f"👮 Arbitro: {d['arbitro']}  |  Severità: {d['molt_arbitro']}x")
-    if controlla_fatica(df, casa, data_match_str) or controlla_fatica(df, fuori, data_match_str):
-    fatica_casa = controlla_fatica(df, casa, data_match_str)
-    fatica_fuori = controlla_fatica(df, fuori, data_match_str)
-
-    if fatica_casa or fatica_fuori:
-        st.warning("⚠️ Possibile stanchezza da impegni ravvicinati")
+            casa_nome = d['Partita'].split(" vs ")[0]
+            fuori_nome = d['Partita'].split(" vs ")[1]
+            if controlla_fatica(df_per_fatica, casa_nome, d['Data']) or \
+               controlla_fatica(df_per_fatica, fuori_nome, d['Data']):
+                st.warning("⚠️ Possibile stanchezza: una delle squadre ha giocato meno di 4 giorni fa.")
 
 with c_inf2:
     st.info(f"⏳ Late Goal Index: {d['lg']:.2f}")
