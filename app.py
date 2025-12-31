@@ -293,7 +293,7 @@ def esegui_analisi(nome_input):
         # Usiamo dt_event_ita invece di 'adesso'
         "Data": dt_event_ita.strftime("%d/%m/%Y"), 
         "Ora": dt_event_ita.strftime("%H:%M"),
-        "Partita": f"{casa} vs. {fuori}",
+        "Partita": f"{casa} vs {fuori}",
         "Fiducia": f"{int(max(p1,px,p2)*100)}%", 
         "Affidabilità": f"{85 + int(molt_arbitro*2)}%",
         "1X2": res_1x2, "U/O 2.5": res_uo, "G/NG": res_gng,
