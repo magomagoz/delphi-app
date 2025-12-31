@@ -219,16 +219,16 @@ def calcola_pronostico_streamlit(nome_input):
 
     # --- UI ---
     st.header(f"🏟️ {casa} vs {fuori}")
-    st.subheader(f"🏆 {m['League']} | 📅 {data_match_str}")
+    st.subheader(f"🏆 {m['League']}  |  📅 {data_match_str}")
     
     c_inf1, c_inf2 = st.columns(2)
     with c_inf1:
-        st.info(f"👮 Arbitro: {arbitro} ({molt_arbitro}x)")
+        st.info(f"👮 Arbitro: {arbitro}  |  Severità: {molt_arbitro}x")
         if controlla_fatica(df, casa, data_match_str) or controlla_fatica(df, fuori, data_match_str):
             st.warning("⚠️ Possibile stanchezza da impegni ravvicinati")
     with c_inf2:
         lg = calcola_late_goal_index(casa, fuori)
-        st.metric("⏳ Late Goal Index", f"{lg}")
+        st.info("⏳ Late Goal Index" - Parametro: {lg}")
         if lg > 1.2: st.error("🔥 ALTA PROBABILITÀ LATE GOAL")
 
     # --- ESITO FINALE 1X2 (BLU) ---
