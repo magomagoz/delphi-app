@@ -345,20 +345,20 @@ with tab1:
         st.header(f"🏟️ {d['Partita']}")
         st.subheader(f"🏆 {m['League']} | 📅 Data: {d['Data']} ore {d['Ora']}")
 
-        c_inf1, c_inf2 = st.columns(2)
-        with c_inf1:
-            st.info(f"👮 Arbitro: {d['arbitro']}  |  Severità: {d['molt_arbitro']}x")
-            if cointrolla_fatica(df, casa, data_match_str) or controlla_fatica(df, fuori, data_match_str):
-            fatica_casa = controlla_fatica(df, casa, data_match_str)
-            fatica_fuori = controlla_fatica(df, fuori, data_match_str)
+c_inf1, c_inf2 = st.columns(2)
+with c_inf1:
+    st.info(f"👮 Arbitro: {d['arbitro']}  |  Severità: {d['molt_arbitro']}x")
+    if cointrolla_fatica(df, casa, data_match_str) or controlla_fatica(df, fuori, data_match_str):
+    fatica_casa = controlla_fatica(df, casa, data_match_str)
+    fatica_fuori = controlla_fatica(df, fuori, data_match_str)
 
-            if fatica_casa or fatica_fuori:
-                st.warning("⚠️ Possibile stanchezza da impegni ravvicinati")
+    if fatica_casa or fatica_fuori:
+        st.warning("⚠️ Possibile stanchezza da impegni ravvicinati")
 
-        with c_inf2:
-            st.info(f"⏳ Late Goal Index: {d['lg']:.2f}")
-            if d['lg'] > 1.2: 
-                st.error("🔥 ALTA PROBABILITÀ DI GOL NEL FNALE (80+ MINUTO)")
+with c_inf2:
+    st.info(f"⏳ Late Goal Index: {d['lg']:.2f}")
+    if d['lg'] > 1.2: 
+        st.error("🔥 ALTA PROBABILITÀ DI GOL NEL FNALE (80+ MINUTO)")
 
         # --- ESITO FINALE 1X2 ---
         st.divider()
