@@ -293,6 +293,7 @@ def esegui_analisi(nome_input):
         # Usiamo dt_event_ita invece di 'adesso'
         "Data": dt_event_ita.strftime("%d/%m/%Y"), 
         "Ora": dt_event_ita.strftime("%H:%M"),
+        "League": m['League']
         "Partita": f"{casa} vs {fuori}",
         "Fiducia": f"{int(max(p1,px,p2)*100)}%", 
         "Affidabilità": f"{85 + int(molt_arbitro*2)}%",
@@ -347,14 +348,14 @@ with tab1:
         
         # --- UI TESTATA ---
         st.header(f"🏟️ {d['Partita']}")
-        st.subheader(f"🏆 {m['League']} | 📅 Data: {d['Data']} ore {d['Ora']}")
+        st.subheader(f"🏆 {d.get('League', 'N.D.')} | 📅 Data: {d['Data']} ore {d['Ora']}")
 
 c_inf1, c_inf2 = st.columns(2)
 
 with c_inf1:
     st.info(f"👮 Arbitro: {d['nome_arbitro']}  |  Severità: {d['molt_arbitro']}x")
-    casa_nome = d['Partita'].split(" vs. ")[0]
-    fuori_nome = d['Partita'].split(" vs. ")[1]
+    casa_nome = d['Partita'].split(" vs ")[0]
+    fuori_nome = d['Partita'].split(" vs ")[1]
     if controlla_fatica(df_per_fatica, casa_nome, d['Data']) or \
     controlla_fatica(df_per_fatica, fuori_nome, d['Data']):
         st.warning("⚠️ Possibile stanchezza: una delle squadre ha giocato meno di 4 giorni fa.")
