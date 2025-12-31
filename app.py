@@ -330,7 +330,6 @@ tab1, tab2, tab3 = st.tabs(["🎯 Analisi", "⚙️ Database", "📜 Cronologia"
 with tab1:
     sq = st.text_input("Inserisci Squadra:")
     
-    # Quando premi "Analizza", salviamo i risultati in session_state
     if st.button("Pronostici Match", type="primary"):
         if sq:
             risultati = esegui_analisi(sq)
@@ -339,142 +338,55 @@ with tab1:
             else:
                 st.session_state['pronostico_corrente'] = None
 
-    # Se c'è un pronostico in memoria, lo mostriamo
     if 'pronostico_corrente' in st.session_state and st.session_state['pronostico_corrente']:
         d = st.session_state['pronostico_corrente']
-
-
-
-    
-    # --- UI ---
-    st.header(f"🏟️ {casa} vs. {fuori}")
-    st.subheader(f"🏆 {m['League']}  |  📅 {data_match_str}")
-
-
-# --- ASSICURATI CHE QUESTE VARIABILI SIANO CALCOLARE PRIMA ---
-# Esempio: 
-# arbitro, molt_arbitro = "Orsato", 1.2
-# lg = 1.35
-# late_goal_val = calcola_late_goal_index(dati...) 
-
-c_inf1, c_inf2 = st.columns(2)
-
-with c_inf1:
-    # Mostra l'arbitro e la sua severità
-    st.info(f"👮 Arbitro: {nome_arbitro}  |  Severità: {molt_arbitro}x")
-    if controlla_fatica(df, casa, data_match_str) or controlla_fatica(df, fuori, data_match_str):
-        st.warning("⚠️ Possibile stanchezza da impegni ravvicinati")
-            
-    # Controlla la fatica (Assicurati che data_match_str sia un oggetto datetime o stringa valida per la funzione)
-    fatica_casa = controlla_fatica(df, casa, data_match_str)
-    fatica_fuori = controlla_fatica(df, fuori, data_match_str)
-    
-    if fatica_casa or fatica_fuori:
-        st.warning("⚠️ Possibile stanchezza da impegni ravvicinati")
-
-with c_inf2:
-    # Qui usiamo una variabile (es. lg) che contiene il valore numerico calcolato
-    lg = calcola_late_goal_index(casa, fuori)
-    st.info(f"⏳ Late Goal Index - Parametro: {lg:.2f}")
-    
-    # Alert visivo se l'indice supera la soglia
-    if lg > 1.2: 
-        st.error("🔥 ALTA PROBABILITÀ LATE GOAL")
-
-
-
-    # --- ESITO FINALE 1X2 (BLU) ---
-    st.divider()
-    st.subheader("🏁 Esito Finale 1X2")
-    c1, cx, c2 = st.columns(3)
-    with c1:
-        prob1 = p_1/total_p
-        st.info(f"**1 (Casa):** {prob1:.1%} (Q: {stima_quota(prob1)})")
-    with cx:
-        probx = p_x/total_p
-        st.info(f"**X (Pareggio):** {probx:.1%} (Q: {stima_quota(probx)})")
-    with c2:
-        prob2 = p_2/total_p
-        st.info(f"**2 (Ospite):** {prob2:.1%} (Q: {stima_quota(prob2)})")
-
-    # --- UNDER/OVER & GOL (BLU) ---
-    st.divider()
-    st.subheader("🏁 Mercati Under/Over & Gol")
-    cuo, cgng = st.columns(2)
-    with cuo:
-        pu = p_u25/total_p
-        st.info(f"**U2.5:** {pu:.1%} (Q: {stima_quota(pu)}) | **O2.5:** {(1-pu):.1%} (Q: {stima_quota(1-pu)})")
-    with cgng:
-        pg = p_gol/total_p
-        st.info(f"**GOL:** {pg:.1%} (Q: {stima_quota(pg)}) | **NOGOL:** {(1-pg):.1%} (Q: {stima_quota(1-pg)})")
-
-    # --- SOMME GOL (VERDI) ---
-    st.divider()
-    st.subheader("⚽ Analisi Somme Gol")
-    c_sgf, c_sgc, c_sgo = st.columns(3)
-    with c_sgf:
-        st.write("**Top 3 Totali**")
-        for k, v in sorted(sgf.items(), key=lambda x:x[1], reverse=True)[:3]:
-            p = v/total_p
-            st.success(f"**{k if k<5 else '>4'} G:** {p:.1%} (Q: {stima_quota(p)})")
-    with c_sgc:
-        st.write("**Top 2 Casa**")
-        for k, v in sorted(sgc.items(), key=lambda x:x[1], reverse=True)[:2]:
-            p = v/total_p
-            st.success(f"**{k} G:** {p:.1%} (Q: {stima_quota(p)})")
-    with c_sgo:
-        st.write("**Top 2 Ospite**")
-        for k, v in sorted(sgo.items(), key=lambda x:x[1], reverse=True)[:2]:
-            p = v/total_p
-            st.success(f"**{k} G:** {p:.1%} (Q: {stima_quota(p)})")
-
-    # --- RISULTATI ESATTI (VERDI E BLU) ---
-    st.divider()
-    st.subheader("🎯 Risultati Esatti")
-    cr1, cr2 = st.columns([2, 1])
-    with cr1:
-        st.write("**Top 6 Finale**")
-        for r in sorted(re_finali, key=lambda x:x['p'], reverse=True)[:6]:
-            p = r['p']/total_p
-            st.success(f"**{r['s']}** ➡️ {p:.1%} (Q: {stima_quota(p)})")
-    with cr2:
-        st.write("**Top 3 1° Tempo**")
-        for r in sorted(re_1t, key=lambda x:x['p'], reverse=True)[:3]:
-            p = r['p']/total_p_1t
-            st.info(f"**{r['s']}** ➡️ {p:.1%} (Q: {stima_quota(p)})")
-
-
-
-
         
-        # IL TASTO SALVA ORA FUNZIONA PERCHÉ I DATI SONO IN SESSION STATE
+        # --- UI TESTATA ---
+        st.header(f"🏟️ {d['Partita']}")
+        st.subheader(f"📅 Data: {d['Data']} ore {d['Ora']}")
+
+        c_inf1, c_inf2 = st.columns(2)
+        with c_inf1:
+            st.info(f"👮 Arbitro: {d['arbitro']}  |  Severità: {d['molt_arbitro']}x")
+            # Nota: Per la fatica servirebbe rileggere il DF, ma semplifichiamo visualizzando l'indice
+        with c_inf2:
+            st.info(f"⏳ Late Goal Index: {d['lg']:.2f}")
+            if d['lg'] > 1.2: 
+                st.error("🔥 ALTA PROBABILITÀ LATE GOAL")
+
+        # --- ESITO FINALE 1X2 ---
+        st.divider()
+        st.subheader("🏁 Esito Finale 1X2")
+        c1, cx, c2 = st.columns(3)
+        with c1:
+            st.metric("1 (Casa)", f"{d['p1']:.1%}", f"Quota: {stima_quota(d['p1'])}")
+        with cx:
+            st.metric("X (Pareggio)", f"{d['px']:.1%}", f"Quota: {stima_quota(d['px'])}")
+        with c2:
+            st.metric("2 (Ospite)", f"{d['p2']:.1%}", f"Quota: {stima_quota(d['p2'])}")
+
+        # --- MERCATI ACCESSORI ---
+        st.divider()
+        col_uo, col_gng = st.columns(2)
+        with col_uo:
+            st.write(f"**U/O 2.5:** {d['U/O 2.5']}")
+        with col_gng:
+            st.write(f"**GOL/NOGOL:** {d['G/NG']}")
+
+        # --- RISULTATI E SOMME ---
+        st.divider()
+        cr1, cr2 = st.columns(2)
+        with cr1:
+            st.success(f"🎯 **Top Risultati Finali:** {d['Top 6 RE Finali']}")
+            st.success(f"⚽ **Somma Gol Totale:** {d['SGF']}")
+        with cr2:
+            st.info(f"⏱️ **Top Risultati 1° Tempo:** {d['Top 3 RE 1°T']}")
+            st.info(f"🏠 **Somma Gol Casa:** {d['SGC']} | 🚀 **Ospite:** {d['SGO']}")
+
+        # --- TASTO SALVATAGGIO ---
+        st.write("---")
         if st.button("💾 Salva in Cronologia"):
             # Rimuoviamo le chiavi extra non necessarie per il CSV
             dati_per_csv = {k: v for k, v in d.items() if k not in ['p1', 'px', 'p2', 'lg', 'arbitro', 'molt_arbitro']}
-            
             if salva_completo_in_locale(dati_per_csv):
-                st.success("✅ Pronostico Salvato!")
-                # Facoltativo: Pulisci lo stato
-                # del st.session_state['pronostico_corrente']
-                # st.rerun()
-
-with tab2:
-    st.info("⚠️ Aggiornerai i principali campionati europei, il Brasile e le Coppe UEFA")
-    if st.button("🌐 Aggiorna Database (Scarica ID Match)"):
-        with st.spinner("Aggiornamento database in corso..."):
-            aggiorna_database_calcio()
-
-with tab3:
-    st.subheader("Archivio")
-    if st.button("🔄 Verifica Risultati Reali"):
-        with st.spinner("Controllo risultati..."):
-            aggiorna_risultati_pronostici()
-            st.rerun()
-            
-    if os.path.exists(FILE_DB_PRONOSTICI):
-        df = pd.read_csv(FILE_DB_PRONOSTICI)
-        if not df.empty:
-            st.dataframe(df.iloc[::-1].style.apply(highlight_winners, axis=1), use_container_width=True)
-            if st.button("🗑️ Svuota Tutto"):
-                os.remove(FILE_DB_PRONOSTICI)
-                st.rerun()
+                st.success("✅ Pronostico Salvato in Cronologia!")
