@@ -243,7 +243,8 @@ with c_inf1:
 
 with c_inf2:
     # Qui usiamo una variabile (es. lg) che contiene il valore numerico calcolato
-    st.info(f"⏳ Late Goal Index - Parametro: {calcola_late_goal_index:.2f}")
+    lg = calcola_late_goal_index(casa, fuori)
+    st.info(f"⏳ Late Goal Index - Parametro: {lg:.2f}")
     
     # Alert visivo se l'indice supera la soglia
     if lg > 1.2: 
@@ -323,3 +324,7 @@ with t2:
 
 with t3:
     if st.button("✅ Verifica pronostici vincenti"): vincente()
+
+    # Salvataggio in background
+    salva_in_cronologia(f"{casa}-{fuori}", calcola_late_goal_index(casa, fuori), fiducia_val, affidabilita_val)
+
