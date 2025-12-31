@@ -233,9 +233,9 @@ c_inf1, c_inf2 = st.columns(2)
 with c_inf1:
     # Mostra l'arbitro e la sua severità
     st.info(f"👮 Arbitro: {arbitro}  |  Severità: {molt_arbitro}x")
-    if controlla_fatica(df, casa, data_match_str) or controlla_fatica(df, fuori, data_match_str):
+        if controlla_fatica(df, casa, data_match_str) or controlla_fatica(df, fuori, data_match_str):
             st.warning("⚠️ Possibile stanchezza da impegni ravvicinati")
-    
+            
     # Controlla la fatica (Assicurati che data_match_str sia un oggetto datetime o stringa valida per la funzione)
     fatica_casa = controlla_fatica(df, casa, data_match_str)
     fatica_fuori = controlla_fatica(df, fuori, data_match_str)
