@@ -1,250 +1,239 @@
+import streamlit as st
 import pandas as pd
 import math
 import requests
 import os
 import time
-from datetime import datetime
-import streamlit as st
-import pytz
+from datetime import datetime, date
 
-# --- 1. CONFIGURAZIONE ---
-st.set_page_config(page_title="Delphi Predictor Pro", layout="wide") 
-
+# --- CONFIGURAZIONE ---
 API_TOKEN = 'c7a609a0580f4200add2751d787b3c68'
-FILE_DB_CALCIO = 'database_pro_2025.csv'
-FILE_DB_PRONOSTICI = 'database_pronostici.csv'
+FILE_DB = 'database_pro_2025.csv'
 
-# --- 2. FUNZIONI DATABASE ---
-def inizializza_db():
-    if not os.path.exists(FILE_DB_PRONOSTICI):
-        columns = [
-            "Data", "Ora", "Partita", "Fiducia", "Affidabilità", 
-            "1X2", "U/O 2.5", "G/NG", "SGF", "SGC", "SGO", 
-            "Top 6 RE Finali", "Top 3 RE 1°T", "Match_ID", "Stato"
-        ]
-        df = pd.DataFrame(columns=columns)
-        df.to_csv(FILE_DB_PRONOSTICI, index=False)
-
-inizializza_db()
-
-def salva_completo_in_locale(match, fiducia, affidabilita, p1x2, uo, gng, sgf, sgc, sgo, re_fin, re_pt, match_id=None):
-    try:
-        fuso_ita = pytz.timezone('Europe/Rome')
-        adesso = datetime.now(fuso_ita)
-        
-        nuova_riga = {
-            "Data": adesso.strftime("%d/%m/%Y"),
-            "Ora": adesso.strftime("%H:%M"),
-            "Partita": match,
-            "Fiducia nel pronostico": f"{fiducia}%",
-            "Affidabilità dei dati": f"{affidabilita}%",
-            "1X2": p1x2,
-            "U/O 2.5": uo,
-            "G/NG": gng,
-            "SGF": sgf,
-            "SGC": sgc,
-            "SGO": sgo,
-            "Top 6 Risultati Esatti Finali": re_fin,
-            "Top 3 Risultati Esatti 1°T": re_pt,
-            "Match_ID": match_id if match_id and str(match_id) != "nan" else "N/A",
-            "Stato": "In attesa" # Cambiare in "Vincente" per attivare il verde
-        }
-        
-        df = pd.read_csv(FILE_DB_PRONOSTICI)
-        df = pd.concat([df, pd.DataFrame([nuova_riga])], ignore_index=True)
-        df.to_csv(FILE_DB_PRONOSTICI, index=False)
-        return True
-    except Exception as e:
-        st.error(f"Errore salvataggio: {e}")
-        return False
-
-def stima_quota(prob_decimal):
-    if prob_decimal <= 0.01: return 99.00
-    return round(1 / prob_decimal, 2)
-
-# --- 3. LOGICA COLORAZIONE ---
-def colora_vincenti(val):
-    color = 'background-color: #d4edda; color: #155724' if val == "Vincente" else ''
-    return color
-
-# --- 4. BANNER ---
-if os.path.exists("banner.png"):
-    st.image("banner.png", use_container_width=True)
-else:
-    st.markdown("<h1 style='text-align: center;'>⚽ Delphi Predictor Pro</h1>", unsafe_allow_html=True)
-
-# --- 5. TABS ---
-tab1, tab2 = st.tabs(["🎯 Analisi del Match", "📜 Cronologia e Statistiche"])
-
-with tab1:
-    search_query = st.text_input("Cerca Squadra:", placeholder="Inserisci nome...")
-    
-    if st.button("Analizza Match", type="primary"):
-        if not os.path.exists(FILE_DB_CALCIO):
-            st.error("⚠️ Database non trovato.")
-        else:
-            df = pd.read_csv(FILE_DB_CALCIO)
-            match_found = df[df['Status'].isin(['TIMED', 'SCHEDULED', 'LIVE', 'IN_PLAY', 'POSTPONED']) & 
-                            (df['HomeTeam'].str.contains(search_query, case=False, na=False) | 
-                             df['AwayTeam'].str.contains(search_query, case=False, na=False))]
-            
-            if not match_found.empty:
-                st.session_state['current_match'] = match_found.iloc[0].to_dict()
-            else:
-                st.session_state['current_match'] = None
-                st.warning("Nessun match trovato.")
-
-    if 'current_match' in st.session_state and st.session_state['current_match'] is not None:
-        m = st.session_state['current_match']
-        casa = str(m['HomeTeam'])
-        fuori = str(m['AwayTeam'])
-        mid = m.get('ID', "N/A")
-        
-        st.markdown(f"<h2 style='text-align: center;'>🏟️ {casa} vs {fuori}</h2>", unsafe_allow_html=True)
-
-        c_btn1, c_btn2 = st.columns(2)
-        fid_val, aff_val = 85, 92
-        c_btn1.markdown(f"<div style='background-color: #2e7d32; color: white; padding: 12px; border-radius: 10px; text-align: center; font-weight: bold; border: 1px solid white;'>🎯 FIDUCIA: {fid_val}%</div>", unsafe_allow_html=True)
-        c_btn2.markdown(f"<div style='background-color: #1565c0; color: white; padding: 12px; border-radius: 10px; text-align: center; font-weight: bold; border: 1px solid white;'>📊 AFFIDABILITÀ: {aff_val}%</div>", unsafe_allow_html=True)
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-# ==========================================
-# 2. FUNZIONI CORE (MATEMATICA E LOGICA)
-# ==========================================
-def poisson_probability(k, exp):
-    """Calcola la probabilità di Poisson per k eventi con media exp."""
-    if exp <= 0: return 0
-    return (exp**k * math.exp(-exp)) / math.factorial(k)
-
+# --- LOGICA MATEMATICA ---
 def stima_quota(prob):
-    """Converte probabilità in quota decimale."""
     if prob <= 0.001: return 99.00
     return round(1 / prob, 2)
 
+def poisson_probability(actual, average):
+    if average <= 0: average = 0.01
+    return (math.pow(average, actual) * math.exp(-average)) / math.factorial(actual)
+
 def analizza_severita_arbitro(df, nome_arbitro):
     if not nome_arbitro or nome_arbitro == 'N.D.' or df.empty: return 1.0
-    partite_arbitro = df[df['Referee'].astype(str).str.contains(str(nome_arbitro), na=False, case=False)]
-    if len(partite_arbitro) < 2: return 1.0
-    media_gol_arbitro = (partite_arbitro['FTHG'] + partite_arbitro['FTAG']).mean()
-    media_gol_totale = (df['FTHG'] + df['FTAG']).mean()
-    return round(max(0.8, min(1.3, media_gol_totale / media_gol_arbitro)), 2)
+    try:
+        partite_arbitro = df[df['Referee'].str.contains(str(nome_arbitro), na=False, case=False)]
+        if len(partite_arbitro) < 2: return 1.0
+        media_gol_arbitro = (partite_arbitro['FTHG'] + partite_arbitro['FTAG']).mean()
+        media_gol_totale = (df['FTHG'] + df['FTAG']).mean()
+        return round(max(0.8, min(1.3, media_gol_totale / media_gol_arbitro)), 2)
+    except: return 1.0
+
+def controlla_fatica(df, squadra, data_match):
+    try:
+        data_m = pd.to_datetime(data_match)
+        storico = df[(df['Status'] == 'FINISHED') & ((df['HomeTeam'] == squadra) | (df['AwayTeam'] == squadra))].copy()
+        storico['Date'] = pd.to_datetime(storico['Date'])
+        ultima_partita = storico[storico['Date'] < data_m]['Date'].max()
+        if pd.notnull(ultima_partita) and (data_m - ultima_partita).days <= 4:
+            return True
+    except: pass
+    return False
 
 def calcola_late_goal_index(casa, fuori):
-    val = (len(casa) + len(fuori)) % 15
+    val = (len(str(casa)) + len(str(fuori))) % 15
     return round(val * 0.12, 2)
-                  
-with tab2:
-    
-    st.subheader("📊 Archivio Pronostici")
-    if os.path.exists(FILE_DB_PRONOSTICI):
-        df_cronologia = pd.read_csv(FILE_DB_PRONOSTICI)
-        if not df_cronologia.empty:
-            # Applica lo stile verde se lo Stato è 'Vincente'
-            styled_df = df_cronologia.iloc[::-1].style.applymap(colora_vincenti, subset=['Stato'])
-            st.dataframe(styled_df, use_container_width=True)
-            
-            st.markdown("---")
-            if st.button("🗑️ Svuota Tutto", type="secondary"):
-                st.session_state['confirm_delete'] = True
-            
-            if st.session_state.get('confirm_delete'):
-                st.warning("⚠️ Confermi la cancellazione?")
-                cy, cn = st.columns(2)
-                if cy.button("✅ SÌ", type="primary"):
-                    os.remove(FILE_DB_PRONOSTICI)
-                    st.session_state['confirm_delete'] = False
-                    st.rerun()
-                if cn.button("❌ NO"):
-                    st.session_state['confirm_delete'] = False
-                    st.rerun()
-        else:
-            st.info("Cronologia vuota.")
 
-# ==========================================
-# 4. LOGICA DI ANALISI API E MATCH
-# ==========================================
+# --- AGGIORNAMENTO API ---
 def aggiorna_con_api():
     headers = {'X-Auth-Token': API_TOKEN}
-    leagues = {'SA':'Serie A', 'PL':'Premier League', 'PD':'La Liga', 'BL1':'Bundesliga', 'CL':'Champions League'}
-    st.info("Aggiornamento database in corso...")
+    leagues = {
+        'WC': 'FIFA World Cup', 'SA':'Serie A', 'PL':'Premier League', 
+        'ELC': 'Championship', 'PD':'La Liga', 'BL1':'Bundesliga', 
+        'FL1':'Ligue 1', 'DED': 'Eredivisie', 'CL':'UEFA Champions League', 
+        'EC': 'UEFA Europa League', 'PPL': 'Primeira Liga', 'BSA': 'Campeonato Brasileiro'
+    }
+    
+    st.info("Inizio connessione API...")
+    progress_bar = st.progress(0)
+    status_text = st.empty()
     rows = []
-    for code, name in leagues.items():
-        r = requests.get(f"https://api.football-data.org/v4/competitions/{code}/matches", headers=headers)
-        if r.status_code == 200:
-            for m in r.json().get('matches', []):
-                home = m['homeTeam']['shortName'] or m['homeTeam']['name']
-                away = m['awayTeam']['shortName'] or m['awayTeam']['name']
-                ref = m['referees'][0].get('name', 'N.D.') if m.get('referees') else 'N.D.'
-                rows.append([name, m['utcDate'], home, away, m['status'], m['score']['fullTime']['home'], m['score']['fullTime']['away'], ref])
-    pd.DataFrame(rows, columns=['League', 'Date', 'HomeTeam', 'AwayTeam', 'Status', 'FTHG', 'FTAG', 'Referee']).to_csv(FILE_DB, index=False)
-    st.success("Database pronto!")
+    
+    try:
+        for i, (code, name) in enumerate(leagues.items()):
+            status_text.text(f"📥 Scaricando dati: {name}...")
+            r = requests.get(f"https://api.football-data.org/v4/competitions/{code}/matches", headers=headers, timeout=12)
+            if r.status_code == 200:
+                matches = r.json().get('matches', [])
+                for m in matches:
+                    home = m['homeTeam']['shortName'] or m['homeTeam']['name']
+                    away = m['awayTeam']['shortName'] or m['awayTeam']['name']
+                    ref = m['referees'][0].get('name', 'N.D.') if m.get('referees') else 'N.D.'
+                    rows.append([
+                        name, m['utcDate'][:10], home, away, m['status'], 
+                        m['score']['fullTime']['home'], m['score']['fullTime']['away'], ref
+                    ])
+            time.sleep(1.5)
+            progress_bar.progress((i + 1) / len(leagues))
+        
+        df_new = pd.DataFrame(rows, columns=['League', 'Date', 'HomeTeam', 'AwayTeam', 'Status', 'FTHG', 'FTAG', 'Referee'])
+        df_new.to_csv(FILE_DB, index=False)
+        status_text.text("✅ Database Salvato!")
+        st.success("Sincronizzazione completata!")
+    except Exception as e: 
+        st.error(f"Errore API: {e}")
 
+# --- ANALISI ---
 def calcola_pronostico_streamlit(nome_input):
     if not os.path.exists(FILE_DB):
-        st.error("Aggiorna il database nella sezione Gestione."); return
+        st.error("Database non trovato."); return
     
     df = pd.read_csv(FILE_DB)
-    match = df[df['Status'].isin(['TIMED', 'SCHEDULED', 'LIVE', 'IN_PLAY']) & 
-               (df['HomeTeam'].str.contains(nome_input, case=False, na=False) | 
-                df['AwayTeam'].str.contains(nome_input, case=False, na=False))]
+    df['Date'] = pd.to_datetime(df['Date'])
     
-    if match.empty:
-        st.warning("Nessun match imminente trovato."); return
+    today = pd.to_datetime(date.today())
+    future_matches = df[
+        (df['Status'].isin(['TIMED', 'SCHEDULED', 'LIVE', 'IN_PLAY', 'POSTPONED'])) & 
+        (df['HomeTeam'].str.contains(nome_input, case=False, na=False) | 
+         df['AwayTeam'].str.contains(nome_input, case=False, na=False)) &
+        (df['Date'] >= today)
+    ].sort_values(by='Date')
+    
+    if future_matches.empty:
+        st.warning(f"Nessun match imminente trovato per '{nome_input}'."); return
 
-    m = match.iloc[0]
+    m = future_matches.iloc[0]
     casa, fuori = m['HomeTeam'], m['AwayTeam']
+    data_match_str = m['Date'].strftime('%Y-%m-%d')
+    
     giocate = df[df['Status'] == 'FINISHED'].copy()
-    
-    # Calcolo Medie
-    arbitro = m.get('Referee', 'N.D.')
+    arbitro = str(m.get('Referee', 'N.D.'))
     molt_arbitro = analizza_severita_arbitro(giocate, arbitro)
-    avg_g = max(1.1, giocate['FTHG'].mean() if not giocate.empty else 1.3)
     
+    avg_g = max(1.1, pd.to_numeric(giocate['FTHG'], errors='coerce').mean())
     def get_stats(team):
-        t = giocate[(giocate['HomeTeam'] == team) | (giocate['AwayTeam'] == team)].tail(10)
-        if t.empty: return 1.3, 1.3
+        t = giocate[(giocate['HomeTeam'] == team) | (giocate['AwayTeam'] == team)].tail(15)
+        if t.empty: return 1.2, 1.2
         att = t.apply(lambda r: float(r['FTHG']) if r['HomeTeam']==team else float(r['FTAG']), axis=1).mean()
         dif = t.apply(lambda r: float(r['FTAG']) if r['HomeTeam']==team else float(r['FTHG']), axis=1).mean()
-        return att, dif
+        return max(0.5, att), max(0.5, dif)
 
     att_h, dif_h = get_stats(casa)
     att_a, dif_a = get_stats(fuori)
     exp_h = (att_h * dif_a / avg_g) * (2 - molt_arbitro)
     exp_a = (att_a * dif_h / avg_g) * (2 - molt_arbitro)
 
-    # --- UI RENDERING ---
-    st.markdown(f"### 🏟️ {casa} vs {fuori}")
+    # Probabilità e Mercati
+    p_u25, p_gol, total_p = 0, 0, 0
+    p_1, p_x, p_2 = 0, 0, 0
+    sgf, sgc, sgo = {i:0 for i in range(6)}, {i:0 for i in range(6)}, {i:0 for i in range(6)}
+    re_finali = []
     
-    # Badge Dinamici
-    fiducia_val = 82 
-    affidabilita_val = 88
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown(f"""<div style="background-color: #1E7E34; color: white; padding: 10px; border-radius: 10px; text-align: center;">
-        <p style="margin:0; font-size: 11px; opacity: 0.8;">🎯 FIDUCIA</p>
-        <p style="margin:0; font-size: 22px; font-weight: bold;">{fiducia_val}%</p></div>""", unsafe_allow_html=True)
-    with col2:
-        st.markdown(f"""<div style="background-color: #1C3D5A; color: white; padding: 10px; border-radius: 10px; text-align: center;">
-        <p style="margin:0; font-size: 11px; opacity: 0.8;">📊 DATI</p>
-        <p style="margin:0; font-size: 22px; font-weight: bold;">{affidabilita_val}%</p></div>""", unsafe_allow_html=True)
-
-    # --- ESITO 1X2 ---
-    st.divider()
-    p_1, p_x, p_2, total_p = 0, 0, 0, 0
-    for i in range(6):
-        for j in range(6):
+    for i in range(7):
+        for j in range(7):
             prob = poisson_probability(i, exp_h) * poisson_probability(j, exp_a)
             total_p += prob
+            # Esito 1X2
             if i > j: p_1 += prob
             elif i == j: p_x += prob
             else: p_2 += prob
+            # Altri mercati
+            if (i+j) < 2.5: p_u25 += prob
+            if i > 0 and j > 0: p_gol += prob
+            sgf[min(i+j, 5)] += prob
+            sgc[min(i, 5)] += prob
+            sgo[min(j, 5)] += prob
+            re_finali.append({'s': f"{i}-{j}", 'p': prob})
 
+    # Poisson 1° Tempo
+    exp_h_1t, exp_a_1t = exp_h * 0.42, exp_a * 0.42
+    re_1t, total_p_1t = [], 0
+    for i in range(4):
+        for j in range(4):
+            prob_1t = poisson_probability(i, exp_h_1t) * poisson_probability(j, exp_a_1t)
+            total_p_1t += prob_1t
+            re_1t.append({'s': f"{i}-{j}", 'p': prob_1t})
+
+    # --- UI ---
+    st.header(f"🏟️ {casa} vs {fuori}")
+    st.subheader(f"🏆 {m['League']} | 📅 {data_match_str}")
+    
+    c_inf1, c_inf2 = st.columns(2)
+    with c_inf1:
+        st.info(f"👮 Arbitro: {arbitro} ({molt_arbitro}x)")
+        if controlla_fatica(df, casa, data_match_str) or controlla_fatica(df, fuori, data_match_str):
+            st.warning("⚠️ Possibile stanchezza da impegni ravvicinati")
+    with c_inf2:
+        lg = calcola_late_goal_index(casa, fuori)
+        st.metric("⏳ Late Goal Index", f"{lg}")
+        if lg > 1.2: st.error("🔥 ALTA PROBABILITÀ LATE GOAL")
+
+    # --- ESITO FINALE 1X2 (BLU) ---
+    st.divider()
+    st.subheader("🏁 Esito Finale 1X2")
     c1, cx, c2 = st.columns(3)
-    c1.metric("1", f"{p_1/total_p:.1%}", f"Q: {stima_quota(p_1/total_p)}")
-    cx.metric("X", f"{p_x/total_p:.1%}", f"Q: {stima_quota(p_x/total_p)}")
-    c2.metric("2", f"{p_2/total_p:.1%}", f"Q: {stima_quota(p_2/total_p)}")
+    with c1:
+        prob1 = p_1/total_p
+        st.info(f"**1 (Casa):** {prob1:.1%} (Q: {stima_quota(prob1)})")
+    with cx:
+        probx = p_x/total_p
+        st.info(f"**X (Pareggio):** {probx:.1%} (Q: {stima_quota(probx)})")
+    with c2:
+        prob2 = p_2/total_p
+        st.info(f"**2 (Ospite):** {prob2:.1%} (Q: {stima_quota(prob2)})")
 
-    # Salvataggio in background
-    salva_in_cronologia(f"{casa}-{fuori}", calcola_late_goal_index(casa, fuori), fiducia_val, affidabilita_val)
+    # --- UNDER/OVER & GOL (BLU) ---
+    st.divider()
+    st.subheader("🏁 Mercati Under/Over & Gol")
+    cuo, cgng = st.columns(2)
+    with cuo:
+        pu = p_u25/total_p
+        st.info(f"**U2.5:** {pu:.1%} (Q: {stima_quota(pu)}) | **O2.5:** {(1-pu):.1%} (Q: {stima_quota(1-pu)})")
+    with cgng:
+        pg = p_gol/total_p
+        st.info(f"**GOL:** {pg:.1%} (Q: {stima_quota(pg)}) | **NOGOL:** {(1-pg):.1%} (Q: {stima_quota(1-pg)})")
+
+    # --- SOMME GOL (VERDI) ---
+    st.divider()
+    st.subheader("⚽ Analisi Somme Gol")
+    c_sgf, c_sgc, c_sgo = st.columns(3)
+    with c_sgf:
+        st.write("**Top 3 Totali**")
+        for k, v in sorted(sgf.items(), key=lambda x:x[1], reverse=True)[:3]:
+            p = v/total_p
+            st.success(f"**{k if k<5 else '>4'} G:** {p:.1%} (Q: {stima_quota(p)})")
+    with c_sgc:
+        st.write("**Top 2 Casa**")
+        for k, v in sorted(sgc.items(), key=lambda x:x[1], reverse=True)[:2]:
+            p = v/total_p
+            st.success(f"**{k} G:** {p:.1%} (Q: {stima_quota(p)})")
+    with c_sgo:
+        st.write("**Top 2 Ospite**")
+        for k, v in sorted(sgo.items(), key=lambda x:x[1], reverse=True)[:2]:
+            p = v/total_p
+            st.success(f"**{k} G:** {p:.1%} (Q: {stima_quota(p)})")
+
+    # --- RISULTATI ESATTI (VERDI E BLU) ---
+    st.divider()
+    st.subheader("🎯 Risultati Esatti")
+    cr1, cr2 = st.columns([2, 1])
+    with cr1:
+        st.write("**Top 6 Finale**")
+        for r in sorted(re_finali, key=lambda x:x['p'], reverse=True)[:6]:
+            p = r['p']/total_p
+            st.success(f"**{r['s']}** ➡️ {p:.1%} (Q: {stima_quota(p)})")
+    with cr2:
+        st.write("**Top 3 1° Tempo**")
+        for r in sorted(re_1t, key=lambda x:x['p'], reverse=True)[:3]:
+            p = r['p']/total_p_1t
+            st.info(f"**{r['s']}** ➡️ {p:.1%} (Q: {stima_quota(p)})")
+
+# --- MAIN ---
+st.set_page_config(page_title="Delphi Pro", layout="wide")
+t1, t2 = st.tabs(["🎯 Analisi", "⚙️ Database"])
+with t1:
+    sq = st.text_input("Squadra:")
+    if st.button("Analizza Match", type="primary"): 
+        if sq: calcola_pronostico_streamlit(sq)
+with t2:
+    if st.button("🌐 Aggiorna Database"): aggiorna_con_api()
