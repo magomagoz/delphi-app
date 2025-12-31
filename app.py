@@ -346,9 +346,10 @@ with tab1:
         st.subheader(f"🏆 {m['League']} | 📅 Data: {d['Data']} ore {d['Ora']}")
 
 c_inf1, c_inf2 = st.columns(2)
+
 with c_inf1:
     st.info(f"👮 Arbitro: {d['arbitro']}  |  Severità: {d['molt_arbitro']}x")
-    if cointrolla_fatica(df, casa, data_match_str) or controlla_fatica(df, fuori, data_match_str):
+    if controlla_fatica(df, casa, data_match_str) or controlla_fatica(df, fuori, data_match_str):
     fatica_casa = controlla_fatica(df, casa, data_match_str)
     fatica_fuori = controlla_fatica(df, fuori, data_match_str)
 
