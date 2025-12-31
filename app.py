@@ -36,16 +36,16 @@ def salva_completo_in_locale(match, fiducia, affidabilita, p1x2, uo, gng, sgf, s
             "Data": adesso.strftime("%d/%m/%Y"),
             "Ora": adesso.strftime("%H:%M"),
             "Partita": match,
-            "Fiducia": f"{fiducia}%",
-            "Affidabilità": f"{affidabilita}%",
+            "Fiducia nel pronostico": f"{fiducia}%",
+            "Affidabilità dei dati": f"{affidabilita}%",
             "1X2": p1x2,
             "U/O 2.5": uo,
             "G/NG": gng,
             "SGF": sgf,
             "SGC": sgc,
             "SGO": sgo,
-            "Top 6 RE Finali": re_fin,
-            "Top 3 RE 1°T": re_pt,
+            "Top 6 Risultati Esatti Finali": re_fin,
+            "Top 3 Risultati Esatti 1°T": re_pt,
             "Match_ID": match_id if match_id and str(match_id) != "nan" else "N/A",
             "Stato": "In attesa" # Cambiare in "Vincente" per attivare il verde
         }
@@ -74,7 +74,7 @@ else:
     st.markdown("<h1 style='text-align: center;'>⚽ Delphi Predictor Pro</h1>", unsafe_allow_html=True)
 
 # --- 5. TABS ---
-tab1, tab2 = st.tabs(["🎯 Analisi Match", "📜 Cronologia e Statistiche"])
+tab1, tab2 = st.tabs(["🎯 Analisi del Match", "📜 Cronologia e Statistiche"])
 
 with tab1:
     search_query = st.text_input("Cerca Squadra (es: Lazio):", placeholder="Inserisci nome...")
@@ -115,9 +115,9 @@ with tab1:
         
         st.subheader("📊 Esito Finale 1X2")
         c1, cx, c2 = st.columns(3)
-        c1.info(f"**1**: {p1:.1%}\nQ: {stima_quota(p1)}")
-        cx.info(f"**X**: {pX:.1%}\nQ: {stima_quota(pX)}")
-        c2.info(f"**2**: {p2:.1%}\nQ: {stima_quota(p2)}")
+        c1.info(f"**1**: {p1:.1%}\nQuota: {stima_quota(p1)}")
+        cx.info(f"**X**: {pX:.1%}\nQuota: {stima_quota(pX)}")
+        c2.info(f"**2**: {p2:.1%}\nQuota: {stima_quota(p2)}")
 
         p_ov25, p_un25, p_gol, p_nogol = 0.54, 0.46, 0.61, 0.39
         txt_uo_cron = "OVER 2.5" if p_ov25 > p_un25 else "UNDER 2.5"
@@ -128,8 +128,8 @@ with tab1:
         with col_uo:
             st.write("**Under/Over 2.5**")
             u1, u2 = st.columns(2)
-            u1.warning(f"**U 2.5**: {p_un25:.1%}\nQ: {stima_quota(p_un25)}")
-            u2.warning(f"**O 2.5**: {p_ov25:.1%}\nQ: {stima_quota(p_ov25)}")
+            u1.warning(f"**Under 2.5**: {p_un25:.1%}\nQuota: {stima_quota(p_un25)}")
+            u2.warning(f"**Over 2.5**: {p_ov25:.1%}\nQuota: {stima_quota(p_ov25)}")
         with col_gn:
             st.write("**Gol/NoGol**")
             g1, g2 = st.columns(2)
@@ -143,13 +143,13 @@ with tab1:
         st.subheader("🎯 Somma Goal Per Squadra")
         col_sgf, col_sgc, col_sgo = st.columns(3)
         with col_sgf:
-            st.write("**SGF (Top 3)**")
+            st.write("**Somma Gol Finale (Top 3)**")
             st.code(f"3 G: 21% Q:{stima_quota(0.21)}\n2 G: 18% Q:{stima_quota(0.18)}\n4 G: 12% Q:{stima_quota(0.12)}")
         with col_sgc:
-            st.write(f"**SGC**")
+            st.write(f"**Somma Gol Casa**")
             st.code(f"2 G: 31% Q:{stima_quota(0.31)}\n1 G: 28% Q:{stima_quota(0.28)}")
         with col_sgo:
-            st.write(f"**SGO**")
+            st.write(f"**Somma Gol Ospite**")
             st.code(f"1 G: 35% Q:{stima_quota(0.35)}\n0 G: 22% Q:{stima_quota(0.22)}")
 
         txt_re_fin_cron = "1-1, 2-1, 1-0, 2-0, 1-2, 0-0" # Tutti e 6
@@ -158,10 +158,10 @@ with tab1:
         st.subheader("🔢 Risultati Esatti")
         col_re_f, col_re_p = st.columns(2)
         with col_re_f:
-            st.write("**Top 6 Finali**")
+            st.write("**Top 6 Risultati Finali**")
             st.code(f"1-1: 14% Q:7.14 | 2-1: 11% Q:9.09\n1-0: 10% Q:10.0 | 2-0: 09% Q:11.11\n1-2: 07% Q:14.29 | 0-0: 06% Q:16.67")
         with col_re_p:
-            st.write("**Top 3 1° Tempo**")
+            st.write("**Top 3 Risultati 1° Tempo**")
             st.code(f"0-0: 32% Q:3.12\n1-0: 18% Q:5.56\n0-1: 15% Q:6.67")
 
         st.markdown("---")
@@ -174,7 +174,7 @@ with tab1:
                 txt_re_fin_cron, txt_re_pt_cron, match_id=mid
             )
             if success:
-                st.success("✅ Salvato senza percentuali!")
+                st.success("✅ Salvato in Cronbologia!")
                 time.sleep(1)
                 st.rerun()
 
