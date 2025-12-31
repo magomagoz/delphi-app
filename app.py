@@ -10,6 +10,73 @@ from datetime import datetime, date
 API_TOKEN = 'c7a609a0580f4200add2751d787b3c68'
 FILE_DB = 'database_pro_2025.csv'
 
+# --- 1. CONFIGURAZIONE ---
+st.set_page_config(page_title="Delphi Predictor Pro", layout="wide") 
+
+API_TOKEN = 'c7a609a0580f4200add2751d787b3c68'
+FILE_DB_CALCIO = 'database_pro_2025.csv'
+FILE_DB_PRONOSTICI = 'database_pronostici.csv'
+
+# --- 2. FUNZIONI DATABASE ---
+def inizializza_db():
+    if not os.path.exists(FILE_DB_PRONOSTICI):
+        columns = [
+            "Data", "Ora", "Partita", "Fiducia", "Affidabilità", 
+            "1X2", "U/O 2.5", "G/NG", "SGF", "SGC", "SGO", 
+            "Top 6 RE Finali", "Top 3 RE 1°T", "Match_ID", "Stato"
+        ]
+        df = pd.DataFrame(columns=columns)
+        df.to_csv(FILE_DB_PRONOSTICI, index=False)
+
+inizializza_db()
+
+def salva_completo_in_locale(match, fiducia, affidabilita, p1x2, uo, gng, sgf, sgc, sgo, re_fin, re_pt, match_id=None):
+    try:
+        fuso_ita = pytz.timezone('Europe/Rome')
+        adesso = datetime.now(fuso_ita)
+        
+        nuova_riga = {
+            "Data": adesso.strftime("%d/%m/%Y"),
+            "Ora": adesso.strftime("%H:%M"),
+            "Partita": match,
+            "Fiducia nel pronostico": f"{fiducia}%",
+            "Affidabilità dei dati": f"{affidabilita}%",
+            "1X2": p1x2,
+            "U/O 2.5": uo,
+            "G/NG": gng,
+            "SGF": sgf,
+            "SGC": sgc,
+            "SGO": sgo,
+            "Top 6 Risultati Esatti Finali": re_fin,
+            "Top 3 Risultati Esatti 1°T": re_pt,
+            "Match_ID": match_id if match_id and str(match_id) != "nan" else "N/A",
+            "Stato": "In attesa" # Cambiare in "Vincente" per attivare il verde
+        }
+        
+        df = pd.read_csv(FILE_DB_PRONOSTICI)
+        df = pd.concat([df, pd.DataFrame([nuova_riga])], ignore_index=True)
+        df.to_csv(FILE_DB_PRONOSTICI, index=False)
+        return True
+    except Exception as e:
+        st.error(f"Errore salvataggio: {e}")
+        return False
+
+def stima_quota(prob_decimal):
+    if prob_decimal <= 0.01: return 99.00
+    return round(1 / prob_decimal, 2)
+
+# --- 3. LOGICA COLORAZIONE ---
+def colora_vincenti(val):
+    color = 'background-color: #d4edda; color: #155724' if val == "Vincente" else ''
+    return color
+
+# --- 4. BANNER ---
+if os.path.exists("banner.png"):
+    st.image("banner.png", use_container_width=True)
+else:
+    st.markdown("<h1 style='text-align: center;'>⚽ Delphi Predictor Pro</h1>", unsafe_allow_html=True)
+
+
 # --- LOGICA MATEMATICA ---
 def stima_quota(prob):
     if prob <= 0.001: return 99.00
