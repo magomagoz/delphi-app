@@ -248,23 +248,3 @@ def calcola_pronostico_streamlit(nome_input):
 
     # Salvataggio in background
     salva_in_cronologia(f"{casa}-{fuori}", calcola_late_goal_index(casa, fuori), fiducia_val, affidabilita_val)
-
-# ==========================================
-# 5. MAIN INTERFACE
-# ==========================================
-st.image("banner.png")
-
-tab1, tab2 = st.tabs(["🎯 Analisi Pro", "⚙️ Gestione"])
-
-with tab1:
-    search = st.text_input("Cerca squadra (es. Milan, Real, Arsenal):")
-    if st.button("CALCOLA PRONOSTICO", type="primary"):
-        if search: calcola_pronostico_streamlit(search)
-    
-    st.divider()
-    mostra_cronologia_bella()
-
-with tab2:
-    if st.button("🌐 AGGIORNA DATABASE"):
-        aggiorna_con_api()
-
