@@ -347,8 +347,8 @@ with tab1:
 
     
     # --- UI ---
-    st.header(f"🏟️ {casa} vs {fuori}")
-    st.subheader(f"🏆 {m['League']}  |  📅 {data_match_str}")
+st.header(f"🏟️ {casa} vs {fuori}")
+st.subheader(f"🏆 {m['League']}  |  📅 {data_match_str}")
 
 
 # --- ASSICURATI CHE QUESTE VARIABILI SIANO CALCOLARE PRIMA ---
