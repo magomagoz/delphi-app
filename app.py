@@ -243,7 +243,7 @@ with c_inf1:
 
 with c_inf2:
     # Qui usiamo una variabile (es. lg) che contiene il valore numerico calcolato
-    st.info(f"⏳ Late Goal Index - Parametro: {lg:.2f}")
+    st.info(f"⏳ Late Goal Index - Parametro: {calcola_late_goal_index:.2f}")
     
     # Alert visivo se l'indice supera la soglia
     if lg > 1.2: 
