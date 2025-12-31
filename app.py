@@ -352,7 +352,7 @@ with tab1:
 c_inf1, c_inf2 = st.columns(2)
 
 with c_inf1:
-    st.info(f"👮 Arbitro: {d['arbitro']}  |  Severità: {d['molt_arbitro']}x")
+    st.info(f"👮 Arbitro: {d['nome_arbitro']}  |  Severità: {d['molt_arbitro']}x")
     casa_nome = d['Partita'].split(" vs. ")[0]
     fuori_nome = d['Partita'].split(" vs. ")[1]
     if controlla_fatica(df_per_fatica, casa_nome, d['Data']) or \
