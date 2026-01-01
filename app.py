@@ -325,7 +325,9 @@ def esegui_analisi(nome_input):
         "Match_ID": match_id,
         "Risultato_Reale": "N/D", "PT_Reale": "N/D",
         # Dati extra per visualizzazione
-        "p1": p1, "px": px, "p2": p2, "lg": calcola_late_goal_index(casa, fuori),
+        "p1": p1, "px": px, "p2": p2, 
+        "pu": pu, "pg": pg,  # <--- AGGIUNGI QUESTE DUE RIGHE QUI
+        "lg": calcola_late_goal_index(casa, fuori),
         "arbitro": arbitro, "molt_arbitro": molt_arbitro
     }
 
