@@ -489,26 +489,26 @@ with tab1:
         c1, cx, c2 = st.columns(3)
         
         with c1:
-            st.success(f"**1 (Casa)**\n 📈 Probabilità: {d['p1']:.1%}\nQuota: {stima_quota(d['p1'])}")
+            st.success(f"** 1 **\n 📈 Prob.: {d['p1']:.1%}\n 💰 Quota: {stima_quota(d['p1'])}")
         with cx:
-            st.success(f"**X (Pareggio)**\n 📈 Probabilità: {d['px']:.1%}\nQuota: {stima_quota(d['px'])}")
+            st.success(f"** X **\n 📈 Prob.: {d['px']:.1%}\n 💰 Quota: {stima_quota(d['px'])}")
         with c2:
-            st.success(f"**2 (Ospite)**\n 📈 Probabilità: {d['p2']:.1%}\nQuota: {stima_quota(d['p2'])}")
+            st.success(f"** 2 **\n 📈 Prob.: {d['p2']:.1%}\n 💰 Quota: {stima_quota(d['p2'])}")
 
         # --- MERCATI ACCESSORI ---
         st.divider()
-        st.subheader("📊 Mercati Goal")
+        st.subheader("📊 Under/Over 2,5 & Gol/NoGol")
         col_uo, col_gng = st.columns(2)
         
         with col_uo:
             # Calcolo probabilità e quota per l'Over partendo dall'Under
             p_over = 1 - d['pu']
-            st.warning(f"**U/O 2.5**\n\n**UNDER:** 📈 {d['pu']:.1%} (💰 Q: {stima_quota(d['pu'])})\n\n**OVER:** {p_over:.1%} (Q: {stima_quota(p_over)})")
+            st.warning(f"\n**UNDER 2,5:** 📈 {d['pu']:.1%} (💰 Q: {stima_quota(d['pu'])})\n\n**OVER 2,5:** {p_over:.1%} (Q: {stima_quota(p_over)})")
             
         with col_gng:
             # Calcolo probabilità e quota per il No Gol partendo dal Gol
             p_nogol = 1 - d['pg']
-            st.warning(f"**GOL / NO GOL**\n\n**GOL:** {d['pg']:.1%} (Q: {stima_quota(d['pg'])})\n\n**NO GOL:** {p_nogol:.1%} (Q: {stima_quota(p_nogol)})")
+            st.warning(f"\n**GOL:** 📈 {d['pg']:.1%} (💰 Q: {stima_quota(d['pg'])})\n\n**NOGOL:** 📈 {p_nogol:.1%} (💰 Q: {stima_quota(p_nogol)})")
 
         # --- RISULTATI E SOMME GOL CON QUOTE ---
         st.divider()
