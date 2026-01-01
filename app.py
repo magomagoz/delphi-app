@@ -377,11 +377,11 @@ with tab1:
         c1, cx, c2 = st.columns(3)
         
         with c1:
-            st.info(f"**1 (Casa)**\n\nProbabilità: {d['p1']:.1%}\n\nQuota: {stima_quota(d['p1'])}")
+            st.success(f"**1 (Casa)**\n\nProbabilità: {d['p1']:.1%}\n\nQuota: {stima_quota(d['p1'])}")
         with cx:
-            st.info(f"**X (Pareggio)**\n\nProbabilità: {d['px']:.1%}\n\nQuota: {stima_quota(d['px'])}")
+            st.success(f"**X (Pareggio)**\n\nProbabilità: {d['px']:.1%}\n\nQuota: {stima_quota(d['px'])}")
         with c2:
-            st.info(f"**2 (Ospite)**\n\nProbabilità: {d['p2']:.1%}\n\nQuota: {stima_quota(d['p2'])}")
+            st.success(f"**2 (Ospite)**\n\nProbabilità: {d['p2']:.1%}\n\nQuota: {stima_quota(d['p2'])}")
 
         # --- MERCATI ACCESSORI ---
         st.divider()
@@ -391,12 +391,12 @@ with tab1:
         with col_uo:
             # Calcolo probabilità e quota per l'Over partendo dall'Under
             p_over = 1 - d['pu']
-            st.info(f"**U/O 2.5**\n\n**UNDER:** 📈 {d['pu']:.1%} (💰 Q: {stima_quota(d['pu'])})\n\n**OVER:** {p_over:.1%} (Q: {stima_quota(p_over)})")
+            st.warning(f"**U/O 2.5**\n\n**UNDER:** 📈 {d['pu']:.1%} (💰 Q: {stima_quota(d['pu'])})\n\n**OVER:** {p_over:.1%} (Q: {stima_quota(p_over)})")
             
         with col_gng:
             # Calcolo probabilità e quota per il No Gol partendo dal Gol
             p_nogol = 1 - d['pg']
-            st.info(f"**GOL / NO GOL**\n\n**GOL:** {d['pg']:.1%} (Q: {stima_quota(d['pg'])})\n\n**NO GOL:** {p_nogol:.1%} (Q: {stima_quota(p_nogol)})")
+            st.warning(f"**GOL / NO GOL**\n\n**GOL:** {d['pg']:.1%} (Q: {stima_quota(d['pg'])})\n\n**NO GOL:** {p_nogol:.1%} (Q: {stima_quota(p_nogol)})")
 
         # --- RISULTATI E SOMME GOL CON QUOTE ---
         st.divider()
@@ -405,11 +405,11 @@ with tab1:
         
         with cr1:
             # Mostra i Top 3 esiti del match con le relative quote
-            st.info(f"🎯 **Somma Gol Finale (Top 3)**\n\n{d['SGF']}")
+            st.error(f"🎯 **Somma Gol Finale (Top 3)**\n\n{d['SGF']}")
             
         with cr2:
             # Mostra i Top 2 esiti per squadra con le relative quote
-            st.info(f"🏠 **Casa:** {d['SGC']}\n\n🚀 **Ospite:** {d['SGO']}")
+            st.error(f"🏠 **Casa:** {d['SGC']}\n\n🚀 **Ospite:** {d['SGO']}")
 
         # --- RISULTATI ESATTI ---
         st.divider()
@@ -420,7 +420,7 @@ with tab1:
             st.success(f"🏁 **Top 6 RE Finali**\n\n{d['Top 6 RE Finali']}")
             
         with cfe2:
-            st.warning(f"⏱️ **Top 3 RE 1° Tempo**\n\n{d['Top 3 RE 1°T']}")
+            st.info(f"⏱️ **Top 3 RE 1° Tempo**\n\n{d['Top 3 RE 1°T']}")
 
         # --- TASTO SALVATAGGIO ---
         st.write("---")
