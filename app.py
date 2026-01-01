@@ -146,14 +146,13 @@ def aggiorna_database_calcio():
                     ref = m['referees'][0]['name'] if m.get('referees') else 'N.D.'
                     # IMPORTANTE: Salviamo l'ID                    
 
-                    
-                    # Modifica questa riga nell'aggiornamento DB
                     rows.append([
                         comp, m['utcDate'], home, away, m['status'], 
                         m['score']['fullTime']['home'], m['score']['fullTime']['away'], 
-                        m['score']['halfTime']['home'], m['score']['halfTime']['away'], # AGGIUNTI QUESTI DUE
+                        m['score']['halfTime']['home'], m['score']['halfTime']['away'], 
                         ref, m['id']
                     ])
+                    
             time.sleep(1) 
             progress_bar.progress((i + 1) / len(competitions))
 
