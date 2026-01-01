@@ -103,6 +103,7 @@ def aggiorna_database_calcio():
             r = requests.get(url, headers=headers)
             if r.status_code == 200:
                 matches = r.json().get('matches', [])
+                
                 for m in matches:
                     home = m['homeTeam']['shortName'] or m['homeTeam']['name']
                     away = m['awayTeam']['shortName'] or m['awayTeam']['name']
