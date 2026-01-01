@@ -431,3 +431,51 @@ with tab1:
             
             if salva_completo_in_locale(dati_per_csv):
                 st.success("✅ Pronostico Salvato in Cronologia!")
+
+with tab3:
+    st.header("📜 Cronologia Pronostici")
+    
+    # 1. Controllo se il file esiste e non è vuoto
+    if os.path.exists(FILE_DB_PRONOSTICI):
+        df_cronologia = pd.read_csv(FILE_DB_PRONOSTICI)
+        
+        if not df_cronologia.empty:
+            # 2. Pulsante di Aggiornamento Risultati (Richiama l'API)
+            if st.button("🔄 Aggiorna Risultati Reali"):
+                with st.spinner("Controllo risultati in corso..."):
+                    aggiorna_risultati_pronostici()
+                    st.rerun()
+
+            # 3. Visualizzazione Tabella con Colorazione Automatica
+            # Applichiamo la funzione highlight_winners che abbiamo definito prima
+            st.dataframe(
+                df_cronologia.style.apply(highlight_winners, axis=1),
+                use_container_width=True,
+                hide_index=True
+            )
+
+            st.divider()
+
+            # 4. TASTO CANCELLA CRONOLOGIA CON WARNING
+            st.subheader("⚠️ Zona Pericolosa")
+            
+            # Usiamo un sistema a due passaggi (conferma tramite checkbox o pulsante dedicato)
+            conferma = st.checkbox("Ho capito che questa azione è irreversibile")
+            
+            if st.button("🗑️ Cancella Tutta la Cronologia", type="secondary", disabled=not conferma):
+                # Sovrascriviamo il file con un DataFrame vuoto (solo intestazioni)
+                columns = [
+                    "Data", "Ora", "Partita", "Fiducia", "Affidabilità", 
+                    "1X2", "U/O 2.5", "G/NG", "SGF", "SGC", "SGO", 
+                    "Top 6 RE Finali", "Top 3 RE 1°T", "Match_ID", "Risultato_Reale", "PT_Reale"
+                ]
+                df_reset = pd.DataFrame(columns=columns)
+                df_reset.to_csv(FILE_DB_PRONOSTICI, index=False)
+                st.success("Cronologia eliminata correttamente!")
+                time.sleep(1)
+                st.rerun()
+                
+        else:
+            st.info("La cronologia è attualmente vuota.")
+    else:
+        st.warning("Database cronologia non trovato.")
