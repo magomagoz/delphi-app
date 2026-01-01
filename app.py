@@ -235,7 +235,11 @@ def esegui_analisi(nome_input):
     m = future_matches.iloc[0]
     casa, fuori = m['HomeTeam'], m['AwayTeam']
     match_id = m.get('ID', 'N/A')
-    
+
+    # Traduzione Lega
+    codice_lega = m['League']
+    nome_lega = LEAGUE_MAP.get(codice_lega, codice_lega)
+
     giocate = df[df['Status'] == 'FINISHED'].copy()
     arbitro = str(m.get('Referee', 'N.D.'))
     molt_arbitro = analizza_severita_arbitro(giocate, arbitro)
@@ -326,7 +330,7 @@ def esegui_analisi(nome_input):
     return {
         "Data": data_finale, 
         "Ora": ora_finale,
-        "League": m['League'],
+        "League": nome_lega, #m['League'],
         "Partita": f"{casa} vs {fuori}",
         "Fiducia": f"{int(max(p1,px,p2)*100)}%", 
         "Affidabilità": f"{85 + int(molt_arbitro*2)}%",
