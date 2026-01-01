@@ -438,7 +438,7 @@ with tab1:
 
         # --- UI TESTATA ---
         st.header(f"🏟️ **{d['Partita']}**")
-        st.subheader(f"🏆 {d.get('League', 'N.D.')  |  📅 Data: {d['Data']} - {d['Ora']}")
+        st.subheader(f"🏆 {d.get('League', 'N.D.') | 📅 Data: {d['Data']} - {d['Ora']}")
 
         # --- 2. ORA PUOI USARE casa_nome E fuori_nome PER LA FORMA ---
         c_trend1, c_trend2 = st.columns(2)
