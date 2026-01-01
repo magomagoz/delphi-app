@@ -256,6 +256,42 @@ def analizza_distribuzione_tempi(df_giocate, squadra):
     # Logica semplificata basata su statistiche generali di lega
     return 42.5, 57.5 
 
+def analizza_h2h(df_giocate, casa, fuori):
+    # Filtriamo tutti i precedenti tra le due squadre (sia a campi invertiti che non)
+    storico = df_giocate[
+        ((df_giocate['HomeTeam'] == casa) & (df_giocate['AwayTeam'] == fuori)) |
+        ((df_giocate['HomeTeam'] == fuori) & (df_giocate['AwayTeam'] == casa))
+    ].tail(5) # Consideriamo gli ultimi 5 scontri diretti
+    
+    if storico.empty:
+        return 1.0, 1.0, "Nessun precedente recente"
+    
+    punti_casa = 0
+    gol_casa = 0
+    gol_fuori = 0
+    
+    for _, r in storico.iterrows():
+        if r['HomeTeam'] == casa:
+            gol_casa += r['FTHG']
+            gol_fuori += r['FTAG']
+            if r['FTHG'] > r['FTAG']: punti_casa += 3
+            elif r['FTHG'] == r['FTAG']: punti_casa += 1
+        else:
+            gol_casa += r['FTAG']
+            gol_fuori += r['FTHG']
+            if r['FTAG'] > r['FTHG']: punti_casa += 3
+            elif r['FTAG'] == r['FTHG']: punti_casa += 1
+            
+    # Calcolo moltiplicatori basati sul dominio storico
+    # Se la squadra in casa ha vinto spesso, riceve un bonus (max 1.10)
+    # Se ha sempre perso, riceve un malus (min 0.90)
+    win_rate = punti_casa / (len(storico) * 3)
+    bonus_h2h_casa = round(0.9 + (win_rate * 0.2), 2)
+    bonus_h2h_fuori = round(2.0 - bonus_h2h_casa, 2)
+    
+    testo_h2h = f"Ultimi {len(storico)} match: {punti_casa} pt fatti dal team casa"
+    return bonus_h2h_casa, bonus_h2h_fuori, testo_h2h
+
 def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0): # Aggiunti parametri
     if not os.path.exists(FILE_DB_CALCIO):
         st.error("Database Calcio mancante. Aggiorna il DB"); return None
@@ -324,9 +360,12 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0): # Aggiunti parametri
     trend_h, molt_forma_h = calcola_trend_forma(giocate, casa)
     trend_a, molt_forma_a = calcola_trend_forma(giocate, fuori)
 
-    # Applichiamo la forma: se una squadra è in "hype", segna di più e subisce meno
-    exp_h = (att_h * dif_a / avg_g) * molt_forma_h * (2 - molt_arbitro) * pen_h
-    exp_a = (att_a * dif_h / avg_g) * molt_forma_a * (2 - molt_arbitro) * pen_a
+    # Calcolo H2H
+    m_h2h_h, m_h2h_a, testo_h2h = analizza_h2h(giocate, casa, fuori)
+    
+    # Applichiamo tutto: Forma, Arbitro, Assenze e ora H2H
+    exp_h = (att_h * dif_a / avg_g) * molt_forma_h * (2 - molt_arbitro) * pen_h * m_h2h_h
+    exp_a = (att_a * dif_h / avg_g) * molt_forma_a * (2 - molt_arbitro) * pen_a * m_h2h_a
 
     p1, px, p2, pu, pg, tot = 0,0,0,0,0,0
     sgf, sgc, sgo = {i:0 for i in range(12)}, {i:0 for i in range(6)}, {i:0 for i in range(6)}
@@ -543,6 +582,14 @@ with tab1:
             st.info(f"⏳ **Gol nel finale: {d['lg']:.2f}**")
             if d['lg'] > 1.2: 
                 st.error("🔥🔥🔥 **POSSIBILE GOL NEL FINALE (80+ MINUTO)**")
+
+        # --- SEZIONE H2H ---
+        st.divider()
+        st.subheader("⚔️ Scontri Diretti (H2H)")
+        st.write(f"📊 {d['h2h_info']}")
+        if "fatti dal team casa" in d['h2h_info']:
+            # Logica per mostrare un messaggio intuitivo
+            st.caption("Il modello ha corretto le probabilità Poisson in base alla dominanza storica tra i due club.")
 
         # --- SEZIONE DISTRIBUZIONE TEMPI ---
         st.divider()
