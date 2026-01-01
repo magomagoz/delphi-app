@@ -294,9 +294,27 @@ def esegui_analisi(nome_input):
     # Stringhe per DB
     top_re = ", ".join([x['s'] for x in sorted(re_fin, key=lambda x:x['p'], reverse=True)[:6]])
     top_re1t = ", ".join([x['s'] for x in sorted(re_1t, key=lambda x:x['p'], reverse=True)[:3]])
-    top_sgf = ", ".join(map(str, [k for k,v in sorted(sgf.items(), key=lambda x:x[1], reverse=True)[:3]]))
-    top_sgc = ", ".join(map(str, [k for k,v in sorted(sgc.items(), key=lambda x:x[1], reverse=True)[:2]]))
-    top_sgo = ", ".join(map(str, [k for k,v in sorted(sgo.items(), key=lambda x:x[1], reverse=True)[:2]]))
+    # Funzione interna per mappare i valori superiori ai limiti
+    def formatta_somma(lista, limite):
+        risultato = []
+        for x in lista:
+            if int(x) >= limite:
+                val = f">{limite-1}"
+                if val not in risultato: # Evita duplicati estetici
+                    risultato.append(val)
+            else:
+                risultato.append(str(x))
+        return ", ".join(risultato)
+
+    # Calcolo liste grezze
+    sgf_list = [k for k,v in sorted(sgf.items(), key=lambda x:x[1], reverse=True)[:3]]
+    sgc_list = [k for k,v in sorted(sgc.items(), key=lambda x:x[1], reverse=True)[:2]]
+    sgo_list = [k for k,v in sorted(sgo.items(), key=lambda x:x[1], reverse=True)[:2]]
+
+    # Generazione stringhe formattate
+    top_sgf = formatta_somma(sgf_list, 5) # Converte 5 in >4
+    top_sgc = formatta_somma(sgc_list, 3) # Converte 3 in >2
+    top_sgo = formatta_somma(sgo_list, 3) # Converte 3 in >2
     
     fuso_ita = pytz.timezone('Europe/Rome')
     adesso = datetime.now(fuso_ita)
