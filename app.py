@@ -310,10 +310,10 @@ def esegui_analisi(nome_input):
     # Prepariamo le stringhe per il dizionario
     data_finale = dt_event_ita.strftime("%d/%m/%Y")
     ora_finale = dt_event_ita.strftime("%H:%M")
-
+        
     return {
-        "Data": dt_event_ita.strftime("%d/%m/%Y"), 
-        "Ora": dt_event_ita.strftime("%H:%M"),
+        "Data": data_finale, 
+        "Ora": ora_finale,
         "League": m['League'],
         "Partita": f"{casa} vs {fuori}",
         "Fiducia": f"{int(max(p1,px,p2)*100)}%", 
