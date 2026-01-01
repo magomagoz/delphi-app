@@ -267,35 +267,27 @@ def esegui_analisi(nome_input):
             if i+j < 2.5: pu+=prob
             if i>0 and j>0: pg+=prob
 
-    # Logica per limitare i valori delle Somme Gol
-    def formatta_somma(lista, limite):
-        risultato = []
-        for x in lista:
-            if int(x) >= limite:
-                # Se il valore raggiunge o supera il limite, aggiungiamo ">limite-1"
-                val = f">{limite-1}"
-                if val not in risultato: # Evitiamo duplicati come ">4, >4"
-                    risultato.append(val)
-            else:
-                risultato.append(str(x))
-        return ", ".join(risultato)
-
-    # Applichiamo la formattazione alle somme calcolate
-    sgf_list = [k for k,v in sorted(sgf.items(), key=lambda x:x[1], reverse=True)[:3]]
-    sgc_list = [k for k,v in sorted(sgc.items(), key=lambda x:x[1], reverse=True)[:2]]
-    sgo_list = [k for k,v in sorted(sgo.items(), key=lambda x:x[1], reverse=True)[:2]]
-
-    top_sgf = formatta_somma(sgf_list, 5) # Se >= 5 diventa >4
-    top_sgc = formatta_somma(sgc_list, 3) # Se >= 3 diventa >2
-    top_sgo = formatta_somma(sgo_list, 3) # Se >= 3 diventa >2
-
+    # Funzione per calcolare quote e formattare con i limiti richiesti
+    def formatta_con_quote(dizionario_prob, limite, top_n):
+        # Prendiamo i top N esiti più probabili
+        top_esiti = sorted(dizionario_prob.items(), key=lambda x: x[1], reverse=True)[:top_n]
+        formattati = []
+        
+        for valore, prob in top_esiti:
+            # Calcolo quota
+            quota = stima_quota(prob)
+            # Gestione etichetta limite
+            label = f">{limite-1}" if int(valore) >= limite else str(valore)
             
-            
-            #Pronostico Somma Gol
-            #sgf[min(i+j, 5)] += prob
-            #sgc[min(i, 5)] += prob
-            #sgo[min(j, 5)] += prob
-            #re_fin.append({'s': f"{i}-{j}", 'p': prob})
+            # Formattazione: "Valore (Q: 1.50)"
+            formattati.append(f"{label} (Q: {quota})")
+        
+        return ", ".join(formattati)
+
+    # Generazione stringhe con quote e limiti
+    top_sgf = formatta_con_quote(sgf, 5, 3) # Top 3 SGF con limite >4
+    top_sgc = formatta_con_quote(sgc, 3, 2) # Top 2 SGC con limite >2
+    top_sgo = formatta_con_quote(sgo, 3, 2) # Top 2 SGO con limite >2
             
     # Poisson 1T
     eh1, ea1 = exp_h*0.42, exp_a*0.42
