@@ -267,27 +267,24 @@ def esegui_analisi(nome_input):
             if i+j < 2.5: pu+=prob
             if i>0 and j>0: pg+=prob
 
-    # Funzione per calcolare quote e formattare con i limiti richiesti
+    # --- NUOVA LOGICA CON QUOTE E LIMITI ---
     def formatta_con_quote(dizionario_prob, limite, top_n):
-        # Prendiamo i top N esiti più probabili
+        # Ordina per probabilità decrescente e prendi i primi N
         top_esiti = sorted(dizionario_prob.items(), key=lambda x: x[1], reverse=True)[:top_n]
         formattati = []
         
         for valore, prob in top_esiti:
-            # Calcolo quota
             quota = stima_quota(prob)
-            # Gestione etichetta limite
+            # Se il valore è >= limite (es. 5 per il totale o 3 per il team), usa ">limite-1"
             label = f">{limite-1}" if int(valore) >= limite else str(valore)
-            
-            # Formattazione: "Valore (Q: 1.50)"
-            formattati.append(f"{label} (Q: {quota})")
+            formattati.append(f"{label} (Q: {quota:.2f})")
         
         return ", ".join(formattati)
 
-    # Generazione stringhe con quote e limiti
-    top_sgf = formatta_con_quote(sgf, 5, 3) # Top 3 SGF con limite >4
-    top_sgc = formatta_con_quote(sgc, 3, 2) # Top 2 SGC con limite >2
-    top_sgo = formatta_con_quote(sgo, 3, 2) # Top 2 SGO con limite >2
+    # Generiamo le stringhe definitive
+    top_sgf_final = formatta_con_quote(sgf, 5, 3) # Esempio: "2 (Q: 3.50), >4 (Q: 5.20)"
+    top_sgc_final = formatta_con_quote(sgc, 3, 2)
+    top_sgo_final = formatta_con_quote(sgo, 3, 2)
             
     # Poisson 1T
     eh1, ea1 = exp_h*0.42, exp_a*0.42
@@ -354,7 +351,11 @@ def esegui_analisi(nome_input):
         "Fiducia": f"{int(max(p1,px,p2)*100)}%", 
         "Affidabilità": f"{85 + int(molt_arbitro*2)}%",
         "1X2": res_1x2, "U/O 2.5": res_uo, "G/NG": res_gng,
-        "SGF": top_sgf, "SGC": top_sgc, "SGO": top_sgo,
+        "U/O 2.5": res_uo, 
+        "G/NG": res_gng,
+        "SGF": top_sgf_final,  # <--- USA QUESTE VARIABILI AGGIORNATE
+        "SGC": top_sgc_final,  # <--- USA QUESTE VARIABILI AGGIORNATE
+        "SGO": top_sgo_final,  # <--- USA QUESTE VARIABILI AGGIORNATE
         "Top 6 RE Finali": top_re, "Top 3 RE 1°T": top_re1t,
         "Match_ID": match_id,
         "Risultato_Reale": "N/D", "PT_Reale": "N/D",
@@ -364,6 +365,34 @@ def esegui_analisi(nome_input):
         "lg": calcola_late_goal_index(casa, fuori),
         "arbitro": arbitro, "molt_arbitro": molt_arbitro
     }
+
+    return {
+        "Data": dt_event_ita.strftime("%d/%m/%Y"), 
+        "Ora": dt_event_ita.strftime("%H:%M"),
+        "League": m['League'],
+        "Partita": f"{casa} vs {fuori}",
+        "Fiducia": f"{int(max(p1,px,p2)*100)}%", 
+        "Affidabilità": f"{85 + int(molt_arbitro*2)}%",
+        "1X2": res_1x2, 
+        "U/O 2.5": res_uo, 
+        "G/NG": res_gng,
+        "SGF": top_sgf_final,  # <--- USA QUESTE VARIABILI AGGIORNATE
+        "SGC": top_sgc_final,  # <--- USA QUESTE VARIABILI AGGIORNATE
+        "SGO": top_sgo_final,  # <--- USA QUESTE VARIABILI AGGIORNATE
+        "Top 6 RE Finali": top_re, 
+        "Top 3 RE 1°T": top_re1t,
+        "Match_ID": match_id,
+        "Risultato_Reale": "N/D", 
+        "PT_Reale": "N/D",
+        "p1": p1, "px": px, "p2": p2, "pu": pu, "pg": pg,
+        "lg": calcola_late_goal_index(casa, fuori),
+        "arbitro": arbitro, "molt_arbitro": molt_arbitro
+    }
+
+
+
+
+
 
 # --- 6. LOGICA DI COLORAZIONE TABELLA ---
 def highlight_winners(row):
