@@ -256,7 +256,7 @@ def analizza_distribuzione_tempi(df_giocate, squadra):
     # Logica semplificata basata su statistiche generali di lega
     return 42.5, 57.5 
 
-def esegui_analisi(nome_input):
+def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0): # Aggiunti parametri
     if not os.path.exists(FILE_DB_CALCIO):
         st.error("Database Calcio mancante. Aggiorna il DB"); return None
 
@@ -325,8 +325,8 @@ def esegui_analisi(nome_input):
     trend_a, molt_forma_a = calcola_trend_forma(giocate, fuori)
 
     # Applichiamo la forma: se una squadra è in "hype", segna di più e subisce meno
-    exp_h = (att_h * dif_a / avg_g) * molt_forma_h * (2 - molt_arbitro)
-    exp_a = (att_a * dif_h / avg_g) * molt_forma_a * (2 - molt_arbitro)
+    exp_h = (att_h * dif_a / avg_g) * molt_forma_h * (2 - molt_arbitro) * pen_h
+    exp_a = (att_a * dif_h / avg_g) * molt_forma_a * (2 - molt_arbitro) * pen_a
 
     p1, px, p2, pu, pg, tot = 0,0,0,0,0,0
     sgf, sgc, sgo = {i:0 for i in range(12)}, {i:0 for i in range(6)}, {i:0 for i in range(6)}
@@ -463,11 +463,29 @@ def highlight_winners(row):
 tab1, tab2, tab3 = st.tabs(["🎯 **Analisi**", "⚙️ **Database**", "📜 **Cronologia**"])
 
 with tab1:
-    sq = st.text_input("Inserisci Squadra:")
+    sq = st.text_input("🔍 Inserisci Squadra:")
     
-    if st.button("Pronostici Match", type="primary"):
+    if sq:
+        # Tasto per ricerca rapida su Google News
+        search_query = f"{sq} missing players injuries lineups news"
+        google_news_url = f"https://www.google.com/search?q={search_query.replace(' ', '+')}&tbm=nws"
+        
+        st.markdown(f"👉 [**Controlla Assenze per {sq} su Google News**]({google_news_url})")
+        
+        st.info("Regola la potenza offensiva se mancano giocatori chiave (es. 0.85 = -15% forza attacco)")
+        
+        col_p1, col_p2 = st.columns(2)
+        with col_p1:
+            pen_h = st.select_slider(f"Potenza Attacco Casa", 
+                                     options=[0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0], value=1.0)
+        with col_p2:
+            pen_a = st.select_slider(f"Potenza Attacco Fuori", 
+                                     options=[0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0], value=1.0)
+    
+    if st.button("Genera Pronostico Delphi", type="primary"):
         if sq:
-            risultati = esegui_analisi(sq)
+            # Passiamo i valori degli slider alla funzione
+            risultati = esegui_analisi(sq, pen_h, pen_a)
             if risultati:
                 st.session_state['pronostico_corrente'] = risultati
             else:
