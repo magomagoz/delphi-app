@@ -438,8 +438,8 @@ with tab1:
 
         # --- UI TESTATA ---
         st.header(f"🏟️ **{d['Partita']}**")
-        st.subheader(f"🏆 {d.get('League', 'N.D.')}")
-        st.subheader(f"📅 {d['Data']} - {d['Ora']}")
+        st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}")
+        st.subheader(f"📅 Data: {d['Data']} ore {d['Ora']}")
 
         # --- 2. ORA PUOI USARE casa_nome E fuori_nome PER LA FORMA ---
         c_trend1, c_trend2 = st.columns(2)
@@ -490,11 +490,11 @@ with tab1:
         c1, cx, c2 = st.columns(3)
         
         with c1:
-            st.success(f" 1 \n 📈 Prob: {d['p1']:.1%}\n 💰 Quota: {stima_quota(d['p1'])}")
+            st.success(f" 1: \n 📈 Prob: {d['p1']:.1%}\n 💰 Quota: {stima_quota(d['p1'])}")
         with cx:
-            st.success(f" X \n 📈 Prob: {d['px']:.1%}\n 💰 Quota: {stima_quota(d['px'])}")
+            st.success(f" X: \n 📈 Prob: {d['px']:.1%}\n 💰 Quota: {stima_quota(d['px'])}")
         with c2:
-            st.success(f" 2 \n 📈 Prob: {d['p2']:.1%}\n 💰 Quota: {stima_quota(d['p2'])}")
+            st.success(f" 2: \n 📈 Prob: {d['p2']:.1%}\n 💰 Quota: {stima_quota(d['p2'])}")
 
         # --- MERCATI ACCESSORI ---
         st.divider()
