@@ -203,7 +203,6 @@ def calcola_late_goal_index(casa, fuori):
     return round(val * 0.10 + 0.5, 2)
 
 def esegui_analisi(nome_input):
-    # Controlla DB
     if not os.path.exists(FILE_DB_CALCIO):
         st.error("Database Calcio mancante. Aggiorna il DB"); return None
     
@@ -211,7 +210,6 @@ def esegui_analisi(nome_input):
     df['Date'] = pd.to_datetime(df['Date'])
     today = pd.to_datetime(date.today())
     
-    # Filtra Match
     future_matches = df[
         (df['Status'].isin(['TIMED', 'SCHEDULED', 'LIVE', 'IN_PLAY', 'POSTPONED'])) & 
         (df['HomeTeam'].str.contains(nome_input, case=False, na=False) | 
@@ -223,13 +221,9 @@ def esegui_analisi(nome_input):
         st.warning(f"Nessun match futuro trovato per '{nome_input}'."); return None
 
     m = future_matches.iloc[0]
-    
-    # Dati match
     casa, fuori = m['HomeTeam'], m['AwayTeam']
-    match_id = m.get('ID', 'N/A') # Usa .get per evitare crash
-    data_match = m['Date'].strftime('%d/%m/%Y')
+    match_id = m.get('ID', 'N/A')
     
-    # Stats Arbitro e Team
     giocate = df[df['Status'] == 'FINISHED'].copy()
     arbitro = str(m.get('Referee', 'N.D.'))
     molt_arbitro = analizza_severita_arbitro(giocate, arbitro)
@@ -244,30 +238,27 @@ def esegui_analisi(nome_input):
 
     att_h, dif_h = get_stats(casa)
     att_a, dif_a = get_stats(fuori)
-    
     exp_h = (att_h * dif_a / avg_g) * (2 - molt_arbitro)
     exp_a = (att_a * dif_h / avg_g) * (2 - molt_arbitro)
     
-    # Poisson finale
     p1, px, p2, pu, pg, tot = 0,0,0,0,0,0
-    sgf, sgc, sgo = {i:0 for i in range(6)}, {i:0 for i in range(6)}, {i:0 for i in range(6)}
-    re_fin, re_1t = [], []
+    sgf, sgc, sgo = {i:0 for i in range(12)}, {i:0 for i in range(6)}, {i:0 for i in range(6)}
+    re_fin = []
     
     for i in range(6):
         for j in range(6):
             prob = poisson_probability(i, exp_h) * poisson_probability(j, exp_a)
             tot += prob
-            
-            #Pronostico 1X2
             if i>j: p1+=prob
             elif i==j: px+=prob
             else: p2+=prob
-
-            #Pronostico U/O 2,5 e G/NG
             if i+j < 2.5: pu+=prob
             if i>0 and j>0: pg+=prob
+            sgf[i+j] += prob
+            sgc[i] += prob
+            sgo[j] += prob
+            re_fin.append({'s': f"{i}-{j}", 'p': prob})
             
-    # Poisson 1T
     eh1, ea1 = exp_h*0.42, exp_a*0.42
     re_1t, total_p_1t = [], 0
     for i in range(4):
@@ -276,70 +267,36 @@ def esegui_analisi(nome_input):
             total_p_1t += pb
             re_1t.append({'s': f"{i}-{j}", 'p': pb})
    
-    # Preparazione Dati per Session State
     p1, px, p2 = p1/tot, px/tot, p2/tot
     pu, pg = pu/tot, pg/tot
-    
-    # Logica scelta pronostico
     res_1x2 = "1" if p1 > px and p1 > p2 else ("X" if px > p1 and px > p2 else "2")
     res_uo = "OVER 2.5" if (1-pu) > 0.5 else "UNDER 2.5"
     res_gng = "GOL" if pg > 0.5 else "NO GOL"
-    
-    # Funzione per formattare i Risultati Esatti con le quote
-    def formatta_re_con_quote(lista_re, top_n):
-        # Ordina la lista di dizionari per probabilità 'p'
-        top_esiti = sorted(lista_re, key=lambda x: x['p'], reverse=True)[:top_n]
-        formattati = []
-        for voce in top_esiti:
-            quota = stima_quota(voce['p'])
-            formattati.append(f"{voce['s']} (Q: {quota:.2f})")
-        return ", ".join(formattati)
 
-    # Generiamo le stringhe per i risultati esatti (FINAL e 1° TEMPO)
+    # --- FUNZIONI DI FORMATTAZIONE CON QUOTE ---
+    def formatta_somma_con_quote(diz, limite, top_n):
+        items = sorted(diz.items(), key=lambda x: x[1], reverse=True)[:top_n]
+        ris = []
+        for k, v in items:
+            label = f">{limite-1}" if k >= limite else str(k)
+            ris.append(f"{label} (Q: {stima_quota(v):.2f})")
+        return ", ".join(ris)
+
+    def formatta_re_con_quote(lista, top_n):
+        items = sorted(lista, key=lambda x: x['p'], reverse=True)[:top_n]
+        return ", ".join([f"{v['s']} (Q: {stima_quota(v['p']):.2f})" for v in items])
+
+    # Generazione stringhe corrette
+    top_sgf_final = formatta_somma_con_quote(sgf, 5, 3)
+    top_sgc_final = formatta_somma_con_quote(sgc, 3, 2)
+    top_sgo_final = formatta_somma_con_quote(sgo, 3, 2)
     top_re_final = formatta_re_con_quote(re_fin, 6)
     top_re1t_final = formatta_re_con_quote(re_1t, 3)
-
-    # Funzione interna per mappare i valori superiori ai limiti
-    def formatta_somma(lista, limite):
-        risultato = []
-        for x in lista:
-            if int(x) >= limite:
-                val = f">{limite-1}"
-                if val not in risultato: # Evita duplicati estetici
-                    risultato.append(val)
-            else:
-                risultato.append(str(x))
-        return ", ".join(risultato)
-
-    # Calcolo liste grezze
-    sgf_list = [k for k,v in sorted(sgf.items(), key=lambda x:x[1], reverse=True)[:3]]
-    sgc_list = [k for k,v in sorted(sgc.items(), key=lambda x:x[1], reverse=True)[:2]]
-    sgo_list = [k for k,v in sorted(sgo.items(), key=lambda x:x[1], reverse=True)[:2]]
-
-    # Generazione stringhe formattate
-    top_sgf = formatta_somma(sgf_list, 5) # Converte 5 in >4
-    top_sgc = formatta_somma(sgc_list, 3) # Converte 3 in >2
-    top_sgo = formatta_somma(sgo_list, 3) # Converte 3 in >2
     
-    fuso_ita = pytz.timezone('Europe/Rome')
-    adesso = datetime.now(fuso_ita)
-    
-    # --- CALCOLO DATA E ORA REALE DELL'EVENTO ---
-    # Convertiamo la stringa del DB in oggetto data
     dt_event = pd.to_datetime(m['Date'])
-    
-    # Se la data non ha fuso orario (è UTC grezzo), glielo assegniamo e convertiamo a Roma
-    if dt_event.tzinfo is None:
-        dt_event = dt_event.tz_localize('UTC')
-    
+    if dt_event.tzinfo is None: dt_event = dt_event.tz_localize('UTC')
     dt_event_ita = dt_event.astimezone(pytz.timezone('Europe/Rome'))
 
-
-
-
-
-
-    
     return {
         "Data": dt_event_ita.strftime("%d/%m/%Y"), 
         "Ora": dt_event_ita.strftime("%H:%M"),
@@ -347,20 +304,11 @@ def esegui_analisi(nome_input):
         "Partita": f"{casa} vs {fuori}",
         "Fiducia": f"{int(max(p1,px,p2)*100)}%", 
         "Affidabilità": f"{85 + int(molt_arbitro*2)}%",
-        "1X2": res_1x2,
-        "U/O 2.5": res_uo, 
-        "G/NG": res_gng,
-        "SGF": top_sgf_final,  # <--- USA QUESTE VARIABILI AGGIORNATE
-        "SGC": top_sgc_final,  # <--- USA QUESTE VARIABILI AGGIORNATE
-        "SGO": top_sgo_final,  # <--- USA QUESTE VARIABILI AGGIORNATE
-        # PUNTO CRUCIALI: Colleghiamo le stringhe con le quote
-        "Top 6 RE Finali": stringa_re_finale, 
-        "Top 3 RE 1°T": stringa_re_pt,
-        "Match_ID": match_id,
-        "Risultato_Reale": "N/D", "PT_Reale": "N/D",
-        # Dati extra per visualizzazione
-        "p1": p1, "px": px, "p2": p2, 
-        "pu": pu, "pg": pg,  # <--- AGGIUNGI QUESTE DUE RIGHE QUI
+        "1X2": res_1x2, "U/O 2.5": res_uo, "G/NG": res_gng,
+        "SGF": top_sgf_final, "SGC": top_sgc_final, "SGO": top_sgo_final,
+        "Top 6 RE Finali": top_re_final, "Top 3 RE 1°T": top_re1t_final,
+        "Match_ID": match_id, "Risultato_Reale": "N/D", "PT_Reale": "N/D",
+        "p1": p1, "px": px, "p2": p2, "pu": pu, "pg": pg,
         "lg": calcola_late_goal_index(casa, fuori),
         "arbitro": arbitro, "molt_arbitro": molt_arbitro
     }
