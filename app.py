@@ -589,10 +589,8 @@ with tab1:
         # --- SEZIONE H2H ---
         st.divider()
         st.subheader("⚔️ Scontri Diretti (H2H)")
-        st.write(f"📊 {d['h2h_info']}")
-        if "fatti dal team casa" in d['h2h_info']:
-            # Logica per mostrare un messaggio intuitivo
-            st.caption("Il modello ha corretto le probabilità Poisson in base alla dominanza storica tra i due club.")
+        if 'h2h_info' in d:
+            st.write(f"📊 {d['h2h_info']}")
 
         # --- SEZIONE DISTRIBUZIONE TEMPI ---
         st.divider()
