@@ -355,20 +355,19 @@ with tab1:
         # TUTTO IL CODICE SUCCESSIVO (c_inf1, c_inf2, st.divider, ecc.) 
         # DEVE ESSERE ALLINEATO QUI (indentato di 8 spazi o 2 tab)
 
-c_inf1, c_inf2 = st.columns(2)
+        c_inf1, c_inf2 = st.columns(2)
 
-with c_inf1:
-    st.info(f"👮 Arbitro: {d.get('arbitro', 'N.D.')}  |  Severità: {d.get('molt_arbitro', 1.0)}x")
-    casa_nome = d['Partita'].split(" vs ")[0]
-    fuori_nome = d['Partita'].split(" vs ")[1]
-    if controlla_fatica(df_per_fatica, casa_nome, d['Data']) or \
-    controlla_fatica(df_per_fatica, fuori_nome, d['Data']):
-        st.warning("⚠️ Possibile stanchezza: una delle squadre ha giocato meno di 4 giorni fa.")
+        with c_inf1:
+            st.info(f"👮 Arbitro: {d.get('arbitro', 'N.D.')}  |  Severità: {d.get('molt_arbitro', 1.0)}x")
+            casa_nome = d['Partita'].split(" vs ")[0]
+            fuori_nome = d['Partita'].split(" vs ")[1]
+            if controlla_fatica(df_per_fatica, casa_nome, d['Data']) or controlla_fatica(df_per_fatica, fuori_nome, d['Data']):
+                st.warning("⚠️ Possibile stanchezza: una delle squadre ha giocato meno di 4 giorni fa.")
 
-with c_inf2:
-    st.info(f"⏳ Late Goal Index: {d['lg']:.2f}")
-    if d['lg'] > 1.2: 
-        st.error("🔥 ALTA PROBABILITÀ DI GOL NEL FNALE (80+ MINUTO)")
+        with c_inf2:
+            st.info(f"⏳ Late Goal Index: {d['lg']:.2f}")
+            if d['lg'] > 1.2: 
+                st.error("🔥 ALTA PROBABILITÀ DI GOL NEL FNALE (80+ MINUTO)")
 
         # --- ESITO FINALE 1X2 ---
         st.divider()
