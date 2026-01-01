@@ -435,57 +435,67 @@ with tab1:
 with tab3:
     st.header("📜 Cronologia Pronostici")
     
-    # 1. Controllo se il file esiste e non è vuoto
     if os.path.exists(FILE_DB_PRONOSTICI):
+        # 1. CARICAMENTO E PULIZIA AUTOMATICA DUPLICATI
         df_cronologia = pd.read_csv(FILE_DB_PRONOSTICI)
         
         if not df_cronologia.empty:
-            # 2. Pulsante di Aggiornamento Risultati (Richiama l'API)
+            # Rimuove righe identiche (stessa Partita e stessa Data)
+            initial_count = len(df_cronologia)
+            df_cronologia = df_cronologia.drop_duplicates(subset=['Data', 'Partita'], keep='last')
+            
+            # Se sono stati rimossi duplicati, salva subito il file pulito
+            if len(df_cronologia) < initial_count:
+                df_cronologia.to_csv(FILE_DB_PRONOSTICI, index=False)
+                st.toast(f"Pulizia completata: rimossi {initial_count - len(df_cronologia)} duplicati.")
+
+            # 2. FILTRO PER GIORNATA SPECIFICA
+            # Estraiamo le date uniche presenti nel DB per il menu a tendina
+            date_disponibili = sorted(df_cronologia['Data'].unique(), reverse=True)
+            date_disponibili.insert(0, "Tutte") # Opzione per vedere tutto
+            
+            data_scelta = st.selectbox("📅 Filtra per data:", date_disponibili)
+            
+            # Applichiamo il filtro se l'utente sceglie una data specifica
+            if data_scelta != "Tutte":
+                df_da_mostrare = df_cronologia[df_cronologia['Data'] == data_scelta]
+            else:
+                df_da_mostrare = df_cronologia
+
+            # 3. PULSANTE AGGIORNAMENTO RISULTATI
             if st.button("🔄 Aggiorna Risultati Reali"):
                 with st.spinner("Controllo risultati in corso..."):
                     aggiorna_risultati_pronostici()
                     st.rerun()
 
-            # 3. Visualizzazione Tabella con Colorazione Automatica
-            # Applichiamo la funzione highlight_winners che abbiamo definito prima
+            # 4. VISUALIZZAZIONE TABELLA FILTRATA
             st.dataframe(
-                df_cronologia.style.apply(highlight_winners, axis=1),
+                df_da_mostrare.style.apply(highlight_winners, axis=1),
                 use_container_width=True,
                 hide_index=True
             )
 
-            # --- TASTO CANCELLA CRONOLOGIA CON POP-UP DI CONFERMA ---
+            # --- TASTO CANCELLA CRONOLOGIA CON POP-UP ROSSO ---
             st.divider()
-            st.subheader("🗑️ Gestione Dati")
-            
-            # Primo tasto: attiva la procedura di cancellazione
-            if st.button("Elimina Cronologia...", help="Clicca per iniziare la procedura di eliminazione"):
+            if st.button("🗑️ Elimina Cronologia...", type="secondary"):
                 st.session_state['conferma_delete'] = True
 
-            # Se la procedura è attiva, mostra il "Pop-up" rosso
             if st.session_state.get('conferma_delete', False):
                 st.error("🚨 **ATTENZIONE: AZIONE IRREVERSIBILE**")
-                st.write("Sei sicuro di voler cancellare tutti i pronostici salvati? Questa operazione non può essere annullata.")
+                st.write("Sei sicuro di voler cancellare TUTTA la cronologia?")
                 
-                col_del1, col_del2 = st.columns(2)
-                with col_del1:
-                    if st.button("SÌ, CANCELLA TUTTO", type="primary", use_container_width=True):
-                        # Logica di reset
-                        columns = [
-                            "Data", "Ora", "Partita", "Fiducia", "Affidabilità", 
-                            "1X2", "U/O 2.5", "G/NG", "SGF", "SGC", "SGO", 
-                            "Top 6 RE Finali", "Top 3 RE 1°T", "Match_ID", "Risultato_Reale", "PT_Reale"
-                        ]
-                        df_reset = pd.DataFrame(columns=columns)
-                        df_reset.to_csv(FILE_DB_PRONOSTICI, index=False)
-                        
-                        st.session_state['conferma_delete'] = False
-                        st.success("Cronologia eliminata!")
-                        time.sleep(1)
-                        st.rerun()
-                
-                with col_del2:
-                    if st.button("ANNULLA", type="secondary", use_container_width=True):
+                c_del1, c_del2 = st.columns(2)
+                with c_del1:
+                    if st.button("SÌ, CANCELLA", type="primary", use_container_width=True):
+                        columns = ["Data", "Ora", "Partita", "Fiducia", "Affidabilità", "1X2", "U/O 2.5", "G/NG", "SGF", "SGC", "SGO", "Top 6 RE Finali", "Top 3 RE 1°T", "Match_ID", "Risultato_Reale", "PT_Reale"]
+                        pd.DataFrame(columns=columns).to_csv(FILE_DB_PRONOSTICI, index=False)
                         st.session_state['conferma_delete'] = False
                         st.rerun()
-
+                with c_del2:
+                    if st.button("ANNULLA", use_container_width=True):
+                        st.session_state['conferma_delete'] = False
+                        st.rerun()
+        else:
+            st.info("La cronologia è vuota.")
+    else:
+        st.warning("Database non trovato.")
