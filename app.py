@@ -206,9 +206,10 @@ def calcola_late_goal_index(casa, fuori):
 def esegui_analisi(nome_input):
     if not os.path.exists(FILE_DB_CALCIO):
         st.error("Database Calcio mancante. Aggiorna il DB"); return None
-    
+
     df = pd.read_csv(FILE_DB_CALCIO)
-    df['Date'] = pd.to_datetime(df['Date'])
+    # Forza il formato datetime con UTC per combaciare con 'today'
+    df['Date'] = pd.to_datetime(df['Date'], utc=True) 
 
 # Invece di: today = pd.to_datetime(date.today())
 # Usa questa versione che rende 'today' compatibile con le date dell'API:
@@ -313,7 +314,8 @@ def esegui_analisi(nome_input):
     # Prepariamo le stringhe per il dizionario
     data_finale = dt_event_ita.strftime("%d/%m/%Y")
     ora_finale = dt_event_ita.strftime("%H:%M")
-        
+
+
     return {
         "Data": data_finale, 
         "Ora": ora_finale,
@@ -323,7 +325,8 @@ def esegui_analisi(nome_input):
         "Affidabilità": f"{85 + int(molt_arbitro*2)}%",
         "1X2": res_1x2, "U/O 2.5": res_uo, "G/NG": res_gng,
         "SGF": top_sgf_final, "SGC": top_sgc_final, "SGO": top_sgo_final,
-        "Top 6 RE Finali": top_re_final, "Top 3 RE 1°T": top_re1t_final,
+        "Top 6 RE Finali": top_re_final,  # <-- Corretto da stringa_re_finale
+        "Top 3 RE 1°T": top_re1t_final,   # <-- Corretto da stringa_re_pt
         "Match_ID": match_id, "Risultato_Reale": "N/D", "PT_Reale": "N/D",
         "p1": p1, "px": px, "p2": p2, "pu": pu, "pg": pg,
         "lg": calcola_late_goal_index(casa, fuori),
@@ -432,7 +435,7 @@ with tab1:
         st.divider()
         st.subheader("🎯 Risultati Esatti Probabili")
         cfe1, cfe2 = st.columns(2)
-        
+
         with cfe1:
             st.success(f"🏁 **Top 6 RE Finali**\n\n{d['Top 6 RE Finali']}")
             
