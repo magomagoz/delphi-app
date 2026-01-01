@@ -401,11 +401,18 @@ with tab1:
 
         # --- MERCATI ACCESSORI ---
         st.divider()
+        st.subheader("📊 Mercati Goal")
         col_uo, col_gng = st.columns(2)
+        
         with col_uo:
-            st.write(f"**U/O 2.5:** {d['U/O 2.5']}")
+            # Calcolo probabilità e quota per l'Over partendo dall'Under
+            p_over = 1 - d['pu']
+            st.info(f"**U/O 2.5**\n\n**UNDER:** {d['pu']:.1%} (Q: {stima_quota(d['pu'])})\n\n**OVER:** {p_over:.1%} (Q: {stima_quota(p_over)})")
+            
         with col_gng:
-            st.write(f"**GOL/NOGOL:** {d['G/NG']}")
+            # Calcolo probabilità e quota per il No Gol partendo dal Gol
+            p_nogol = 1 - d['pg']
+            st.info(f"**GOL / NO GOL**\n\n**GOL:** {d['pg']:.1%} (Q: {stima_quota(d['pg'])})\n\n**NO GOL:** {p_nogol:.1%} (Q: {stima_quota(p_nogol)})")
 
         # --- RISULTATI E SOMME ---
         st.divider()
