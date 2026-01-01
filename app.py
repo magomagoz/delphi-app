@@ -93,6 +93,35 @@ def salva_completo_in_locale(data_dict):
         st.error(f"Errore salvataggio: {e}")
         return False
 
+def calcola_trend_forma(df_giocate, squadra):
+    # Filtra le ultime 4 partite della squadra
+    ultime = df_giocate[(df_giocate['HomeTeam'] == squadra) | (df_giocate['AwayTeam'] == squadra)].tail(4)
+    if ultime.empty:
+        return "N.D.", 1.0
+    
+    punti = 0
+    stringa_trend = []
+    for _, r in ultime.iterrows():
+        # Determina se la squadra giocava in casa o fuori
+        is_home = r['HomeTeam'] == squadra
+        goal_fatti = r['FTHG'] if is_home else r['FTAG']
+        goal_subiti = r['FTAG'] if is_home else r['FTHG']
+        
+        if goal_fatti > goal_subiti:
+            punti += 3
+            stringa_trend.append("🟢")
+        elif goal_fatti == goal_subiti:
+            punti += 1
+            stringa_trend.append("🟡")
+        else:
+            stringa_trend.append("🔴")
+    
+    # Calcola un moltiplicatore (Media 1.0)
+    # 12 punti (4 vittorie) = 1.2x attacco / 0.8x difesa
+    # 0 punti (4 sconfitte) = 0.8x attacco / 1.2x difesa
+    moltiplicatore = round(0.8 + (punti / 12) * 0.4, 2)
+    return "".join(stringa_trend), moltiplicatore
+
 # --- 4. FUNZIONI AGGIORNAMENTO API ---
 def aggiorna_database_calcio():
     headers = {'X-Auth-Token': API_TOKEN}
@@ -263,11 +292,17 @@ def esegui_analisi(nome_input):
         gs = t.apply(lambda r: r['FTAG'] if r['HomeTeam']==team else r['FTHG'], axis=1).mean()
         return max(0.5, gf), max(0.5, gs)
 
+    
     att_h, dif_h = get_stats(casa)
     att_a, dif_a = get_stats(fuori)
-    exp_h = (att_h * dif_a / avg_g) * (2 - molt_arbitro)
-    exp_a = (att_a * dif_h / avg_g) * (2 - molt_arbitro)
     
+    trend_h, molt_forma_h = calcola_trend_forma(giocate, casa)
+    trend_a, molt_forma_a = calcola_trend_forma(giocate, fuori)
+
+    # Applichiamo la forma: se una squadra è in "hype", segna di più e subisce meno
+    exp_h = (att_h * dif_a / avg_g) * molt_forma_h * (2 - molt_arbitro)
+    exp_a = (att_a * dif_h / avg_g) * molt_forma_a * (2 - molt_arbitro)
+
     p1, px, p2, pu, pg, tot = 0,0,0,0,0,0
     sgf, sgc, sgo = {i:0 for i in range(12)}, {i:0 for i in range(6)}, {i:0 for i in range(6)}
     re_fin = []
@@ -345,6 +380,10 @@ def esegui_analisi(nome_input):
         "Partita": f"{casa} vs {fuori}",
         "Fiducia": f"{int(max(p1,px,p2)*100)}%", 
         "Affidabilità": f"{85 + int(molt_arbitro*2)}%",
+        "Trend_Casa": trend_h,
+        "Trend_Fuori": trend_a,
+        "Forma_H": molt_forma_h,
+        "Forma_A": molt_forma_a,
         "1X2": res_1x2, "U/O 2.5": res_uo, "G/NG": res_gng,
         "SGF": top_sgf_final, "SGC": top_sgc_final, "SGO": top_sgo_final,
         "Top 6 RE Finali": top_re_final,  # <-- Corretto da stringa_re_finale
