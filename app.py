@@ -418,7 +418,7 @@ def highlight_winners(row):
     return colors
 
 # --- 7. MAIN ---
-tab1, tab2, tab3 = st.tabs(["🎯 Analisi", "⚙️ Database", "📜 Cronologia"])
+tab1, tab2, tab3 = st.tabs(["🎯 **Analisi**", "⚙️ **Database**", "📜 **Cronologia**"])
 
 with tab1:
     sq = st.text_input("Inserisci Squadra:")
@@ -437,8 +437,8 @@ with tab1:
         casa_nome, fuori_nome = d['Partita'].split(" vs ")
 
         # --- UI TESTATA ---
-        st.header(f"🏟️ {d['Partita']}")
-        st.subheader(f"🏆 {d.get('League', 'N.D.')} | 📅 Data: {d['Data']} ore {d['Ora']}")
+        st.header(f"🏟️ **{d['Partita']}**")
+        st.subheader(f"🏆 {d.get('League', 'N.D.')  |  📅 Data: {d['Data']} - {d['Ora']}")
 
         # --- 2. ORA PUOI USARE casa_nome E fuori_nome PER LA FORMA ---
         c_trend1, c_trend2 = st.columns(2)
@@ -459,7 +459,7 @@ with tab1:
         
         if fatica_casa or fatica_fuori:
             with st.container():
-                st.markdown("### 🏃‍♂️ Allerta Stanchezza")
+                st.markdown("### 🏃‍♂️ **Allerta Stanchezza**")
                 c_fat1, c_fat2 = st.columns(2)
                 with c_fat1:
                     if fatica_casa:
@@ -473,16 +473,16 @@ with tab1:
         c_inf1, c_inf2 = st.columns(2)
 
         with c_inf1:
-            st.info(f"👮 Arbitro: {d.get('arbitro', 'N.D.')}  |  Severità: {d.get('molt_arbitro', 1.0)}x")
+            st.info(f"👮 **Arbitro**: {d.get('arbitro', 'N.D.')}  |  **Severità**: {d.get('molt_arbitro', 1.0)}x")
             casa_nome = d['Partita'].split(" vs ")[0]
             fuori_nome = d['Partita'].split(" vs ")[1]
             #if controlla_fatica(df_per_fatica, casa_nome, d['Data']) or controlla_fatica(df_per_fatica, fuori_nome, d['Data']):
-                #st.warning("⚠️ Possibile stanchezza: una delle squadre ha giocato meno di 4 giorni fa.")
+                #st.warning("⚠️ **Possibile stanchezza: una delle squadre ha giocato meno di 3 giorni fa**")
 
         with c_inf2:
-            st.info(f"⏳ Gol nel finale: {d['lg']:.2f}")
+            st.info(f"⏳ **Gol nel finale**: {d['lg']:.2f}")
             if d['lg'] > 1.2: 
-                st.error("🔥 ALTA PROBABILITÀ DI GOL NEL FINALE (80+ MINUTO)")
+                st.error("🔥🔥🔥 **POSSIBILE GOL NEL FINALE (80+ MINUTO)**")
 
         # --- ESITO FINALE 1X2 ---
         st.divider()
