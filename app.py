@@ -432,8 +432,7 @@ def analizza_distribuzione_tempi(df_giocate, squadra):
     # Prepariamo le stringhe per il dizionario
     data_finale = dt_event_ita.strftime("%d/%m/%Y")
     ora_finale = dt_event_ita.strftime("%H:%M")
-
-
+    
     return {
         "Data": data_finale, 
         "Ora": ora_finale,
@@ -452,6 +451,13 @@ def analizza_distribuzione_tempi(df_giocate, squadra):
         "Fatica": "No", # Inizializzato qui, verrà sovrascritto al salvataggio
         "Match_ID": match_id, "Risultato_Reale": "N/D", "PT_Reale": "N/D",
         "p1": p1, "px": px, "p2": p2, "pu": pu, "pg": pg,
+        "dist_1t_h": dist_1t_h,
+        "dist_2t_h": dist_2t_h,
+        "dist_1t_a": dist_1t_a,
+        "dist_2t_a": dist_2t_a,
+        "tempo_top": tempo_top,
+        "casa_nome": casa,   # Aggiungiamo questi per comodità
+        "fuori_nome": fuori,
         "lg": calcola_late_goal_index(casa, fuori),
         "arbitro": arbitro, "molt_arbitro": molt_arbitro
     }
@@ -640,9 +646,9 @@ with tab1:
                 st.rerun()
 
 with tab2:
-    st.info("⚠️ Aggiornerai i principali campionati europei, il Brasile e le Coppe UEFA")
-    if st.button("🌐 Aggiorna Database (Scarica ID Match)"):
-        with st.spinner("Aggiornamento database in corso..."):
+    st.info("⚠️ Aggiornerai Serie A, Bundesliga, Ligue 1, Premier e Championship, Eredivisie, Liga spagnola e portoghese, il Brasile, le Coppe UEFA e la FIFA World Cup")
+    if st.button("🌐 Aggiorna Database Dati"):
+        with st.spinner("Aggiornamento database dati in corso..."):
             aggiorna_database_calcio()
 
 with tab3:
