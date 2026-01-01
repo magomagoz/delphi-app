@@ -366,34 +366,6 @@ def esegui_analisi(nome_input):
         "arbitro": arbitro, "molt_arbitro": molt_arbitro
     }
 
-    return {
-        "Data": dt_event_ita.strftime("%d/%m/%Y"), 
-        "Ora": dt_event_ita.strftime("%H:%M"),
-        "League": m['League'],
-        "Partita": f"{casa} vs {fuori}",
-        "Fiducia": f"{int(max(p1,px,p2)*100)}%", 
-        "Affidabilità": f"{85 + int(molt_arbitro*2)}%",
-        "1X2": res_1x2, 
-        "U/O 2.5": res_uo, 
-        "G/NG": res_gng,
-        "SGF": top_sgf_final,  # <--- USA QUESTE VARIABILI AGGIORNATE
-        "SGC": top_sgc_final,  # <--- USA QUESTE VARIABILI AGGIORNATE
-        "SGO": top_sgo_final,  # <--- USA QUESTE VARIABILI AGGIORNATE
-        "Top 6 RE Finali": top_re, 
-        "Top 3 RE 1°T": top_re1t,
-        "Match_ID": match_id,
-        "Risultato_Reale": "N/D", 
-        "PT_Reale": "N/D",
-        "p1": p1, "px": px, "p2": p2, "pu": pu, "pg": pg,
-        "lg": calcola_late_goal_index(casa, fuori),
-        "arbitro": arbitro, "molt_arbitro": molt_arbitro
-    }
-
-
-
-
-
-
 # --- 6. LOGICA DI COLORAZIONE TABELLA ---
 def highlight_winners(row):
     colors = [''] * len(row)
