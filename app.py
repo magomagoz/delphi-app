@@ -424,13 +424,30 @@ with tab1:
 
         # --- TASTO SALVATAGGIO ---
         st.write("---")
-        if st.button("💾 Salva in Cronologia"):
-            # Escludiamo TUTTE le probabilità e i dati tecnici (p1, px, p2, pu, pg, lg, ecc.)
+        if st.button("💾 Salva in Cronologia", use_container_width=True):
+            import re # Importiamo re per pulire le quote
+            
+            # Creiamo una copia dei dati da salvare
+            dati_puliti = d.copy()
+            
+            # Elenco dei campi che contengono le quote (Q: ...)
+            campi_con_quote = ["SGF", "SGC", "SGO", "Top 6 RE Finali", "Top 3 RE 1°T"]
+            
+            for campo in campi_con_quote:
+                if campo in dati_puliti:
+                    # Questa regex rimuove "(Q: 1.23)" lasciando solo il valore/risultato
+                    testo_pulito = re.sub(r'\s\(Q:\s\d+\.\d+\)', '', str(dati_puliti[campo]))
+                    dati_puliti[campo] = testo_pulito
+
+            # Escludiamo i dati tecnici che non servono nel CSV
             escludi = ['p1', 'px', 'p2', 'pu', 'pg', 'lg', 'arbitro', 'molt_arbitro']
-            dati_per_csv = {k: v for k, v in d.items() if k not in escludi}
+            dati_per_csv = {k: v for k, v in dati_puliti.items() if k not in escludi}
             
             if salva_completo_in_locale(dati_per_csv):
-                st.success("✅ Pronostico Salvato in Cronologia!")
+                st.success("✅ Salvato in Cronologia!")
+                time.sleep(1)
+                st.rerun()
+
 with tab2:
     st.info("⚠️ Aggiornerai i principali campionati europei, il Brasile e le Coppe UEFA")
     if st.button("🌐 Aggiorna Database (Scarica ID Match)"):
