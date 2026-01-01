@@ -285,12 +285,37 @@ def esegui_analisi(nome_input):
     molt_arbitro = analizza_severita_arbitro(giocate, arbitro)
     avg_g = max(1.1, pd.to_numeric(giocate['FTHG'], errors='coerce').mean())
     
-    def get_stats(team):
+    def get_stats_specifiche(team, is_home_team):
+        # Prendiamo le ultime 15 partite totali per avere un campione statistico solido
         t = giocate[(giocate['HomeTeam'] == team) | (giocate['AwayTeam'] == team)].tail(15)
         if t.empty: return 1.2, 1.2
-        gf = t.apply(lambda r: r['FTHG'] if r['HomeTeam']==team else r['FTAG'], axis=1).mean()
-        gs = t.apply(lambda r: r['FTAG'] if r['HomeTeam']==team else r['FTHG'], axis=1).mean()
-        return max(0.5, gf), max(0.5, gs)
+        
+        if is_home_team:
+            # Stats solo quando giocava in CASA
+            stats_casa = t[t['HomeTeam'] == team]
+            if not stats_casa.empty:
+                gf = stats_casa['FTHG'].mean()
+                gs = stats_casa['FTAG'].mean()
+            else:
+                # Se non ha giocato in casa nelle ultime 15 (raro), usa media generale
+                gf = t.apply(lambda r: r['FTHG'] if r['HomeTeam']==team else r['FTAG'], axis=1).mean()
+                gs = t.apply(lambda r: r['FTAG'] if r['HomeTeam']==team else r['FTHG'], axis=1).mean()
+        else:
+            # Stats solo quando giocava FUORI
+            stats_fuori = t[t['AwayTeam'] == team]
+            if not stats_fuori.empty:
+                gf = stats_fuori['FTAG'].mean()
+                gs = stats_fuori['FTHG'].mean()
+            else:
+                # Se non ha giocato fuori nelle ultime 15, usa media generale
+                gf = t.apply(lambda r: r['FTHG'] if r['HomeTeam']==team else r['FTAG'], axis=1).mean()
+                gs = t.apply(lambda r: r['FTAG'] if r['HomeTeam']==team else r['FTHG'], axis=1).mean()
+                
+        return max(0.4, gf), max(0.4, gs)
+
+    # Applichiamo le statistiche differenziate
+    att_h, dif_h = get_stats_specifiche(casa, True)   # Stats Casa per chi gioca in casa
+    att_a, dif_a = get_stats_specifiche(fuori, False) # Stats Fuori per chi gioca fuori
 
     
     att_h, dif_h = get_stats(casa)
