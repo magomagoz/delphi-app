@@ -279,7 +279,8 @@ def esegui_analisi(nome_input):
     
     fuso_ita = pytz.timezone('Europe/Rome')
     adesso = datetime.now(fuso_ita)
-        # --- CALCOLO DATA E ORA REALE DELL'EVENTO ---
+    
+    # --- CALCOLO DATA E ORA REALE DELL'EVENTO ---
     # Convertiamo la stringa del DB in oggetto data
     dt_event = pd.to_datetime(m['Date'])
     
@@ -288,13 +289,12 @@ def esegui_analisi(nome_input):
         dt_event = dt_event.tz_localize('UTC')
     
     dt_event_ita = dt_event.astimezone(pytz.timezone('Europe/Rome'))
-    df_per_fatica = pd.read_csv(FILE_DB_CALCIO)
-
+    
     return {
         # Usiamo dt_event_ita invece di 'adesso'
         "Data": dt_event_ita.strftime("%d/%m/%Y"), 
         "Ora": dt_event_ita.strftime("%H:%M"),
-        "League": m['League']
+        "League": m['League'],
         "Partita": f"{casa} vs {fuori}",
         "Fiducia": f"{int(max(p1,px,p2)*100)}%", 
         "Affidabilità": f"{85 + int(molt_arbitro*2)}%",
@@ -352,9 +352,6 @@ with tab1:
         st.header(f"🏟️ {d['Partita']}")
         st.subheader(f"🏆 {d.get('League', 'N.D.')} | 📅 Data: {d['Data']} ore {d['Ora']}")
 
-        # TUTTO IL CODICE SUCCESSIVO (c_inf1, c_inf2, st.divider, ecc.) 
-        # DEVE ESSERE ALLINEATO QUI (indentato di 8 spazi o 2 tab)
-
         c_inf1, c_inf2 = st.columns(2)
 
         with c_inf1:
@@ -401,7 +398,9 @@ with tab1:
         # --- TASTO SALVATAGGIO ---
         st.write("---")
         if st.button("💾 Salva in Cronologia"):
-            # Rimuoviamo le chiavi extra non necessarie per il CSV
-            dati_per_csv = {k: v for k, v in d.items() if k not in ['p1', 'px', 'p2', 'lg', 'arbitro', 'molt_arbitro']}
+            # Escludiamo TUTTE le probabilità e i dati tecnici (p1, px, p2, pu, pg, lg, ecc.)
+            escludi = ['p1', 'px', 'p2', 'pu', 'pg', 'lg', 'arbitro', 'molt_arbitro']
+            dati_per_csv = {k: v for k, v in d.items() if k not in escludi}
+            
             if salva_completo_in_locale(dati_per_csv):
                 st.success("✅ Pronostico Salvato in Cronologia!")
