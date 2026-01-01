@@ -349,6 +349,7 @@ def esegui_analisi(nome_input):
         "SGF": top_sgf_final, "SGC": top_sgc_final, "SGO": top_sgo_final,
         "Top 6 RE Finali": top_re_final,  # <-- Corretto da stringa_re_finale
         "Top 3 RE 1°T": top_re1t_final,   # <-- Corretto da stringa_re_pt
+        "Fatica": data_dict.get("Fatica", "No"),
         "Match_ID": match_id, "Risultato_Reale": "N/D", "PT_Reale": "N/D",
         "p1": p1, "px": px, "p2": p2, "pu": pu, "pg": pg,
         "lg": calcola_late_goal_index(casa, fuori),
@@ -484,29 +485,30 @@ with tab1:
         with cfe2:
             st.info(f"⏱️ **Top 3 RE 1° Tempo**\n\n{d['Top 3 RE 1°T']}")
 
-        # --- TASTO SALVATAGGIO ---
-        st.write("---")
+        # --- TASTO SALVATAGGIO AGGIORNATO ---
         if st.button("💾 Salva in Cronologia", use_container_width=True):
-            import re # Importiamo re per pulire le quote
-            
-            # Creiamo una copia dei dati da salvare
+            import re
             dati_puliti = d.copy()
             
-            # Elenco dei campi che contengono le quote (Q: ...)
+            # Prepariamo la stringa fatica
+            nota_fatica = "Nessuna"
+            if fatica_casa and fatica_fuori: nota_fatica = "Entrambe"
+            elif fatica_casa: nota_fatica = f"Solo {casa_nome}"
+            elif fatica_fuori: nota_fatica = f"Solo {fuori_nome}"
+            dati_puliti["Fatica"] = nota_fatica
+
+            # Pulizia quote come prima
             campi_con_quote = ["SGF", "SGC", "SGO", "Top 6 RE Finali", "Top 3 RE 1°T"]
-            
             for campo in campi_con_quote:
                 if campo in dati_puliti:
-                    # Questa regex rimuove "(Q: 1.23)" lasciando solo il valore/risultato
                     testo_pulito = re.sub(r'\s\(Q:\s\d+\.\d+\)', '', str(dati_puliti[campo]))
                     dati_puliti[campo] = testo_pulito
 
-            # Escludiamo i dati tecnici che non servono nel CSV
             escludi = ['p1', 'px', 'p2', 'pu', 'pg', 'lg', 'arbitro', 'molt_arbitro']
             dati_per_csv = {k: v for k, v in dati_puliti.items() if k not in escludi}
             
             if salva_completo_in_locale(dati_per_csv):
-                st.success("✅ Salvato in Cronologia!")
+                st.success("✅ Salvato (incluso dato fatica)!")
                 time.sleep(1)
                 st.rerun()
 
@@ -571,7 +573,9 @@ with tab3:
                 c_del1, c_del2 = st.columns(2)
                 with c_del1:
                     if st.button("SÌ, CANCELLA", type="primary", use_container_width=True):
-                        columns = ["Data", "Ora", "Partita", "Fiducia", "Affidabilità", "1X2", "U/O 2.5", "G/NG", "SGF", "SGC", "SGO", "Top 6 RE Finali", "Top 3 RE 1°T", "Match_ID", "Risultato_Reale", "PT_Reale"]
+
+                        # Nel blocco della cancellazione cronologia (Tab 3), aggiorna la lista colonne:
+                        columns = ["Data", "Ora", "Partita", "Fiducia", "Affidabilità", "1X2", "U/O 2.5", "G/NG", "SGF", "SGC", "SGO", "Top 6 RE Finali", "Top 3 RE 1°T", "Fatica", "Match_ID", "Risultato_Reale", "PT_Reale"]
                         pd.DataFrame(columns=columns).to_csv(FILE_DB_PRONOSTICI, index=False)
                         st.session_state['conferma_delete'] = False
                         st.rerun()
