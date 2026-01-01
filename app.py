@@ -458,15 +458,29 @@ with tab1:
             p_nogol = 1 - d['pg']
             st.info(f"**GOL / NO GOL**\n\n**GOL:** {d['pg']:.1%} (Q: {stima_quota(d['pg'])})\n\n**NO GOL:** {p_nogol:.1%} (Q: {stima_quota(p_nogol)})")
 
-        # --- RISULTATI E SOMME ---
+        # --- RISULTATI E SOMME GOL ---
         st.divider()
+        st.subheader("⚽ Analisi Somma Gol (Multigol)")
         cr1, cr2 = st.columns(2)
+        
         with cr1:
-            st.success(f"🎯 **Top Risultati Finali:** {d['Top 6 RE Finali']}")
-            st.success(f"⚽ **Somma Gol Totale:** {d['SGF']}")
+            # Somma Gol Totale (Match)
+            st.info(f"🎯 **Somma Gol Finale (Top 3)**\n\n{d['SGF']}")
+            
         with cr2:
-            st.info(f"⏱️ **Top Risultati 1° Tempo:** {d['Top 3 RE 1°T']}")
-            st.info(f"🏠 **Somma Gol Casa:** {d['SGC']} | 🚀 **Ospite:** {d['SGO']}")
+            # Somma Gol Casa e Ospite (Team)
+            st.info(f"🏠 **Casa (Top 2):** {d['SGC']}\n\n🚀 **Ospite (Top 2):** {d['SGO']}")
+
+        # --- RISULTATI ESATTI ---
+        st.divider()
+        st.subheader("🎯 Risultati Esatti Probabili")
+        cfe1, cfe2 = st.columns(2)
+        
+        with cfe1:
+            st.success(f"🏁 **Top 6 RE Finali**\n\n{d['Top 6 RE Finali']}")
+            
+        with cfe2:
+            st.warning(f"⏱️ **Top 3 RE 1° Tempo**\n\n{d['Top 3 RE 1°T']}")
 
         # --- TASTO SALVATAGGIO ---
         st.write("---")
