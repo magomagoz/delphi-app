@@ -464,6 +464,9 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0): # Aggiunti parametri
         "Fatica": "No", # Inizializzato qui, verrà sovrascritto al salvataggio
         "Match_ID": match_id, "Risultato_Reale": "N/D", "PT_Reale": "N/D",
         "p1": p1, "px": px, "p2": p2, "pu": pu, "pg": pg,
+        "h2h_info": testo_h2h, # Fondamentale per risolvere il KeyError
+        "m_h2h_h": m_h2h_h,
+        "m_h2h_a": m_h2h_a,
         "dist_1t_h": dist_1t_h,
         "dist_2t_h": dist_2t_h,
         "dist_1t_a": dist_1t_a,
