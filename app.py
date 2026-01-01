@@ -438,7 +438,7 @@ with tab1:
 
         # --- UI TESTATA ---
         st.header(f"🏟️ **{d['Partita']}**")
-        st.subheader(f"🏆 {d.get('League', 'N.D.')} | 📅 Data: {d['Data']} - {d['Ora']}")
+        st.subheader(f"🏆 {d.get('League', 'N.D.')} | 📅 {d['Data']} - {d['Ora']}")
 
         # --- 2. ORA PUOI USARE casa_nome E fuori_nome PER LA FORMA ---
         c_trend1, c_trend2 = st.columns(2)
@@ -459,28 +459,27 @@ with tab1:
         
         if fatica_casa or fatica_fuori:
             with st.container():
-                st.markdown("### 🏃‍♂️ **Allerta Stanchezza**")
+                st.markdown("🏃‍♂️ **Allerta Stanchezza**")
                 c_fat1, c_fat2 = st.columns(2)
                 with c_fat1:
                     if fatica_casa:
-                        st.error(f"⚠️ **{casa_nome}**: ha giocato meno di 72 ore fa!")
+                        st.error(f"⚠️ **{casa_nome}: ha giocato meno di 72 ore fa!**")
                 with c_fat2:
                     if fatica_fuori:
-                        st.error(f"⚠️ **{fuori_nome}**: ha giocato meno di 72 ore fa!")
+                        st.error(f"⚠️ **{fuori_nome}**: ha giocato meno di 72 ore fa!**")
             st.divider()
 
-        
         c_inf1, c_inf2 = st.columns(2)
 
         with c_inf1:
-            st.info(f"👮 **Arbitro**: {d.get('arbitro', 'N.D.')}  |  **Severità**: {d.get('molt_arbitro', 1.0)}x")
+            st.info(f"👮 **Arbitro: {d.get('arbitro', 'N.D.')**}  |  **Severità: {d.get('molt_arbitro', 1.0)}x**")
             casa_nome = d['Partita'].split(" vs ")[0]
             fuori_nome = d['Partita'].split(" vs ")[1]
             #if controlla_fatica(df_per_fatica, casa_nome, d['Data']) or controlla_fatica(df_per_fatica, fuori_nome, d['Data']):
                 #st.warning("⚠️ **Possibile stanchezza: una delle squadre ha giocato meno di 3 giorni fa**")
 
         with c_inf2:
-            st.info(f"⏳ **Gol nel finale**: {d['lg']:.2f}")
+            st.info(f"⏳ **Gol nel finale: {d['lg']:.2f}**")
             if d['lg'] > 1.2: 
                 st.error("🔥🔥🔥 **POSSIBILE GOL NEL FINALE (80+ MINUTO)**")
 
@@ -490,11 +489,11 @@ with tab1:
         c1, cx, c2 = st.columns(3)
         
         with c1:
-            st.success(f"**1 (Casa)**\n\nProbabilità: {d['p1']:.1%}\n\nQuota: {stima_quota(d['p1'])}")
+            st.success(f"**1 (Casa)**\n 📈 Probabilità: {d['p1']:.1%}\nQuota: {stima_quota(d['p1'])}")
         with cx:
-            st.success(f"**X (Pareggio)**\n\nProbabilità: {d['px']:.1%}\n\nQuota: {stima_quota(d['px'])}")
+            st.success(f"**X (Pareggio)**\n 📈 Probabilità: {d['px']:.1%}\nQuota: {stima_quota(d['px'])}")
         with c2:
-            st.success(f"**2 (Ospite)**\n\nProbabilità: {d['p2']:.1%}\n\nQuota: {stima_quota(d['p2'])}")
+            st.success(f"**2 (Ospite)**\n 📈 Probabilità: {d['p2']:.1%}\nQuota: {stima_quota(d['p2'])}")
 
         # --- MERCATI ACCESSORI ---
         st.divider()
