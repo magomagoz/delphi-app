@@ -53,12 +53,31 @@ def inizializza_db():
 
 inizializza_db()
 
-def salva_completo_in_locale(data_dict):
+def salva_completo_in_locale(match, fiducia, affidabilita, p1x2, uo, gng, sgf, sgc, sgo, re_fin, re_pt, match_id=None):
     try:
+        fuso_ita = pytz.timezone('Europe/Rome')
+        adesso = datetime.now(fuso_ita)
+        
+        nuova_riga = {
+            "Data": adesso.strftime("%d/%m/%Y"),
+            "Ora": adesso.strftime("%H:%M"),
+            "Partita": match,
+            "Fiducia nel pronostico": f"{fiducia}%",
+            "Affidabilità dei dati": f"{affidabilita}%",
+            "1X2": p1x2,
+            "U/O 2.5": uo,
+            "G/NG": gng,
+            "SGF": sgf,
+            "SGC": sgc,
+            "SGO": sgo,
+            "Top 6 Risultati Esatti Finali": re_fin,
+            "Top 3 Risultati Esatti 1°T": re_pt,
+            "Match_ID": match_id if match_id and str(match_id) != "nan" else "N/A",
+            "Stato": "In attesa" # Cambiare in "Vincente" per attivare il verde
+        }
+        
         df = pd.read_csv(FILE_DB_PRONOSTICI)
-        # Creiamo un DataFrame da una singola riga (il dizionario)
-        nuova_riga = pd.DataFrame([data_dict])
-        df = pd.concat([df, nuova_riga], ignore_index=True)
+        df = pd.concat([df, pd.DataFrame([nuova_riga])], ignore_index=True)
         df.to_csv(FILE_DB_PRONOSTICI, index=False)
         return True
     except Exception as e:
@@ -364,18 +383,21 @@ with tab1:
         with c_inf2:
             st.info(f"⏳ Late Goal Index: {d['lg']:.2f}")
             if d['lg'] > 1.2: 
-                st.error("🔥 ALTA PROBABILITÀ DI GOL NEL FNALE (80+ MINUTO)")
+                st.error("🔥 ALTA PROBABILITÀ DI GOL NEL FINALE (80+ MINUTO)")
 
-        # --- ESITO FINALE 1X2 ---
-        st.divider()
-        st.subheader("🏁 Esito Finale 1X2")
-        c1, cx, c2 = st.columns(3)
-        with c1:
-            st.metric("1 (Casa)", f"{d['p1']:.1%}", f"Quota: {stima_quota(d['p1'])}")
-        with cx:
-            st.metric("X (Pareggio)", f"{d['px']:.1%}", f"Quota: {stima_quota(d['px'])}")
-        with c2:
-            st.metric("2 (Ospite)", f"{d['p2']:.1%}", f"Quota: {stima_quota(d['p2'])}")
+    # --- ESITO FINALE 1X2 (BLU) ---
+    st.divider()
+    st.subheader("🏁 Esito Finale 1X2")
+    c1, cx, c2 = st.columns(3)
+    with c1:
+        prob1 = p_1/total_p
+        st.info(f"**1 (Casa):** {prob1:.1%} (Q: {stima_quota(prob1)})")
+    with cx:
+        probx = p_x/total_p
+        st.info(f"**X (Pareggio):** {probx:.1%} (Q: {stima_quota(probx)})")
+    with c2:
+        prob2 = p_2/total_p
+        st.info(f"**2 (Ospite):** {prob2:.1%} (Q: {stima_quota(prob2)})")
 
         # --- MERCATI ACCESSORI ---
         st.divider()
