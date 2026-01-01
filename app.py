@@ -294,24 +294,22 @@ def esegui_analisi(nome_input):
     top_re_final = formatta_re_con_quote(re_fin, 6)
     top_re1t_final = formatta_re_con_quote(re_1t, 3)
 
-
-    # --- FIX ORARIO EVENTO ---
-    # L'API restituisce la data nel formato ISO (es: 2025-05-20T20:45:00Z)
+    # --- FIX DEFINITIVO ORARIO ---
     try:
-        # Usiamo pd.to_datetime che è molto bravo a gestire il formato ISO dell'API
-        dt_event = pd.to_datetime(m['Date'])
+        # L'API restituisce 2025-05-20T18:30:00Z. 
+        # Forziamo il parsing includendo l'informazione UTC
+        dt_event = pd.to_datetime(m['Date'], utc=True)
         
-        # Se non ha fuso orario, forziamo UTC (quello nativo dell'API)
-        if dt_event.tzinfo is None:
-            dt_event = dt_event.tz_localize('UTC')
-        
-        # Convertiamo nell'orario di Roma
-        dt_event_ita = dt_event.astimezone(pytz.timezone('Europe/Rome'))
-    except:
-        # Se qualcosa fallisce, usiamo l'orario attuale come paracadute
+        # Convertiamo nel fuso orario di Roma (gestisce automaticamente ora legale/solare)
+        fuso_roma = pytz.timezone('Europe/Rome')
+        dt_event_ita = dt_event.astimezone(fuso_roma)
+    except Exception as e:
+        # In caso di errore estremo, mettiamo un orario neutro ma visibile
         dt_event_ita = datetime.now(pytz.timezone('Europe/Rome'))
-
-    # Ora il return userà dt_event_ita che contiene l'ora esatta del calcio d'inizio
+    
+    # Prepariamo le stringhe per il dizionario
+    data_finale = dt_event_ita.strftime("%d/%m/%Y")
+    ora_finale = dt_event_ita.strftime("%H:%M")
 
     return {
         "Data": dt_event_ita.strftime("%d/%m/%Y"), 
