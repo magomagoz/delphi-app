@@ -520,21 +520,21 @@ with tab1:
 
         # --- SEZIONE DISTRIBUZIONE TEMPI ---
         st.divider()
-        st.subheader("⏱️ Analisi Tempi")
+        st.subheader("⏱️ Analisi Tempi (Distribuzione Gol)")
         ct1, ct2 = st.columns(2)
         
         with ct1:
-            st.write(f"**Distribuzione Gol {casa_n}:**")
-            st.progress(dist_1t_h / 100, text=f"1T: {dist_1t_h}%")
-            st.progress(dist_2t_h / 100, text=f"2T: {dist_2t_h}%")
+            st.write(f"**{casa_nome}**")
+            # Usiamo i dati estratti dal dizionario 'd'
+            st.progress(d['dist_1t_h'] / 100, text=f"1° Tempo: {d['dist_1t_h']}%")
+            st.progress(d['dist_2t_h'] / 100, text=f"2° Tempo: {d['dist_2t_h']}%")
             
         with ct2:
-            st.write(f"**Distribuzione Gol {fuori_n}:**")
-            st.progress(dist_1t_a / 100, text=f"1T: {dist_1t_a}%")
-            st.progress(dist_2t_a / 100, text=f"2T: {dist_2t_a}%")
+            st.write(f"**{fuori_nome}**")
+            st.progress(d['dist_1t_a'] / 100, text=f"1° Tempo: {d['dist_1t_a']}%")
+            st.progress(d['dist_2t_a'] / 100, text=f"2° Tempo: {d['dist_2t_a']}%")
 
-        st.info(f"💡 **Suggerimento**: Il tempo con più gol previsto è il **{tempo_top}**")
-
+        st.info(f"💡 **Tendenza**: Il tempo con più gol previsto è il **{d['tempo_top']}**")
         
         # --- SEZIONE WARNING FATICA ---
         df_calcio = pd.read_csv(FILE_DB_CALCIO)
