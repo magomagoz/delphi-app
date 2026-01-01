@@ -314,6 +314,33 @@ def get_stats(team, is_home_side, df_giocate):
             
     return max(0.5, gf), max(0.5, gs)
 
+def analizza_pericolosita_tempi(df_giocate, squadra):
+    # Analizziamo gli ultimi 10 match della squadra
+    ultime = df_giocate[(df_giocate['HomeTeam'] == squadra) | (df_giocate['AwayTeam'] == squadra)].tail(10)
+    
+    gol_fatti_1t = 0
+    gol_fatti_2t = 0
+    
+    for _, r in ultime.iterrows():
+        # Dobbiamo derivare i gol del 2° tempo sottraendo quelli del 1° dal finale
+        # Nota: assicurati di avere le colonne HalfTime Home/Away nel DB
+        is_home = r['HomeTeam'] == squadra
+        
+        # Gol totali
+        f_tot = r['FTHG'] if is_home else r['FTAG']
+        # Gol primo tempo (se disponibili nel DB, altrimenti usiamo una media)
+        f_1t = r.get('HTHG', f_tot/2) if is_home else r.get('HTAG', f_tot/2)
+        
+        gol_fatti_1t += f_1t
+        gol_fatti_2t += (f_tot - f_1t)
+        
+    tot = gol_fatti_1t + gol_fatti_2t
+    perc_1t = round((gol_fatti_1t / tot * 100), 1) if tot > 0 else 50
+    perc_2t = round((gol_fatti_2t / tot * 100), 1) if tot > 0 else 50
+    
+    return perc_1t, perc_2t
+
+
 def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0): # Aggiunti parametri
     if not os.path.exists(FILE_DB_CALCIO):
         st.error("Database Calcio mancante. Aggiorna il DB"); return None
@@ -588,6 +615,26 @@ with tab1:
         # Usiamo .get() per evitare il KeyError se la chiave manca
         st.write(f"📊 {d.get('h2h_info', 'Dati H2H non disponibili')}")
 
+        # --- SEZIONE FASCE ORARIE ---
+        st.divider()
+        st.subheader("⏰ Analisi Momento Gol (Ultime 10)")
+        
+        c_time1, c_time2 = st.columns(2)
+        p1_h, p2_h = analizza_pericolosita_tempi(df_calcio, casa_nome)
+        p1_a, p2_a = analizza_pericolosita_tempi(df_calcio, fuori_nome)
+
+        with c_time1:
+            st.write(f"**{casa_nome}**")
+            st.metric("Gol 1° Tempo", f"{p1_h}%")
+            st.metric("Gol 2° Tempo", f"{p2_h}%", delta=f"{p2_h-p1_h}%" if p2_h > p1_h else None)
+            if p2_h > 65: st.warning("⚠️ Squadra da 'Second Time Goal'")
+
+        with c_time2:
+            st.write(f"**{fuori_nome}**")
+            st.metric("Gol 1° Tempo", f"{p1_a}%")
+            st.metric("Gol 2° Tempo", f"{p2_a}%", delta=f"{p2_a-p1_a}%" if p2_a > p1_a else None)
+            if p1_a > 60: st.info("⚡ Partenza Sprint garantita")
+        
         # --- SEZIONE DISTRIBUZIONE TEMPI ---
         st.divider()
         st.subheader("⏱️ Analisi Tempi (Distribuzione Gol)")
