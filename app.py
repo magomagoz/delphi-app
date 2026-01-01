@@ -386,9 +386,9 @@ def esegui_analisi(nome_input):
         "Forma_A": molt_forma_a,
         "1X2": res_1x2, "U/O 2.5": res_uo, "G/NG": res_gng,
         "SGF": top_sgf_final, "SGC": top_sgc_final, "SGO": top_sgo_final,
-        "Top 6 RE Finali": top_re_final,  # <-- Corretto da stringa_re_finale
-        "Top 3 RE 1°T": top_re1t_final,   # <-- Corretto da stringa_re_pt
-        "Fatica": "N/D",
+        "Top 6 RE Finali": top_re_final, 
+        "Top 3 RE 1°T": top_re1t_final,
+        "Fatica": "No", # Inizializzato qui, verrà sovrascritto al salvataggio
         "Match_ID": match_id, "Risultato_Reale": "N/D", "PT_Reale": "N/D",
         "p1": p1, "px": px, "p2": p2, "pu": pu, "pg": pg,
         "lg": calcola_late_goal_index(casa, fuori),
@@ -434,12 +434,13 @@ with tab1:
     if 'pronostico_corrente' in st.session_state and st.session_state['pronostico_corrente']:
         d = st.session_state['pronostico_corrente']
         df_per_fatica = pd.read_csv(FILE_DB_CALCIO) # Carichiamo il DB qui per usarlo sotto
+        casa_nome, fuori_nome = d['Partita'].split(" vs ")
 
         # --- UI TESTATA ---
         st.header(f"🏟️ {d['Partita']}")
         st.subheader(f"🏆 {d.get('League', 'N.D.')} | 📅 Data: {d['Data']} ore {d['Ora']}")
 
-        # --- SEZIONE TREND DI FORMA ---
+        # --- 2. ORA PUOI USARE casa_nome E fuori_nome PER LA FORMA ---
         c_trend1, c_trend2 = st.columns(2)
         with c_trend1:
             st.markdown(f"**Forma {casa_nome}:** {d['Trend_Casa']}")
