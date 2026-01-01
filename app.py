@@ -209,8 +209,11 @@ def esegui_analisi(nome_input):
     
     df = pd.read_csv(FILE_DB_CALCIO)
     df['Date'] = pd.to_datetime(df['Date'])
-    today = pd.to_datetime(date.today())
-    
+
+# Invece di: today = pd.to_datetime(date.today())
+# Usa questa versione che rende 'today' compatibile con le date dell'API:
+    today = pd.Timestamp.now(tz='UTC').normalize()
+
     future_matches = df[
         (df['Status'].isin(['TIMED', 'SCHEDULED', 'LIVE', 'IN_PLAY', 'POSTPONED'])) & 
         (df['HomeTeam'].str.contains(nome_input, case=False, na=False) | 
