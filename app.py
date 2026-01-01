@@ -292,18 +292,14 @@ def analizza_h2h(df_giocate, casa, fuori):
     testo_h2h = f"Ultimi {len(storico)} match: {punti_casa} pt fatti dal team casa"
     return bonus_h2h_casa, bonus_h2h_fuori, testo_h2h
 
-def get_stats(team, is_home_side):
-    # Prendiamo le ultime 15 partite totali per solidità statistica
-    t = giocate[(giocate['HomeTeam'] == team) | (giocate['AwayTeam'] == team)].tail(15)
+def get_stats(team, is_home_side, df_giocate):
+    # Filtriamo le ultime 15 partite totali della squadra
+    t = df_giocate[(df_giocate['HomeTeam'] == team) | (df_giocate['AwayTeam'] == team)].tail(15)
     if t.empty: return 1.2, 1.2
         
-    # Filtriamo solo i match giocati in quella specifica condizione (Casa o Fuori)
-    if is_home_side:
-        stats_condizione = t[t['HomeTeam'] == team]
-    else:
-        stats_condizione = t[t['AwayTeam'] == team]
+    # Filtriamo per condizione (Casa o Fuori)
+    stats_condizione = t[t['HomeTeam'] == team] if is_home_side else t[t['AwayTeam'] == team]
             
-    # Se ha dati per quella condizione, usa quelli, altrimenti usa la media generale (fallback)
     if not stats_condizione.empty:
         if is_home_side:
             gf = stats_condizione['FTHG'].mean()
@@ -312,7 +308,7 @@ def get_stats(team, is_home_side):
             gf = stats_condizione['FTAG'].mean()
             gs = stats_condizione['FTHG'].mean()
     else:
-        # Fallback: media totale se mancano match in quella condizione nelle ultime 15
+        # Fallback: media totale delle ultime 15
         gf = t.apply(lambda r: r['FTHG'] if r['HomeTeam']==team else r['FTAG'], axis=1).mean()
         gs = t.apply(lambda r: r['FTAG'] if r['HomeTeam']==team else r['FTHG'], axis=1).mean()
             
@@ -353,9 +349,9 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0): # Aggiunti parametri
     molt_arbitro = analizza_severita_arbitro(giocate, arbitro)
     avg_g = max(1.1, pd.to_numeric(giocate['FTHG'], errors='coerce').mean())
     
-    # Chiamate aggiornate: passiamo True per la squadra in casa e False per quella fuori
-    att_h, dif_h = get_stats(casa, True)
-    att_a, dif_a = get_stats(fuori, False)
+    # Passiamo 'giocate' come terzo argomento
+    att_h, dif_h = get_stats(casa, True, giocate)
+    att_a, dif_a = get_stats(fuori, False, giocate)
     
     trend_h, molt_forma_h = calcola_trend_forma(giocate, casa)
     trend_a, molt_forma_a = calcola_trend_forma(giocate, fuori)
@@ -464,7 +460,7 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0): # Aggiunti parametri
         "Fatica": "No", # Inizializzato qui, verrà sovrascritto al salvataggio
         "Match_ID": match_id, "Risultato_Reale": "N/D", "PT_Reale": "N/D",
         "p1": p1, "px": px, "p2": p2, "pu": pu, "pg": pg,
-        "h2h_info": testo_h2h, # Fondamentale per risolvere il KeyError
+        "h2h_info": testo_h2h,
         "m_h2h_h": m_h2h_h,
         "m_h2h_a": m_h2h_a,
         "dist_1t_h": dist_1t_h,
@@ -589,8 +585,8 @@ with tab1:
         # --- SEZIONE H2H ---
         st.divider()
         st.subheader("⚔️ Scontri Diretti (H2H)")
-        if 'h2h_info' in d:
-            st.write(f"📊 {d['h2h_info']}")
+        # Usiamo .get() per evitare il KeyError se la chiave manca
+        st.write(f"📊 {d.get('h2h_info', 'Dati H2H non disponibili')}")
 
         # --- SEZIONE DISTRIBUZIONE TEMPI ---
         st.divider()
