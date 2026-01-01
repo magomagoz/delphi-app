@@ -351,8 +351,7 @@ def analizza_pericolosita_tempi(df_giocate, squadra):
     
     return perc_1t, perc_2t
 
-
-def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0): # Aggiunti parametri
+def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False): # Aggiunto parametro
     if not os.path.exists(FILE_DB_CALCIO):
         st.error("Database Calcio mancante. Aggiorna il DB"); return None
 
@@ -401,6 +400,14 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0): # Aggiunti parametri
     exp_h = (att_h * dif_a / avg_g) * molt_forma_h * (2 - molt_arbitro) * pen_h * m_h2h_h
     exp_a = (att_a * dif_h / avg_g) * molt_forma_a * (2 - molt_arbitro) * pen_a * m_h2h_a
 
+    # AGGIUNGI QUESTO BLOCCO:
+    if is_big_match:
+        exp_h *= 0.88 # Riduzione del 12%
+        exp_a *= 0.88
+
+
+
+    
     p1, px, p2, pu, pg, tot = 0,0,0,0,0,0
     sgf, sgc, sgo = {i:0 for i in range(12)}, {i:0 for i in range(6)}, {i:0 for i in range(6)}
     re_fin = []
@@ -509,6 +516,7 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0): # Aggiunti parametri
         "casa_nome": casa,   # Aggiungiamo questi per comodità
         "fuori_nome": fuori,
         "lg": calcola_late_goal_index(casa, fuori),
+        "is_big_match": is_big_match,
         "arbitro": arbitro, 
         "molt_arbitro": molt_arbitro
     }
@@ -556,12 +564,13 @@ with tab1:
                                      options=[0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0], value=1.0)
         with col_p2:
             pen_a = st.select_slider(f"Potenza Attacco Fuori", 
-                                     options=[0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0], value=1.0)
+                                     options=[0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0], value=1.0)        
+            is_big_match = st.toggle("🔥 Filtro Big Match / Derby", help="Attiva questa opzione per scontri tra top team. Riduce l'aspettativa di gol del 12% per riflettere l'atteggiamento tattico prudente.")
     
-    if st.button("Genera Pronostico Delphi", type="primary"):
+    if st.button("**Genera Pronostico**", type="primary"):
         if sq:
             # Passiamo i valori degli slider alla funzione
-            risultati = esegui_analisi(sq, pen_h, pen_a)
+            risultati = esegui_analisi(sq, pen_h, pen_a, is_big_match) 
             if risultati:
                 st.session_state['pronostico_corrente'] = risultati
             else:
@@ -576,6 +585,9 @@ with tab1:
         st.header(f"🏟️ **{d['Partita']}**")
         st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}")
         st.subheader(f"📅 Data: {d['Data']} ore {d['Ora']}")
+
+        if d.get('is_big_match'):
+            st.warning("🛡️ **Filtro Big Match Attivo**: Le probabilità Over/Under sono state ricalcolate per una partita tattica.")
 
         # --- 2. ORA PUOI USARE casa_nome E fuori_nome PER LA FORMA ---
         c_trend1, c_trend2 = st.columns(2)
