@@ -304,9 +304,20 @@ def esegui_analisi(nome_input):
     res_uo = "OVER 2.5" if (1-pu) > 0.5 else "UNDER 2.5"
     res_gng = "GOL" if pg > 0.5 else "NO GOL"
     
-    # Stringhe per DB
-    top_re = ", ".join([x['s'] for x in sorted(re_fin, key=lambda x:x['p'], reverse=True)[:6]])
-    top_re1t = ", ".join([x['s'] for x in sorted(re_1t, key=lambda x:x['p'], reverse=True)[:3]])
+    # Funzione per formattare i Risultati Esatti con le quote
+    def formatta_re_con_quote(lista_re, top_n):
+        # Ordina la lista di dizionari per probabilità 'p'
+        top_esiti = sorted(lista_re, key=lambda x: x['p'], reverse=True)[:top_n]
+        formattati = []
+        for voce in top_esiti:
+            quota = stima_quota(voce['p'])
+            formattati.append(f"{voce['s']} (Q: {quota:.2f})")
+        return ", ".join(formattati)
+
+    # Generiamo le stringhe per i risultati esatti
+    top_re_final = formatta_re_con_quote(re_fin, 6)
+    top_re1t_final = formatta_re_con_quote(re_1t, 3)
+
     # Funzione interna per mappare i valori superiori ai limiti
     def formatta_somma(lista, limite):
         risultato = []
@@ -356,7 +367,8 @@ def esegui_analisi(nome_input):
         "SGF": top_sgf_final,  # <--- USA QUESTE VARIABILI AGGIORNATE
         "SGC": top_sgc_final,  # <--- USA QUESTE VARIABILI AGGIORNATE
         "SGO": top_sgo_final,  # <--- USA QUESTE VARIABILI AGGIORNATE
-        "Top 6 RE Finali": top_re, "Top 3 RE 1°T": top_re1t,
+        "Top 6 RE Finali": top_re_final,
+        "Top 3 RE 1°T": top_re1t_final,
         "Match_ID": match_id,
         "Risultato_Reale": "N/D", "PT_Reale": "N/D",
         # Dati extra per visualizzazione
