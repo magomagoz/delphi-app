@@ -472,11 +472,11 @@ with tab1:
         c_inf1, c_inf2 = st.columns(2)
 
         with c_inf1:
-            st.info(f"👮 **Arbitro: {d.get('arbitro', 'N.D.')**}  |  **Severità: {d.get('molt_arbitro', 1.0)}x**")
+            st.info(f"👮 **Arbitro**: {d.get('arbitro', 'N.D.')}  |  **Severità**: {d.get('molt_arbitro', 1.0)}x")
             casa_nome = d['Partita'].split(" vs ")[0]
             fuori_nome = d['Partita'].split(" vs ")[1]
             #if controlla_fatica(df_per_fatica, casa_nome, d['Data']) or controlla_fatica(df_per_fatica, fuori_nome, d['Data']):
-                #st.warning("⚠️ **Possibile stanchezza: una delle squadre ha giocato meno di 3 giorni fa**")
+                #st.warning("⚠️ **Possibile stanchezza: una delle squadre ha giocato meno di 3 giorni fa!**")
 
         with c_inf2:
             st.info(f"⏳ **Gol nel finale: {d['lg']:.2f}**")
