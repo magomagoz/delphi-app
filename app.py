@@ -390,14 +390,14 @@ with tab1:
     st.subheader("🏁 Esito Finale 1X2")
     c1, cx, c2 = st.columns(3)
     with c1:
-        prob1 = p_1/total_p
-        st.info(f"**1 (Casa):** {prob1:.1%} (Q: {stima_quota(prob1)})")
+        p1 = p_1/total_p
+        st.info(f"**1 (Casa):** {p1:.1%} (Q: {stima_quota(p1)})")
     with cx:
         probx = p_x/total_p
-        st.info(f"**X (Pareggio):** {probx:.1%} (Q: {stima_quota(probx)})")
+        st.info(f"**X (Pareggio):** {px:.1%} (Q: {stima_quota(px)})")
     with c2:
         prob2 = p_2/total_p
-        st.info(f"**2 (Ospite):** {prob2:.1%} (Q: {stima_quota(prob2)})")
+        st.info(f"**2 (Ospite):** {p2:.1%} (Q: {stima_quota(p2)})")
 
         # --- MERCATI ACCESSORI ---
         st.divider()
