@@ -284,37 +284,6 @@ def esegui_analisi(nome_input):
     arbitro = str(m.get('Referee', 'N.D.'))
     molt_arbitro = analizza_severita_arbitro(giocate, arbitro)
     avg_g = max(1.1, pd.to_numeric(giocate['FTHG'], errors='coerce').mean())
-
-def analizza_distribuzione_tempi(df_giocate, squadra):
-    # Filtriamo le ultime 10 partite per vedere il trend recente dei tempi
-    t = df_giocate[(df_giocate['HomeTeam'] == squadra) | (df_giocate['AwayTeam'] == squadra)].tail(10)
-    if t.empty:
-        return 50, 50 # Default 50% e 50%
-    
-    gol_1t = 0
-    gol_2t = 0
-    
-    for _, r in t.iterrows():
-        is_home = r['HomeTeam'] == squadra
-        # Usiamo il database per estrarre i gol fatti nel primo tempo (HTHG/HTAG se presenti)
-        # Se il tuo DB non ha HTHG, questa logica va adattata o basata su stima
-        # Assumendo che il tuo DB API scarichi anche i risultati parziali:
-        try:
-            # Esempio basato su una distribuzione statistica media se il dato manca
-            # In alternativa, se hai accesso ai dati storici completi:
-            fatti_tot = r['FTHG'] if is_home else r['FTAG']
-            # Stima basata su trend di lega (42% gol nel 1T, 58% nel 2T)
-            gol_1t += fatti_tot * 0.42
-            gol_2t += fatti_tot * 0.58
-        except:
-            continue
-            
-    tot = gol_1t + gol_2t
-    if tot == 0: return 42, 58
-    
-    perc_1t = (gol_1t / tot) * 100
-    perc_2t = (gol_2t / tot) * 100
-    return round(perc_1t, 1), round(perc_2t, 1)
     
     def get_stats(team, is_home_side):
         # Prendiamo le ultime 15 partite totali per solidità statistica
@@ -353,17 +322,6 @@ def analizza_distribuzione_tempi(df_giocate, squadra):
     exp_h = (att_h * dif_a / avg_g) * molt_forma_h * (2 - molt_arbitro)
     exp_a = (att_a * dif_h / avg_g) * molt_forma_a * (2 - molt_arbitro)
 
-    # Calcolo distribuzione gol per tempo
-    dist_1t_h, dist_2t_h = analizza_distribuzione_tempi(giocate, casa)
-    dist_1t_a, dist_2t_a = analizza_distribuzione_tempi(giocate, fuori)
-
-    # Calcoliamo la probabilità di quale tempo avrà più gol
-    # Media pesata tra le due squadre
-    prob_1t_piu_gol = (dist_1t_h + dist_1t_a) / 2
-    prob_2t_piu_gol = (dist_2t_h + dist_2t_a) / 2
-    
-    tempo_top = "2° Tempo" if prob_2t_piu_gol > prob_1t_piu_gol else "1° Tempo"
-   
     p1, px, p2, pu, pg, tot = 0,0,0,0,0,0
     sgf, sgc, sgo = {i:0 for i in range(12)}, {i:0 for i in range(6)}, {i:0 for i in range(6)}
     re_fin = []
@@ -432,7 +390,8 @@ def analizza_distribuzione_tempi(df_giocate, squadra):
     # Prepariamo le stringhe per il dizionario
     data_finale = dt_event_ita.strftime("%d/%m/%Y")
     ora_finale = dt_event_ita.strftime("%H:%M")
-    
+
+
     return {
         "Data": data_finale, 
         "Ora": ora_finale,
@@ -451,13 +410,6 @@ def analizza_distribuzione_tempi(df_giocate, squadra):
         "Fatica": "No", # Inizializzato qui, verrà sovrascritto al salvataggio
         "Match_ID": match_id, "Risultato_Reale": "N/D", "PT_Reale": "N/D",
         "p1": p1, "px": px, "p2": p2, "pu": pu, "pg": pg,
-        "dist_1t_h": dist_1t_h,
-        "dist_2t_h": dist_2t_h,
-        "dist_1t_a": dist_1t_a,
-        "dist_2t_a": dist_2t_a,
-        "tempo_top": tempo_top,
-        "casa_nome": casa,   # Aggiungiamo questi per comodità
-        "fuori_nome": fuori,
         "lg": calcola_late_goal_index(casa, fuori),
         "arbitro": arbitro, "molt_arbitro": molt_arbitro
     }
@@ -517,24 +469,6 @@ with tab1:
             st.markdown(f"**Forma {fuori_nome}:** {d['Trend_Fuori']}")
             st.caption(f"Incidenza stats: {d['Forma_A']}x")
         st.write("---")
-
-        # --- SEZIONE DISTRIBUZIONE TEMPI ---
-        st.divider()
-        st.subheader("⏱️ Analisi Tempi (Distribuzione Gol)")
-        ct1, ct2 = st.columns(2)
-        
-        with ct1:
-            st.write(f"**{casa_nome}**")
-            # Usiamo i dati estratti dal dizionario 'd'
-            st.progress(d['dist_1t_h'] / 100, text=f"1° Tempo: {d['dist_1t_h']}%")
-            st.progress(d['dist_2t_h'] / 100, text=f"2° Tempo: {d['dist_2t_h']}%")
-            
-        with ct2:
-            st.write(f"**{fuori_nome}**")
-            st.progress(d['dist_1t_a'] / 100, text=f"1° Tempo: {d['dist_1t_a']}%")
-            st.progress(d['dist_2t_a'] / 100, text=f"2° Tempo: {d['dist_2t_a']}%")
-
-        st.info(f"💡 **Tendenza**: Il tempo con più gol previsto è il **{d['tempo_top']}**")
         
         # --- SEZIONE WARNING FATICA ---
         df_calcio = pd.read_csv(FILE_DB_CALCIO)
@@ -561,6 +495,8 @@ with tab1:
             st.info(f"👮 **Arbitro**: {d.get('arbitro', 'N.D.')}  |  **Severità**: {d.get('molt_arbitro', 1.0)}x")
             casa_nome = d['Partita'].split(" vs ")[0]
             fuori_nome = d['Partita'].split(" vs ")[1]
+            #if controlla_fatica(df_per_fatica, casa_nome, d['Data']) or controlla_fatica(df_per_fatica, fuori_nome, d['Data']):
+                #st.warning("⚠️ **Possibile stanchezza: una delle squadre ha giocato meno di 3 giorni fa!**")
 
         with c_inf2:
             st.info(f"⏳ **Gol nel finale: {d['lg']:.2f}**")
@@ -646,9 +582,9 @@ with tab1:
                 st.rerun()
 
 with tab2:
-    st.info("⚠️ Aggiornerai Serie A, Bundesliga, Ligue 1, Premier e Championship, Eredivisie, Liga spagnola e portoghese, il Brasile, le Coppe UEFA e la FIFA World Cup")
-    if st.button("🌐 Aggiorna Database Dati"):
-        with st.spinner("Aggiornamento database dati in corso..."):
+    st.info("⚠️ Aggiornerai i principali campionati europei, il Brasile e le Coppe UEFA")
+    if st.button("🌐 Aggiorna Database (Scarica ID Match)"):
+        with st.spinner("Aggiornamento database in corso..."):
             aggiorna_database_calcio()
 
 with tab3:
