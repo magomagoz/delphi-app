@@ -53,30 +53,32 @@ def inizializza_db():
 
 inizializza_db()
 
-def salva_completo_in_locale(match, fiducia, affidabilita, p1x2, uo, gng, sgf, sgc, sgo, re_fin, re_pt, match_id=None):
+def salva_completo_in_locale(data_dict):
     try:
-        fuso_ita = pytz.timezone('Europe/Rome')
-        adesso = datetime.now(fuso_ita)
+        # Carichiamo il database esistente
+        df = pd.read_csv(FILE_DB_PRONOSTICI)
         
+        # Creiamo una riga compatibile con le colonne definite in inizializza_db
         nuova_riga = {
-            "Data": adesso.strftime("%d/%m/%Y"),
-            "Ora": adesso.strftime("%H:%M"),
-            "Partita": match,
-            "Fiducia nel pronostico": f"{fiducia}%",
-            "Affidabilità dei dati": f"{affidabilita}%",
-            "1X2": p1x2,
-            "U/O 2.5": uo,
-            "G/NG": gng,
-            "SGF": sgf,
-            "SGC": sgc,
-            "SGO": sgo,
-            "Top 6 Risultati Esatti Finali": re_fin,
-            "Top 3 Risultati Esatti 1°T": re_pt,
-            "Match_ID": match_id if match_id and str(match_id) != "nan" else "N/A",
-            "Stato": "In attesa" # Cambiare in "Vincente" per attivare il verde
+            "Data": data_dict.get("Data"),
+            "Ora": data_dict.get("Ora"),
+            "Partita": data_dict.get("Partita"),
+            "Fiducia": data_dict.get("Fiducia"),
+            "Affidabilità": data_dict.get("Affidabilità"),
+            "1X2": data_dict.get("1X2"),
+            "U/O 2.5": data_dict.get("U/O 2.5"),
+            "G/NG": data_dict.get("G/NG"),
+            "SGF": data_dict.get("SGF"),
+            "SGC": data_dict.get("SGC"),
+            "SGO": data_dict.get("SGO"),
+            "Top 6 RE Finali": data_dict.get("Top 6 RE Finali"),
+            "Top 3 RE 1°T": data_dict.get("Top 3 RE 1°T"),
+            "Match_ID": data_dict.get("Match_ID"),
+            "Risultato_Reale": "N/D",
+            "PT_Reale": "N/D"
         }
         
-        df = pd.read_csv(FILE_DB_PRONOSTICI)
+        # Aggiungiamo la riga e salviamo
         df = pd.concat([df, pd.DataFrame([nuova_riga])], ignore_index=True)
         df.to_csv(FILE_DB_PRONOSTICI, index=False)
         return True
@@ -385,19 +387,17 @@ with tab1:
             if d['lg'] > 1.2: 
                 st.error("🔥 ALTA PROBABILITÀ DI GOL NEL FINALE (80+ MINUTO)")
 
-    # --- ESITO FINALE 1X2 (BLU) ---
-    st.divider()
-    st.subheader("🏁 Esito Finale 1X2")
-    c1, cx, c2 = st.columns(3)
-    with c1:
-        p1 = p1/total_p
-        st.info(f"**1 (Casa):** {p1:.1%} (Q: {stima_quota(p1)})")
-    with cx:
-        probx = px/total_p
-        st.info(f"**X (Pareggio):** {px:.1%} (Q: {stima_quota(px)})")
-    with c2:
-        prob2 = p2/total_p
-        st.info(f"**2 (Ospite):** {p2:.1%} (Q: {stima_quota(p2)})")
+        # --- ESITO FINALE 1X2 ---
+        st.divider()
+        st.subheader("🏁 Esito Finale 1X2")
+        c1, cx, c2 = st.columns(3)
+        
+        with c1:
+            st.info(f"**1 (Casa)**\n\nProbabilità: {d['p1']:.1%}\n\nQuota: {stima_quota(d['p1'])}")
+        with cx:
+            st.info(f"**X (Pareggio)**\n\nProbabilità: {d['px']:.1%}\n\nQuota: {stima_quota(d['px'])}")
+        with c2:
+            st.info(f"**2 (Ospite)**\n\nProbabilità: {d['p2']:.1%}\n\nQuota: {stima_quota(d['p2'])}")
 
         # --- MERCATI ACCESSORI ---
         st.divider()
