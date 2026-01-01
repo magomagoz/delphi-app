@@ -391,7 +391,7 @@ with tab1:
         with col_uo:
             # Calcolo probabilità e quota per l'Over partendo dall'Under
             p_over = 1 - d['pu']
-            st.info(f"**U/O 2.5**\n\n**UNDER:** {d['pu']:.1%} (Q: {stima_quota(d['pu'])})\n\n**OVER:** {p_over:.1%} (Q: {stima_quota(p_over)})")
+            st.info(f"**U/O 2.5**\n\n**UNDER:** 📈 {d['pu']:.1%} (💰 Q: {stima_quota(d['pu'])})\n\n**OVER:** {p_over:.1%} (Q: {stima_quota(p_over)})")
             
         with col_gng:
             # Calcolo probabilità e quota per il No Gol partendo dal Gol
@@ -431,6 +431,11 @@ with tab1:
             
             if salva_completo_in_locale(dati_per_csv):
                 st.success("✅ Pronostico Salvato in Cronologia!")
+with tab2:
+    st.info("⚠️ Aggiornerai i principali campionati europei, il Brasile e le Coppe UEFA")
+    if st.button("🌐 Aggiorna Database (Scarica ID Match)"):
+        with st.spinner("Aggiornamento database in corso..."):
+            aggiorna_database_calcio()
 
 with tab3:
     st.header("📜 Cronologia Pronostici")
