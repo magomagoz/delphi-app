@@ -454,28 +454,38 @@ with tab3:
                 hide_index=True
             )
 
+            # --- TASTO CANCELLA CRONOLOGIA CON POP-UP DI CONFERMA ---
             st.divider()
+            st.subheader("🗑️ Gestione Dati")
+            
+            # Primo tasto: attiva la procedura di cancellazione
+            if st.button("Elimina Cronologia...", help="Clicca per iniziare la procedura di eliminazione"):
+                st.session_state['conferma_delete'] = True
 
-            # 4. TASTO CANCELLA CRONOLOGIA CON WARNING
-            st.subheader("⚠️ Zona Pericolosa")
-            
-            # Usiamo un sistema a due passaggi (conferma tramite checkbox o pulsante dedicato)
-            conferma = st.checkbox("Ho capito che questa azione è irreversibile")
-            
-            if st.button("🗑️ Cancella Tutta la Cronologia", type="secondary", disabled=not conferma):
-                # Sovrascriviamo il file con un DataFrame vuoto (solo intestazioni)
-                columns = [
-                    "Data", "Ora", "Partita", "Fiducia", "Affidabilità", 
-                    "1X2", "U/O 2.5", "G/NG", "SGF", "SGC", "SGO", 
-                    "Top 6 RE Finali", "Top 3 RE 1°T", "Match_ID", "Risultato_Reale", "PT_Reale"
-                ]
-                df_reset = pd.DataFrame(columns=columns)
-                df_reset.to_csv(FILE_DB_PRONOSTICI, index=False)
-                st.success("Cronologia eliminata correttamente!")
-                time.sleep(1)
-                st.rerun()
+            # Se la procedura è attiva, mostra il "Pop-up" rosso
+            if st.session_state.get('conferma_delete', False):
+                st.error("🚨 **ATTENZIONE: AZIONE IRREVERSIBILE**")
+                st.write("Sei sicuro di voler cancellare tutti i pronostici salvati? Questa operazione non può essere annullata.")
                 
-        else:
-            st.info("La cronologia è attualmente vuota.")
-    else:
-        st.warning("Database cronologia non trovato.")
+                col_del1, col_del2 = st.columns(2)
+                with col_del1:
+                    if st.button("SÌ, CANCELLA TUTTO", type="primary", use_container_width=True):
+                        # Logica di reset
+                        columns = [
+                            "Data", "Ora", "Partita", "Fiducia", "Affidabilità", 
+                            "1X2", "U/O 2.5", "G/NG", "SGF", "SGC", "SGO", 
+                            "Top 6 RE Finali", "Top 3 RE 1°T", "Match_ID", "Risultato_Reale", "PT_Reale"
+                        ]
+                        df_reset = pd.DataFrame(columns=columns)
+                        df_reset.to_csv(FILE_DB_PRONOSTICI, index=False)
+                        
+                        st.session_state['conferma_delete'] = False
+                        st.success("Cronologia eliminata!")
+                        time.sleep(1)
+                        st.rerun()
+                
+                with col_del2:
+                    if st.button("ANNULLA", type="secondary", use_container_width=True):
+                        st.session_state['conferma_delete'] = False
+                        st.rerun()
+
