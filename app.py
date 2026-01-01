@@ -314,7 +314,7 @@ def esegui_analisi(nome_input):
             formattati.append(f"{voce['s']} (Q: {quota:.2f})")
         return ", ".join(formattati)
 
-    # Generiamo le stringhe per i risultati esatti
+    # Generiamo le stringhe per i risultati esatti (FINAL e 1° TEMPO)
     top_re_final = formatta_re_con_quote(re_fin, 6)
     top_re1t_final = formatta_re_con_quote(re_1t, 3)
 
@@ -354,14 +354,13 @@ def esegui_analisi(nome_input):
     dt_event_ita = dt_event.astimezone(pytz.timezone('Europe/Rome'))
     
     return {
-        # Usiamo dt_event_ita invece di 'adesso'
         "Data": dt_event_ita.strftime("%d/%m/%Y"), 
         "Ora": dt_event_ita.strftime("%H:%M"),
         "League": m['League'],
         "Partita": f"{casa} vs {fuori}",
         "Fiducia": f"{int(max(p1,px,p2)*100)}%", 
         "Affidabilità": f"{85 + int(molt_arbitro*2)}%",
-        "1X2": res_1x2, "U/O 2.5": res_uo, "G/NG": res_gng,
+        "1X2": res_1x2,
         "U/O 2.5": res_uo, 
         "G/NG": res_gng,
         "SGF": top_sgf_final,  # <--- USA QUESTE VARIABILI AGGIORNATE
