@@ -267,11 +267,35 @@ def esegui_analisi(nome_input):
             if i+j < 2.5: pu+=prob
             if i>0 and j>0: pg+=prob
 
+    # Logica per limitare i valori delle Somme Gol
+    def formatta_somma(lista, limite):
+        risultato = []
+        for x in lista:
+            if int(x) >= limite:
+                # Se il valore raggiunge o supera il limite, aggiungiamo ">limite-1"
+                val = f">{limite-1}"
+                if val not in risultato: # Evitiamo duplicati come ">4, >4"
+                    risultato.append(val)
+            else:
+                risultato.append(str(x))
+        return ", ".join(risultato)
+
+    # Applichiamo la formattazione alle somme calcolate
+    sgf_list = [k for k,v in sorted(sgf.items(), key=lambda x:x[1], reverse=True)[:3]]
+    sgc_list = [k for k,v in sorted(sgc.items(), key=lambda x:x[1], reverse=True)[:2]]
+    sgo_list = [k for k,v in sorted(sgo.items(), key=lambda x:x[1], reverse=True)[:2]]
+
+    top_sgf = formatta_somma(sgf_list, 5) # Se >= 5 diventa >4
+    top_sgc = formatta_somma(sgc_list, 3) # Se >= 3 diventa >2
+    top_sgo = formatta_somma(sgo_list, 3) # Se >= 3 diventa >2
+
+            
+            
             #Pronostico Somma Gol
-            sgf[min(i+j, 5)] += prob
-            sgc[min(i, 5)] += prob
-            sgo[min(j, 5)] += prob
-            re_fin.append({'s': f"{i}-{j}", 'p': prob})
+            #sgf[min(i+j, 5)] += prob
+            #sgc[min(i, 5)] += prob
+            #sgo[min(j, 5)] += prob
+            #re_fin.append({'s': f"{i}-{j}", 'p': prob})
             
     # Poisson 1T
     eh1, ea1 = exp_h*0.42, exp_a*0.42
