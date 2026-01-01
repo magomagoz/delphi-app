@@ -353,6 +353,17 @@ def analizza_distribuzione_tempi(df_giocate, squadra):
     exp_h = (att_h * dif_a / avg_g) * molt_forma_h * (2 - molt_arbitro)
     exp_a = (att_a * dif_h / avg_g) * molt_forma_a * (2 - molt_arbitro)
 
+    # Calcolo distribuzione gol per tempo
+    dist_1t_h, dist_2t_h = analizza_distribuzione_tempi(giocate, casa)
+    dist_1t_a, dist_2t_a = analizza_distribuzione_tempi(giocate, fuori)
+
+    # Calcoliamo la probabilità di quale tempo avrà più gol
+    # Media pesata tra le due squadre
+    prob_1t_piu_gol = (dist_1t_h + dist_1t_a) / 2
+    prob_2t_piu_gol = (dist_2t_h + dist_2t_a) / 2
+    
+    tempo_top = "2° Tempo" if prob_2t_piu_gol > prob_1t_piu_gol else "1° Tempo"
+   
     p1, px, p2, pu, pg, tot = 0,0,0,0,0,0
     sgf, sgc, sgo = {i:0 for i in range(12)}, {i:0 for i in range(6)}, {i:0 for i in range(6)}
     re_fin = []
@@ -500,6 +511,24 @@ with tab1:
             st.markdown(f"**Forma {fuori_nome}:** {d['Trend_Fuori']}")
             st.caption(f"Incidenza stats: {d['Forma_A']}x")
         st.write("---")
+
+        # --- SEZIONE DISTRIBUZIONE TEMPI ---
+        st.divider()
+        st.subheader("⏱️ Analisi Tempi")
+        ct1, ct2 = st.columns(2)
+        
+        with ct1:
+            st.write(f"**Distribuzione Gol {casa_n}:**")
+            st.progress(dist_1t_h / 100, text=f"1T: {dist_1t_h}%")
+            st.progress(dist_2t_h / 100, text=f"2T: {dist_2t_h}%")
+            
+        with ct2:
+            st.write(f"**Distribuzione Gol {fuori_n}:**")
+            st.progress(dist_1t_a / 100, text=f"1T: {dist_1t_a}%")
+            st.progress(dist_2t_a / 100, text=f"2T: {dist_2t_a}%")
+
+        st.info(f"💡 **Suggerimento**: Il tempo con più gol previsto è il **{tempo_top}**")
+
         
         # --- SEZIONE WARNING FATICA ---
         df_calcio = pd.read_csv(FILE_DB_CALCIO)
@@ -526,8 +555,6 @@ with tab1:
             st.info(f"👮 **Arbitro**: {d.get('arbitro', 'N.D.')}  |  **Severità**: {d.get('molt_arbitro', 1.0)}x")
             casa_nome = d['Partita'].split(" vs ")[0]
             fuori_nome = d['Partita'].split(" vs ")[1]
-            #if controlla_fatica(df_per_fatica, casa_nome, d['Data']) or controlla_fatica(df_per_fatica, fuori_nome, d['Data']):
-                #st.warning("⚠️ **Possibile stanchezza: una delle squadre ha giocato meno di 3 giorni fa!**")
 
         with c_inf2:
             st.info(f"⏳ **Gol nel finale: {d['lg']:.2f}**")
