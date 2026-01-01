@@ -410,8 +410,16 @@ def esegui_analisi(nome_input):
         "Fatica": "No", # Inizializzato qui, verrà sovrascritto al salvataggio
         "Match_ID": match_id, "Risultato_Reale": "N/D", "PT_Reale": "N/D",
         "p1": p1, "px": px, "p2": p2, "pu": pu, "pg": pg,
+        "dist_1t_h": dist_1t_h,
+        "dist_2t_h": dist_2t_h,
+        "dist_1t_a": dist_1t_a,
+        "dist_2t_a": dist_2t_a,
+        "tempo_top": tempo_top,
+        "casa_nome": casa,   # Aggiungiamo questi per comodità
+        "fuori_nome": fuori,
         "lg": calcola_late_goal_index(casa, fuori),
-        "arbitro": arbitro, "molt_arbitro": molt_arbitro
+        "arbitro": arbitro, 
+        "molt_arbitro": molt_arbitro
     }
 
 # --- 6. LOGICA DI COLORAZIONE TABELLA ---
