@@ -10,6 +10,13 @@ import pytz
 # --- 1. CONFIGURAZIONE ---
 st.set_page_config(page_title="Delphi Predictor Pro", layout="wide") 
 
+LEAGUE_MAP = {
+    'SA': 'Serie A', 'PL': 'Premier League', 'ELC': 'Championship',
+    'PD': 'La Liga', 'BL1': 'Bundesliga', 'FL1': 'Ligue 1',
+    'CL': 'UEFA Champions League', 'PPL': 'Primeira Liga', 'DED': 'Eredivisie',
+    'BSA': 'Serie A Brasile', 'EC': 'UEFA Europa League', 'WC': 'FIFA World Cup'
+}
+
 # --- 1.1. BANNER ---
 if os.path.exists("banner.png"):
     st.image("banner.png", use_container_width=True)
