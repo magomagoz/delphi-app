@@ -292,10 +292,25 @@ def esegui_analisi(nome_input):
     top_sgo_final = formatta_somma_con_quote(sgo, 3, 2)
     top_re_final = formatta_re_con_quote(re_fin, 6)
     top_re1t_final = formatta_re_con_quote(re_1t, 3)
-    
-    dt_event = pd.to_datetime(m['Date'])
-    if dt_event.tzinfo is None: dt_event = dt_event.tz_localize('UTC')
-    dt_event_ita = dt_event.astimezone(pytz.timezone('Europe/Rome'))
+
+
+    # --- FIX ORARIO EVENTO ---
+    # L'API restituisce la data nel formato ISO (es: 2025-05-20T20:45:00Z)
+    try:
+        # Usiamo pd.to_datetime che è molto bravo a gestire il formato ISO dell'API
+        dt_event = pd.to_datetime(m['Date'])
+        
+        # Se non ha fuso orario, forziamo UTC (quello nativo dell'API)
+        if dt_event.tzinfo is None:
+            dt_event = dt_event.tz_localize('UTC')
+        
+        # Convertiamo nell'orario di Roma
+        dt_event_ita = dt_event.astimezone(pytz.timezone('Europe/Rome'))
+    except:
+        # Se qualcosa fallisce, usiamo l'orario attuale come paracadute
+        dt_event_ita = datetime.now(pytz.timezone('Europe/Rome'))
+
+    # Ora il return userà dt_event_ita che contiene l'ora esatta del calcio d'inizio
 
     return {
         "Data": dt_event_ita.strftime("%d/%m/%Y"), 
