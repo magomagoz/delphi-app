@@ -156,9 +156,12 @@ def aggiorna_database_calcio():
                     ])
             time.sleep(1) 
             progress_bar.progress((i + 1) / len(competitions))
-        
-        # Salviamo con la colonna ID
-        df_new = pd.DataFrame(rows, columns=['League', 'Date', 'HomeTeam', 'AwayTeam', 'Status', 'FTHG', 'FTAG', 'Referee', 'ID'])
+
+        # Salviamo con la colonna ID e le nuove colonne HT
+        df_new = pd.DataFrame(rows, columns=[
+            'League', 'Date', 'HomeTeam', 'AwayTeam', 'Status', 
+            'FTHG', 'FTAG', 'HTHG', 'HTAG', 'Referee', 'ID'
+        ])
         df_new.to_csv(FILE_DB_CALCIO, index=False)
         status_text.empty()
         st.success("✅ Database Calcio aggiornato con successo!")
@@ -255,10 +258,9 @@ def calcola_late_goal_index(casa, fuori):
     return round(val * 0.10 + 0.5, 2)
 
 def analizza_distribuzione_tempi(df_giocate, squadra):
-    t = df_giocate[(df_giocate['HomeTeam'] == squadra) | (df_giocate['AwayTeam'] == squadra)].tail(10)
-    if t.empty: return 42, 58
-    # Logica semplificata basata su statistiche generali di lega
-    return 42.5, 57.5 
+    # Chiama la funzione pericolosità che abbiamo scritto sopra
+    p1, p2 = analizza_pericolosita_tempi(df_giocate, squadra)
+    return p1, p2
 
 def analizza_h2h(df_giocate, casa, fuori):
     # Filtriamo tutti i precedenti tra le due squadre (sia a campi invertiti che non)
@@ -622,6 +624,7 @@ with tab1:
         # --- SEZIONE H2H ---
         st.divider()
         st.subheader("⚔️ Scontri Diretti (H2H)")
+
         # Usiamo .get() per evitare il KeyError se la chiave manca
         st.write(f"📊 {d.get('h2h_info', 'Dati H2H non disponibili')}")
 
