@@ -362,8 +362,9 @@ def esegui_analisi(nome_input):
         "SGF": top_sgf_final,  # <--- USA QUESTE VARIABILI AGGIORNATE
         "SGC": top_sgc_final,  # <--- USA QUESTE VARIABILI AGGIORNATE
         "SGO": top_sgo_final,  # <--- USA QUESTE VARIABILI AGGIORNATE
-        "Top 6 RE Finali": top_re_final,
-        "Top 3 RE 1°T": top_re1t_final,
+        # PUNTO CRUCIALI: Colleghiamo le stringhe con le quote
+        "Top 6 RE Finali": stringa_re_finale, 
+        "Top 3 RE 1°T": stringa_re_pt,
         "Match_ID": match_id,
         "Risultato_Reale": "N/D", "PT_Reale": "N/D",
         # Dati extra per visualizzazione
