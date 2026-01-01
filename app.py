@@ -145,9 +145,13 @@ def aggiorna_database_calcio():
                     away = m['awayTeam']['shortName'] or m['awayTeam']['name']
                     ref = m['referees'][0]['name'] if m.get('referees') else 'N.D.'
                     # IMPORTANTE: Salviamo l'ID                    
+
+                    
+                    # Modifica questa riga nell'aggiornamento DB
                     rows.append([
                         comp, m['utcDate'], home, away, m['status'], 
                         m['score']['fullTime']['home'], m['score']['fullTime']['away'], 
+                        m['score']['halfTime']['home'], m['score']['halfTime']['away'], # AGGIUNTI QUESTI DUE
                         ref, m['id']
                     ])
             time.sleep(1) 
@@ -315,28 +319,34 @@ def get_stats(team, is_home_side, df_giocate):
     return max(0.5, gf), max(0.5, gs)
 
 def analizza_pericolosita_tempi(df_giocate, squadra):
-    # Analizziamo gli ultimi 10 match della squadra
-    ultime = df_giocate[(df_giocate['HomeTeam'] == squadra) | (df_giocate['AwayTeam'] == squadra)].tail(10)
+    # Analizziamo gli ultimi 15 match per avere un campione più ampio
+    ultime = df_giocate[(df_giocate['HomeTeam'] == squadra) | (df_giocate['AwayTeam'] == squadra)].tail(15)
     
     gol_fatti_1t = 0
     gol_fatti_2t = 0
+    match_validi = 0
     
     for _, r in ultime.iterrows():
-        # Dobbiamo derivare i gol del 2° tempo sottraendo quelli del 1° dal finale
-        # Nota: assicurati di avere le colonne HalfTime Home/Away nel DB
         is_home = r['HomeTeam'] == squadra
-        
-        # Gol totali
         f_tot = r['FTHG'] if is_home else r['FTAG']
-        # Gol primo tempo (se disponibili nel DB, altrimenti usiamo una media)
-        f_1t = r.get('HTHG', f_tot/2) if is_home else r.get('HTAG', f_tot/2)
         
-        gol_fatti_1t += f_1t
-        gol_fatti_2t += (f_tot - f_1t)
+        # Cerchiamo i gol del primo tempo nelle colonne HTHG/HTAG
+        # Se non esistono o sono NaN, saltiamo il calcolo per questo match
+        h_1t = r.get('HTHG') if is_home else r.get('HTAG')
         
+        if pd.notnull(h_1t):
+            gol_fatti_1t += h_1t
+            gol_fatti_2t += (f_tot - h_1t)
+            match_validi += 1
+            
+    if match_validi == 0:
+        return 50.0, 50.0  # Fallback se mancano i dati storici parziali
+    
     tot = gol_fatti_1t + gol_fatti_2t
-    perc_1t = round((gol_fatti_1t / tot * 100), 1) if tot > 0 else 50
-    perc_2t = round((gol_fatti_2t / tot * 100), 1) if tot > 0 else 50
+    if tot == 0: return 50.0, 50.0
+    
+    perc_1t = round((gol_fatti_1t / tot * 100), 1)
+    perc_2t = round((gol_fatti_2t / tot * 100), 1)
     
     return perc_1t, perc_2t
 
@@ -622,6 +632,12 @@ with tab1:
         c_time1, c_time2 = st.columns(2)
         p1_h, p2_h = analizza_pericolosita_tempi(df_calcio, casa_nome)
         p1_a, p2_a = analizza_pericolosita_tempi(df_calcio, fuori_nome)
+
+        if p1_h == 50.0 and p2_h == 50.0:
+            st.caption("⚠️ Dati parziali insufficienti nel DB per un'analisi accurata dei tempi.")
+        else:
+            # Mostra i tuoi metric/progress bar qui
+            st.write(f"Distribuzione Gol {casa_nome}: {p1_h}% (1°T) / {p2_h}% (2°T)")
 
         with c_time1:
             st.write(f"**{casa_nome}**")
