@@ -285,16 +285,35 @@ def esegui_analisi(nome_input):
     molt_arbitro = analizza_severita_arbitro(giocate, arbitro)
     avg_g = max(1.1, pd.to_numeric(giocate['FTHG'], errors='coerce').mean())
     
-    def get_stats(team):
+    def get_stats(team, is_home_side):
+        # Prendiamo le ultime 15 partite totali per solidità statistica
         t = giocate[(giocate['HomeTeam'] == team) | (giocate['AwayTeam'] == team)].tail(15)
         if t.empty: return 1.2, 1.2
-        gf = t.apply(lambda r: r['FTHG'] if r['HomeTeam']==team else r['FTAG'], axis=1).mean()
-        gs = t.apply(lambda r: r['FTAG'] if r['HomeTeam']==team else r['FTHG'], axis=1).mean()
+        
+        # Filtriamo solo i match giocati in quella specifica condizione (Casa o Fuori)
+        if is_home_side:
+            stats_condizione = t[t['HomeTeam'] == team]
+        else:
+            stats_condizione = t[t['AwayTeam'] == team]
+            
+        # Se ha dati per quella condizione, usa quelli, altrimenti usa la media generale (fallback)
+        if not stats_condizione.empty:
+            if is_home_side:
+                gf = stats_condizione['FTHG'].mean()
+                gs = stats_condizione['FTAG'].mean()
+            else:
+                gf = stats_condizione['FTAG'].mean()
+                gs = stats_condizione['FTHG'].mean()
+        else:
+            # Fallback: media totale se mancano match in quella condizione nelle ultime 15
+            gf = t.apply(lambda r: r['FTHG'] if r['HomeTeam']==team else r['FTAG'], axis=1).mean()
+            gs = t.apply(lambda r: r['FTAG'] if r['HomeTeam']==team else r['FTHG'], axis=1).mean()
+            
         return max(0.5, gf), max(0.5, gs)
 
-    
-    att_h, dif_h = get_stats(casa)
-    att_a, dif_a = get_stats(fuori)
+    # Chiamate aggiornate: passiamo True per la squadra in casa e False per quella fuori
+    att_h, dif_h = get_stats(casa, True)
+    att_a, dif_a = get_stats(fuori, False)
     
     trend_h, molt_forma_h = calcola_trend_forma(giocate, casa)
     trend_a, molt_forma_a = calcola_trend_forma(giocate, fuori)
