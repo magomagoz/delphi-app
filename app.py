@@ -267,24 +267,20 @@ def esegui_analisi(nome_input):
             if i+j < 2.5: pu+=prob
             if i>0 and j>0: pg+=prob
 
-    # --- NUOVA LOGICA CON QUOTE E LIMITI ---
-    def formatta_con_quote(dizionario_prob, limite, top_n):
-        # Ordina per probabilità decrescente e prendi i primi N
-        top_esiti = sorted(dizionario_prob.items(), key=lambda x: x[1], reverse=True)[:top_n]
+    # --- LOGICA RE CON QUOTE ---
+    def formatta_re_con_quote(lista_re, top_n):
+        # Ordina la lista di dizionari per probabilità 'p' decrescente
+        top_esiti = sorted(lista_re, key=lambda x: x['p'], reverse=True)[:top_n]
         formattati = []
-        
-        for valore, prob in top_esiti:
-            quota = stima_quota(prob)
-            # Se il valore è >= limite (es. 5 per il totale o 3 per il team), usa ">limite-1"
-            label = f">{limite-1}" if int(valore) >= limite else str(valore)
-            formattati.append(f"{label} (Q: {quota:.2f})")
-        
+        for voce in top_esiti:
+            # Calcoliamo la quota usando la funzione stima_quota già presente
+            quota = stima_quota(voce['p'])
+            formattati.append(f"{voce['s']} (Q: {quota:.2f})")
         return ", ".join(formattati)
 
-    # Generiamo le stringhe definitive
-    top_sgf_final = formatta_con_quote(sgf, 5, 3) # Esempio: "2 (Q: 3.50), >4 (Q: 5.20)"
-    top_sgc_final = formatta_con_quote(sgc, 3, 2)
-    top_sgo_final = formatta_con_quote(sgo, 3, 2)
+    # Generiamo le stringhe definitive che andranno nel dizionario
+    stringa_re_finale = formatta_re_con_quote(re_fin, 6)
+    stringa_re_pt = formatta_re_con_quote(re_1t, 3)
             
     # Poisson 1T
     eh1, ea1 = exp_h*0.42, exp_a*0.42
