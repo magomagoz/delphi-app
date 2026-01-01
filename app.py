@@ -439,6 +439,16 @@ with tab1:
         st.header(f"🏟️ {d['Partita']}")
         st.subheader(f"🏆 {d.get('League', 'N.D.')} | 📅 Data: {d['Data']} ore {d['Ora']}")
 
+        # --- SEZIONE TREND DI FORMA ---
+        c_trend1, c_trend2 = st.columns(2)
+        with c_trend1:
+            st.markdown(f"**Forma {casa_nome}:** {d['Trend_Casa']}")
+            st.caption(f"Incidenza stats: {d['Forma_H']}x")
+        with c_trend2:
+            st.markdown(f"**Forma {fuori_nome}:** {d['Trend_Fuori']}")
+            st.caption(f"Incidenza stats: {d['Forma_A']}x")
+        st.write("---")
+        
         # --- SEZIONE WARNING FATICA ---
         df_calcio = pd.read_csv(FILE_DB_CALCIO)
         casa_nome, fuori_nome = d['Partita'].split(" vs ")
