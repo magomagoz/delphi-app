@@ -388,7 +388,7 @@ def esegui_analisi(nome_input):
         "SGF": top_sgf_final, "SGC": top_sgc_final, "SGO": top_sgo_final,
         "Top 6 RE Finali": top_re_final,  # <-- Corretto da stringa_re_finale
         "Top 3 RE 1°T": top_re1t_final,   # <-- Corretto da stringa_re_pt
-        "Fatica": data_dict.get("Fatica", "No"),
+        "Fatica": "N/D",
         "Match_ID": match_id, "Risultato_Reale": "N/D", "PT_Reale": "N/D",
         "p1": p1, "px": px, "p2": p2, "pu": pu, "pg": pg,
         "lg": calcola_late_goal_index(casa, fuori),
