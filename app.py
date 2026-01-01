@@ -450,18 +450,18 @@ with tab1:
             p_nogol = 1 - d['pg']
             st.info(f"**GOL / NO GOL**\n\n**GOL:** {d['pg']:.1%} (Q: {stima_quota(d['pg'])})\n\n**NO GOL:** {p_nogol:.1%} (Q: {stima_quota(p_nogol)})")
 
-        # --- RISULTATI E SOMME GOL ---
+        # --- RISULTATI E SOMME GOL CON QUOTE ---
         st.divider()
         st.subheader("⚽ Analisi Somma Gol (Multigol)")
         cr1, cr2 = st.columns(2)
         
         with cr1:
-            # Somma Gol Totale (Match)
+            # Mostra i Top 3 esiti del match con le relative quote
             st.info(f"🎯 **Somma Gol Finale (Top 3)**\n\n{d['SGF']}")
             
         with cr2:
-            # Somma Gol Casa e Ospite (Team)
-            st.info(f"🏠 **Casa (Top 2):** {d['SGC']}\n\n🚀 **Ospite (Top 2):** {d['SGO']}")
+            # Mostra i Top 2 esiti per squadra con le relative quote
+            st.info(f"🏠 **Casa:** {d['SGC']}\n\n🚀 **Ospite:** {d['SGO']}")
 
         # --- RISULTATI ESATTI ---
         st.divider()
