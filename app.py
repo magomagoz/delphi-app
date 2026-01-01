@@ -266,21 +266,6 @@ def esegui_analisi(nome_input):
             #Pronostico U/O 2,5 e G/NG
             if i+j < 2.5: pu+=prob
             if i>0 and j>0: pg+=prob
-
-    # --- LOGICA RE CON QUOTE ---
-    def formatta_re_con_quote(lista_re, top_n):
-        # Ordina la lista di dizionari per probabilità 'p' decrescente
-        top_esiti = sorted(lista_re, key=lambda x: x['p'], reverse=True)[:top_n]
-        formattati = []
-        for voce in top_esiti:
-            # Calcoliamo la quota usando la funzione stima_quota già presente
-            quota = stima_quota(voce['p'])
-            formattati.append(f"{voce['s']} (Q: {quota:.2f})")
-        return ", ".join(formattati)
-
-    # Generiamo le stringhe definitive che andranno nel dizionario
-    stringa_re_finale = formatta_re_con_quote(re_fin, 6)
-    stringa_re_pt = formatta_re_con_quote(re_1t, 3)
             
     # Poisson 1T
     eh1, ea1 = exp_h*0.42, exp_a*0.42
@@ -348,6 +333,12 @@ def esegui_analisi(nome_input):
         dt_event = dt_event.tz_localize('UTC')
     
     dt_event_ita = dt_event.astimezone(pytz.timezone('Europe/Rome'))
+
+
+
+
+
+
     
     return {
         "Data": dt_event_ita.strftime("%d/%m/%Y"), 
