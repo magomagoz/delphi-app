@@ -107,7 +107,7 @@ def aggiorna_database_calcio():
                     home = m['homeTeam']['shortName'] or m['homeTeam']['name']
                     away = m['awayTeam']['shortName'] or m['awayTeam']['name']
                     ref = m['referees'][0]['name'] if m.get('referees') else 'N.D.'
-                    # IMPORTANTE: Salviamo l'ID
+                    # IMPORTANTE: Salviamo l'ID                    
                     rows.append([
                         comp, m['utcDate'], home, away, m['status'], 
                         m['score']['fullTime']['home'], m['score']['fullTime']['away'], 
