@@ -598,8 +598,8 @@ with tab1:
             # Eseguiamo l'analisi finale con le penali scelte
             risultati = esegui_analisi(sq, pen_h, pen_a, is_big_match)
             st.session_state['pronostico_corrente'] = risultati
-            else:
-                st.session_state['pronostico_corrente'] = None
+        else:
+            st.session_state['pronostico_corrente'] = None
 
     if 'pronostico_corrente' in st.session_state and st.session_state['pronostico_corrente']:
         d = st.session_state['pronostico_corrente']
