@@ -548,7 +548,7 @@ with tab1:
     
     if sq:
         # Tasto per ricerca rapida su Google News
-        search_query = f"{sq} formazione e assenti per la partita del {data_finale}"
+        search_query = f"{sq} formazione e assenti per la partita del {d['Data']} ore {d['Ora']}"
         google_news_url = f"https://www.google.com/search?q={search_query.replace(' ', '+')}&tbm=nws"
         
         st.markdown(f"👉 [**Controlla Formazione e Assenti per {sq} su Google News**]({google_news_url})")
@@ -759,8 +759,8 @@ with tab1:
                 st.rerun()
 
 with tab2:
-    st.info("⚠️ Aggiornerai i principali campionati europei, il Brasile e le Coppe UEFA")
-    if st.button("🌐 Aggiorna Database (Scarica ID Match)"):
+    st.info("⚠️ Aggiornerai Premier, Championship, Primera, Serie A, Liga, Ligue 1, Bundesliga, Eredivisie, Brasilera, UEFA e FIFA")
+    if st.button("🌐 Aggiorna Database"):
         with st.spinner("Aggiornamento database in corso..."):
             aggiorna_database_calcio()
 
