@@ -545,6 +545,7 @@ tab1, tab2, tab3 = st.tabs(["🎯 **Analisi**", "⚙️ **Database**", "📜 **C
 
 with tab1:
     sq = st.text_input("🔍 Inserisci Squadra:")
+    data = st.data()
     
     if sq:
         # Tasto per ricerca rapida su Google News
