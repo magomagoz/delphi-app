@@ -548,7 +548,7 @@ with tab1:
     
     if sq:
         # Tasto per ricerca rapida su Google News
-        search_query = f"{Partita}: formazioni e assenti"
+        search_query = f"{casa_nome} - {fuori_nome}: formazioni e assenti"
         google_news_url = f"https://www.google.com/search?q={search_query.replace(' ', '+')}&tbm=nws"
         
         st.markdown(f"👉 [**Controlla Formazione e Assenti per {sq} su Google News**]({google_news_url})")
