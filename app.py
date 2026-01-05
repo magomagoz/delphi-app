@@ -545,33 +545,44 @@ tab1, tab2, tab3 = st.tabs(["🎯 **Analisi**", "⚙️ **Database**", "📜 **C
 
 with tab1:
     sq = st.text_input("🔍 Inserisci Squadra:")
-    
-    #if sq:
-        # Tasto per ricerca rapida su Google News
-        #search_query = f"{sq}: formazioni e assenti prossima partita"
-        #google_news_url = f"https://www.google.com/search?q={search_query.replace(' ', '+')}&tbm=nws"
-        
-        #st.markdown(f"👉 [**Controlla Formazione e Assenti per {sq} su Google News**]({google_news_url})")
 
-    if sq:
-        # 1. Eseguiamo l'analisi per ottenere i dati dal database/API
-        # Nota: usiamo valori di default per le penali se l'utente non ha ancora cliccato "Genera"
-        risultati_temp = esegui_analisi(sq)
-        
-        if risultati_temp:
-            data_match = risultati_temp['Data']  # Formato DD/MM/YYYY
-            # Creiamo una query super precisa: "Squadra formazioni 25/05/2024"
-            search_query = f"{sq} formazioni assenti {data_match}"
-            google_news_url = f"https://www.google.com/search?q={search_query.replace(' ', '+')}&tbm=nws"
-            
-            st.markdown(f"👉 [**Controlla Formazione e Assenti per {sq} del {data_match} su Google News**]({google_news_url})")
-        else:
-            # Fallback se non trova il match nel database
-            search_query = f"{sq} formazioni assenti prossima partita"
-            google_news_url = f"https://www.google.com/search?q={search_query.replace(' ', '+')}&tbm=nws"
-            st.markdown(f"👉 [**Controlla Formazione e Assenti per {sq} su Google News**]({google_news_url})")
+    # Inizializziamo gli stati se non esistono
+    if 'dati_acquisiti' not in st.session_state:
+        st.session_state['dati_acquisiti'] = False
+    if 'squadra_precedente' not in st.session_state:
+        st.session_state['squadra_precedente'] = ""
 
-        st.info("Regola la potenza offensiva se mancano giocatori chiave (es. 0.85 = -15% forza attacco)")
+    # Reset se l'utente cambia squadra nel box
+    if sq != st.session_state['squadra_precedente']:
+        st.session_state['dati_acquisiti'] = False
+        st.session_state['pronostico_corrente'] = None
+        st.session_state['squadra_precedente'] = sq
+
+    # --- STEP 1: ACQUISIZIONE ---
+    if sq and not st.session_state['dati_acquisiti']:
+        if st.button("📊 Acquisisci Dati", type="secondary", use_container_width=True):
+            risultati_temp = esegui_analisi(sq)
+            if risultati_temp:
+                st.session_state['dati_temp'] = risultati_temp
+                st.session_state['dati_acquisiti'] = True
+                st.rerun()
+            else:
+                st.error("Squadra non trovata nel database.")
+
+    # --- STEP 2: RICERCA NEWS E GENERAZIONE ---
+    if st.session_state['dati_acquisiti']:
+        d_temp = st.session_state['dati_temp']
+        
+        # Link Google News con data precisa
+        data_match = d_temp['Data']
+        search_query = f"{sq} formazioni assenti {data_match}"
+        google_news_url = f"https://www.google.com/search?q={search_query.replace(' ', '+')}&tbm=nws"
+        
+        st.success(f"✅ Dati acquisiti per {d_temp['Partita']}")
+        st.markdown(f"👉 [**Controlla Formazione e Assenti per il {data_match} su Google News**]({google_news_url})")
+        
+        st.divider()
+        st.info("Regola la potenza offensiva se mancano giocatori chiave")
         
         col_p1, col_p2 = st.columns(2)
         with col_p1:
@@ -580,14 +591,13 @@ with tab1:
         with col_p2:
             pen_a = st.select_slider(f"Potenza Attacco Fuori", 
                                      options=[0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0], value=1.0)        
-            is_big_match = st.toggle("🔥 Filtro Big Match / Derby", help="Attiva questa opzione per scontri tra top team. Riduce l'aspettativa di gol del 12% per riflettere l'atteggiamento tattico prudente.")
-    
-    if st.button("**Genera Pronostico**", type="primary"):
-        if sq:
-            # Passiamo i valori degli slider alla funzione
-            risultati = esegui_analisi(sq, pen_h, pen_a, is_big_match) 
-            if risultati:
-                st.session_state['pronostico_corrente'] = risultati
+            is_big_match = st.toggle("🔥 Filtro Big Match / Derby")
+
+        # Pulsante finale per il pronostico
+        if st.button("🎯 Genera Pronostico", type="primary", use_container_width=True):
+            # Eseguiamo l'analisi finale con le penali scelte
+            risultati = esegui_analisi(sq, pen_h, pen_a, is_big_match)
+            st.session_state['pronostico_corrente'] = risultati
             else:
                 st.session_state['pronostico_corrente'] = None
 
