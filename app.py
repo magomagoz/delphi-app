@@ -548,7 +548,7 @@ with tab1:
     
     if sq:
         # Tasto per ricerca rapida su Google News
-        search_query = f"{sq} formazione e assenti per la partita del {Data} ore {Ora}"
+        search_query = f"{Partita}: formazioni e assenti"
         google_news_url = f"https://www.google.com/search?q={search_query.replace(' ', '+')}&tbm=nws"
         
         st.markdown(f"👉 [**Controlla Formazione e Assenti per {sq} su Google News**]({google_news_url})")
@@ -754,12 +754,12 @@ with tab1:
             dati_per_csv = {k: v for k, v in dati_puliti.items() if k not in escludi}
             
             if salva_completo_in_locale(dati_per_csv):
-                st.success("✅ Salvato (incluso dato fatica)!")
+                st.success("✅ Salvato in cronologia!")
                 time.sleep(1)
                 st.rerun()
 
 with tab2:
-    st.info("⚠️ Aggiornerai Premier, Championship, Primera, Serie A, Liga, Ligue 1, Bundesliga, Eredivisie, Brasilera, UEFA e FIFA")
+    st.info("⚠️ Aggiornerai Premier, Championship, Primera, Serie A, Liga, Ligue 1, Bundesliga, Eredivisie, Brasileirao Betano, UEFA e FIFA")
     if st.button("🌐 Aggiorna Database"):
         with st.spinner("Aggiornamento database in corso..."):
             aggiorna_database_calcio()
