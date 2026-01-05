@@ -81,8 +81,8 @@ def salva_completo_in_locale(data_dict):
             "Top 6 RE Finali": data_dict.get("Top 6 RE Finali"),
             "Top 3 RE 1°T": data_dict.get("Top 3 RE 1°T"),
             "Match_ID": data_dict.get("Match_ID"),
-            "Risultato_Reale": "N/D",
-            "PT_Reale": "N/D"
+            "Risultato_Reale": data_dict.get("Risultato_Reale"),
+            "PT_Reale": data_dict.get("PT_Reale"
         }
         
         # Aggiungiamo la riga e salviamo
@@ -405,9 +405,6 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False): # Aggi
         exp_h *= 0.88 # Riduzione del 12%
         exp_a *= 0.88
 
-
-
-    
     p1, px, p2, pu, pg, tot = 0,0,0,0,0,0
     sgf, sgc, sgo = {i:0 for i in range(12)}, {i:0 for i in range(6)}, {i:0 for i in range(6)}
     re_fin = []
@@ -551,10 +548,10 @@ with tab1:
     
     if sq:
         # Tasto per ricerca rapida su Google News
-        search_query = f"{sq} missing players injuries lineups news"
+        search_query = f"{sq} formazione e assenti"
         google_news_url = f"https://www.google.com/search?q={search_query.replace(' ', '+')}&tbm=nws"
         
-        st.markdown(f"👉 [**Controlla Assenze per {sq} su Google News**]({google_news_url})")
+        st.markdown(f"👉 [**Controlla Formazione e Assenti per {sq} su Google News**]({google_news_url})")
         
         st.info("Regola la potenza offensiva se mancano giocatori chiave (es. 0.85 = -15% forza attacco)")
         
