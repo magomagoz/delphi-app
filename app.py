@@ -545,15 +545,32 @@ tab1, tab2, tab3 = st.tabs(["🎯 **Analisi**", "⚙️ **Database**", "📜 **C
 
 with tab1:
     sq = st.text_input("🔍 Inserisci Squadra:")
-    data = st.data()
     
-    if sq:
+    #if sq:
         # Tasto per ricerca rapida su Google News
-        search_query = f"{sq}: formazioni e assenti prossima partita"
-        google_news_url = f"https://www.google.com/search?q={search_query.replace(' ', '+')}&tbm=nws"
+        #search_query = f"{sq}: formazioni e assenti prossima partita"
+        #google_news_url = f"https://www.google.com/search?q={search_query.replace(' ', '+')}&tbm=nws"
         
-        st.markdown(f"👉 [**Controlla Formazione e Assenti per {sq} su Google News**]({google_news_url})")
+        #st.markdown(f"👉 [**Controlla Formazione e Assenti per {sq} su Google News**]({google_news_url})")
+
+    if sq:
+        # 1. Eseguiamo l'analisi per ottenere i dati dal database/API
+        # Nota: usiamo valori di default per le penali se l'utente non ha ancora cliccato "Genera"
+        risultati_temp = esegui_analisi(sq)
         
+        if risultati_temp:
+            data_match = risultati_temp['Data']  # Formato DD/MM/YYYY
+            # Creiamo una query super precisa: "Squadra formazioni 25/05/2024"
+            search_query = f"{sq} formazioni assenti {data_match}"
+            google_news_url = f"https://www.google.com/search?q={search_query.replace(' ', '+')}&tbm=nws"
+            
+            st.markdown(f"👉 [**Controlla Formazione e Assenti per {sq} del {data_match} su Google News**]({google_news_url})")
+        else:
+            # Fallback se non trova il match nel database
+            search_query = f"{sq} formazioni assenti prossima partita"
+            google_news_url = f"https://www.google.com/search?q={search_query.replace(' ', '+')}&tbm=nws"
+            st.markdown(f"👉 [**Controlla Formazione e Assenti per {sq} su Google News**]({google_news_url})")
+
         st.info("Regola la potenza offensiva se mancano giocatori chiave (es. 0.85 = -15% forza attacco)")
         
         col_p1, col_p2 = st.columns(2)
