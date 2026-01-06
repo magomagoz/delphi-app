@@ -575,11 +575,11 @@ with tab1:
         
         # Link Google News con data precisa
         data_match = d_temp['Data']
-        search_query = f"{sq} formazioni assenti {data_match}"
+        search_query = f"**Formazione {sq} nella partita del {data_match}**"
         google_news_url = f"https://www.google.com/search?q={search_query.replace(' ', '+')}&tbm=nws"
         
         st.success(f"✅ Dati acquisiti per {d_temp['Partita']}")
-        st.markdown(f"👉 [**Controlla Formazione e Assenti per il {data_match} su Google News**]({google_news_url})")
+        st.markdown(f"👉 [**Controlla Formazione e Assenti per il {data_match}**]({google_news_url})")
         
         st.divider()
         st.info("Regola la potenza offensiva se mancano giocatori chiave")
@@ -646,7 +646,7 @@ with tab1:
         c_inf1, c_inf2 = st.columns(2)
 
         with c_inf1:
-            st.info(f"👮 **Arbitro**: {d.get('arbitro', 'N.D.')}  |  **Severità**: {d.get('molt_arbitro', 1.0)}x")
+            st.info(f"👮 **Arbitro**: {d.get('arbitro', 'N.D.')}  |  **Impatto**: {d.get('molt_arbitro', 1.0)}x")
             casa_nome = d['Partita'].split(" vs ")[0]
             fuori_nome = d['Partita'].split(" vs ")[1]
             #if controlla_fatica(df_per_fatica, casa_nome, d['Data']) or controlla_fatica(df_per_fatica, fuori_nome, d['Data']):
@@ -742,7 +742,7 @@ with tab1:
         
         with cr1:
             # Mostra i Top 3 esiti del match con le relative quote
-            st.error(f"🎯 **Somma Gol Finale (Top 3)**\n\n{d['SGF']}")
+            st.error(f"🎯 **Somma Gol Finale (Top 3)**\n{d['SGF']}")
             
         with cr2:
             # Mostra i Top 2 esiti per squadra con le relative quote
