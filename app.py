@@ -577,14 +577,13 @@ with tab1:
             with col_uo: st.warning(f"**UNDER 2.5:** {d['pu']:.1%} (Q:{stima_quota(d['pu'])})\n\n**OVER 2.5:** {p_over:.1%} (Q:{stima_quota(p_over)})")
             with col_gng: st.warning(f"**GOL:** {d['pg']:.1%} (Q:{stima_quota(d['pg'])})\n\n**NOGOL:** {p_nogol:.1%} (Q:{stima_quota(p_nogol)})")
             
-            st.divider()
         # --- RISULTATI E SOMME GOL CON QUOTE ---
         st.divider()
         st.subheader("⚽ Analisi Somma Gol")
         cr1, cr2 = st.columns(2)
         with cr1:
             # Mostra i Top 3 esiti del match con le relative quote
-            st.error(f"🎯 **Somma Gol Finale (Top 3)**\n\n{d['sgf']}")           
+            st.error(f"🎯 **Somma Gol Finale (Top 3)**\n\n{d['SGF']}")           
         with cr2:
             # Mostra i Top 2 esiti per squadra con le relative quote
             st.error(f"🏠 **Somma Gol Casa:** {d['SGC']}\n\n🚀 **Somma Gol Ospite:** {d['SGO']}")
