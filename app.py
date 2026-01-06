@@ -27,6 +27,13 @@ API_TOKEN = 'c7a609a0580f4200add2751d787b3c68'
 FILE_DB_CALCIO = 'database_pro_2025.csv'
 FILE_DB_PRONOSTICI = 'database_pronostici.csv'
 
+# --- SOTTO LE DEFINIZIONI DEI FILE ---
+FILE_DB_CALCIO = 'database_pro_2025.csv'
+FILE_DB_PRONOSTICI = 'database_pronostici.csv'
+
+# Forza la creazione del file all'avvio dell'app
+inizializza_db() 
+
 # --- 2. FUNZIONI LOGICHE DI VERIFICA (CASELLE VERDI) ---
 def check_1x2(pred, home, away):
     if home > away: res = "1"
@@ -49,21 +56,27 @@ def check_in_list(pred_string, value_to_find):
 
 # --- 3. FUNZIONI DATABASE ---
 def inizializza_db():
-    # Definiamo la lista colonne definitiva
     columns = [
         "Data", "Ora", "Partita", "Fiducia", "Affidabilità", 
         "1X2", "U/O 2.5", "G/NG", "SGF", "SGC", "SGO", 
         "Top 6 RE Finali", "Top 3 RE 1°T", "Fatica", "Match_ID", "Risultato_Reale", "PT_Reale"
     ]
     if not os.path.exists(FILE_DB_PRONOSTICI):
+        # Crea un file nuovo con le colonne se non esiste
         df = pd.DataFrame(columns=columns)
         df.to_csv(FILE_DB_PRONOSTICI, index=False)
     else:
-        # Verifica se la colonna Fatica esiste nel file vecchio, altrimenti la aggiunge
-        df_esistente = pd.read_csv(FILE_DB_PRONOSTICI)
-        if "Fatica" not in df_esistente.columns:
-            df_esistente["Fatica"] = "N.D."
+        # Se esiste, controlliamo che non sia vuoto o corrotto
+        try:
+            df_esistente = pd.read_csv(FILE_DB_PRONOSTICI)
+            # Aggiunge colonne mancanti se hai aggiornato il codice ma il file è vecchio
+            for col in columns:
+                if col not in df_esistente.columns:
+                    df_esistente[col] = "N/D"
             df_esistente.to_csv(FILE_DB_PRONOSTICI, index=False)
+        except:
+            # Se il file è illeggibile, lo resetta
+            pd.DataFrame(columns=columns).to_csv(FILE_DB_PRONOSTICI, index=False)
 
 def salva_completo_in_locale(data_dict):
     try:
