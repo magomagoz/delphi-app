@@ -474,21 +474,21 @@ with tab1:
         st.session_state['squadra_precedente'] = sq
 
     if sq and not st.session_state['dati_acquisiti']:
-        if st.button("📊 Acquisisci dati della partita", type="secondary", use_container_width=True):
-            risultati_temp = esegui_analisi(sq)
-            if risultati_temp:
-                st.session_state['dati_temp'] = risultati_temp
+        if st.button("📊 Acquisisci dati della partita", use_container_width=True):
+            res = esegui_analisi(sq) # Esegue l'analisi
+            if res:
+                st.session_state['dati_temp'] = res # Salva nel database temporaneo
                 st.session_state['dati_acquisiti'] = True
                 st.rerun()
-            else:
-                st.error("Squadra non trovata nel database.")
+            else: st.error("Squadra non trovata.")
 
-    if st.session_state['dati_acquisiti']:
-        d_temp = st.session_state['dati_temp']
+    if st.session_state.get('dati_acquisiti'):
+        d = st.session_state['dati_temp'] # <--- QUI DEFINIAMO 'd'
+        st.success(f"✅ Dati acquisiti per {d['Partita']}")
+    
         search_query = f"**Formazione {sq} nella partita del {d_temp['Data']}**"
         google_news_url = f"https://www.google.com/search?q={search_query.replace(' ', '+')}&tbm=nws"
         
-        st.success(f"✅ Dati acquisiti per {d_temp['Partita']}")
         st.markdown(f"👉 [**Controlla Formazione e Assenti per il {d_temp['Data']}**]({google_news_url})")
 
         st.divider()
@@ -601,8 +601,8 @@ with tab1:
             if st.button("💾 Salva in Cronologia", use_container_width=True):
                 # Calcola la fatica prima di salvare
                 df_c = pd.read_csv(FILE_DB_CALCIO)
-                f_h = controlla_fatica(df_c, res['casa_nome'], res['Data'])
-                f_a = controlla_fatica(df_c, res['fuori_nome'], res['Data'])
+                f_h = controlla_fatica(df_c, d['casa_nome'], d['Data'])
+                f_a = controlla_fatica(df_c, d['fuori_nome'], d['Data'])
                 res['Fatica'] = "SÌ" if (f_h or f_a) else "NO"
                 
                 if salva_completo_in_locale(res):
@@ -656,27 +656,27 @@ with tab4:
     st.header("📊 Performance Delphi Predictor Pro")
     if os.path.exists(FILE_DB_PRONOSTICI):
         df_stat = pd.read_csv(FILE_DB_PRONOSTICI)
-        # Filtra solo i match che hanno un risultato reale inserito
-        df_conclusi = df_stat[df_stat['Risultato_Reale'] != "N/D"].copy()
+        # Filtriamo solo i match conclusi (quelli con risultato reale)
+        df_v = df_stat[df_stat['Risultato_Reale'] != "N/D"].copy()
         
-        if not df_conclusi.empty:
-            def calcola_win(r):
+        if not df_v.empty:
+            # Funzione interna per verificare se il pronostico 1X2 era corretto
+            def verifica(r):
                 try:
                     h, a = map(int, str(r['Risultato_Reale']).split('-'))
                     return check_1x2(r['1X2'], h, a)
                 except: return False
-
-            df_conclusi['Esito'] = df_conclusi.apply(calcola_win, axis=1)
-            wr = df_conclusi['Esito'].mean()
+            
+            df_v['Vinto'] = df_v.apply(verifica, axis=1)
+            win_rate = df_v['Vinto'].mean()
             
             c1, c2 = st.columns(2)
-            c1.metric("Win Rate 1X2", f"{wr:.1%}")
-            c2.metric("Match Analizzati", len(df_conclusi))
+            c1.metric("Win Rate 1X2", f"{win_rate:.1%}")
+            c2.metric("Match Totali", len(df_v))
             
-            st.subheader("Dettaglio Ultime Giocate")
-            st.table(df_conclusi[['Partita', '1X2', 'Risultato_Reale', 'Esito']].tail(10))
+            st.subheader("Ultime 10 Giocate Verificate")
+            st.dataframe(df_v[['Partita', '1X2', 'Risultato_Reale', 'Vinto']].tail(10), use_container_width=True)
         else:
-            st.info("Aggiorna i risultati in 'Cronologia' per vedere le statistiche.")
+            st.info("Aggiorna i risultati reali nella Cronologia per generare le statistiche.")
     else:
-        st.warning("Nessun dato disponibile. Salva prima qualche pronostico.")
-    
+        st.warning("Database pronostici non trovato.")
