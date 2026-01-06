@@ -41,7 +41,7 @@ def check_uo(pred, home, away):
     return str(pred).strip().upper() == res
 
 def check_gng(pred, home, away):
-    res = "GOL" if home > 0 and away > 0 else "NO GOL"
+    res = "GOL" if home > 0 and away > 0 else "NOGOL"
     return str(pred).strip().upper() == res
 
 def check_in_list(pred_string, value_to_find):
@@ -160,7 +160,7 @@ def aggiorna_database_calcio():
         status_text.empty()
         st.success("✅ Database Calcio aggiornato con successo!")
     except Exception as e:
-        st.error(f"Errore aggiornamento API: {e}")
+        st.error(f"Errore aggiornamento dati: {e}")
 
 def aggiorna_risultati_pronostici():
     if not os.path.exists(FILE_DB_PRONOSTICI): return
