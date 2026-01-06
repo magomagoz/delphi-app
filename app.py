@@ -28,7 +28,7 @@ FILE_DB_CALCIO = 'database_pro_2025.csv'
 FILE_DB_PRONOSTICI = 'database_pronostici.csv'
 
 # Forza la creazione del file all'avvio dell'app
-inizializza_db() 
+def inizializza_db() 
 
 # --- 2. FUNZIONI LOGICHE DI VERIFICA (CASELLE VERDI) ---
 def check_1x2(pred, home, away):
