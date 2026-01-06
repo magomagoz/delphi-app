@@ -860,4 +860,4 @@ with tab3:
     else:
         st.warning("Database non trovato.")
             
-        st.dataframe(df_disp.style.apply(highlight_winners, axis=1), use_container_width=True, hide_index=True
+        st.dataframe(df_disp.style.apply(highlight_winners, axis=1), use_container_width=True, hide_index=True)
