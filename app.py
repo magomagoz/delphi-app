@@ -4,6 +4,7 @@ import math
 import requests
 import os
 import time
+import re
 from datetime import datetime, date
 import pytz
 
@@ -70,6 +71,9 @@ def inizializza_db():
         except:
             # Se il file è illeggibile, lo resetta
             pd.DataFrame(columns=columns).to_csv(FILE_DB_PRONOSTICI, index=False)
+
+# *** FIX CRUCIALE: ESEGUIAMO LA FUNZIONE ALL'AVVIO ***
+inizializza_db()
 
 def salva_completo_in_locale(data_dict):
     try:
@@ -719,7 +723,7 @@ with tab1:
         with col_uo:
             # Calcolo probabilità e quota per l'Over partendo dall'Under
             p_over = 1 - d['pu']
-            st.warning(f"\n**UNDER 2,5:** 📈 Prob: {d['pu']:.1%} (💰 Quota: {stima_quota(d['pu'])})\n\n**OVER 2,5:**  📈 Prob {p_over:.1%} (💰 Quota: {stima_quota(p_over)})")
+            st.warning(f"\n**UNDER 2,5:** 📈 Prob: {d['pu']:.1%} (💰 Quota: {stima_quota(d['pu'])})\n\n**OVER 2,5:** 📈 Prob {p_over:.1%} (💰 Quota: {stima_quota(p_over)})")
             
         with col_gng:
             # Calcolo probabilità e quota per il No Gol partendo dal Gol
