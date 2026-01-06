@@ -566,9 +566,6 @@ with tab1:
             p_nogol = 1 - d['pg']
             with col_uo: st.warning(f"**UNDER 2.5:** {d['pu']:.1%} (Q:{stima_quota(d['pu'])})\n\n**OVER 2.5:** {p_over:.1%} (Q:{stima_quota(p_over)})")
             with col_gng: st.warning(f"**GOL:** {d['pg']:.1%} (Q:{stima_quota(d['pg'])})\n\n**NOGOL:** {p_nogol:.1%} (Q:{stima_quota(p_nogol)})")
-
-            st.error(f"🎯 **Top 3 Somme Gol:** {d['SGF']}")
-            st.info(f"🏁 **Top 6 Risultati Esatti:** {d['Top 6 RE Finali']}")
             
             st.divider()
         # --- RISULTATI E SOMME GOL CON QUOTE ---
@@ -594,11 +591,6 @@ with tab1:
             
         with cfe2:
             st.info(f"⏱️ **Top 3 RE 1° Tempo**\n\n{d['Top 3 RE 1°T']}")
-
-
-            
-
-            
 
             # --- LOGICA SALVATAGGIO ROBUSTA ---
             if st.button("💾 Salva in Cronologia", use_container_width=True):
