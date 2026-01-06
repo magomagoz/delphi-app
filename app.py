@@ -78,25 +78,23 @@ def inizializza_db():
 # ESEGUIAMO SUBITO L'INIZIALIZZAZIONE
 inizializza_db()
 
-def salva_completo_in_locale(data_dict):
+def salva_completo_in_locale(res_dict):
     try:
         columns = get_db_columns()
-        # Se il file non esiste per qualche motivo, lo ricrea al volo
-        if not os.path.exists(FILE_DB_PRONOSTICI):
-            df_old = pd.DataFrame(columns=columns)
-        else:
-            df_old = pd.read_csv(FILE_DB_PRONOSTICI)
-
-        # Prepara la nuova riga assicurandosi che abbia tutte le chiavi
-        nuova_riga_data = {col: data_dict.get(col, "N/D") for col in columns}
-        nuova_riga_df = pd.DataFrame([nuova_riga_data])
+        df_old = pd.read_csv(FILE_DB_PRONOSTICI) if os.path.exists(FILE_DB_PRONOSTICI) else pd.DataFrame(columns=columns)
         
-        # Concatena e salva
-        df_updated = pd.concat([df_old, nuova_riga_df], ignore_index=True)
+        # Pulizia: rimuove "(Q: 1.50)" per non rompere i confronti futuri
+        dati_puliti = res_dict.copy()
+        for campo in ["SGF", "SGC", "SGO", "Top 6 RE Finali", "Top 3 RE 1°T"]:
+            if campo in dati_puliti:
+                dati_puliti[campo] = re.sub(r'\s\(Q:\s\d+\.\d+\)', '', str(dati_puliti[campo]))
+
+        nuova_riga = {col: dati_puliti.get(col, "N/D") for col in columns}
+        df_updated = pd.concat([df_old, pd.DataFrame([nuova_riga])], ignore_index=True)
         df_updated.to_csv(FILE_DB_PRONOSTICI, index=False)
         return True
     except Exception as e:
-        st.error(f"❌ Errore durante il salvataggio nel file CSV: {e}")
+        st.error(f"❌ Errore salvataggio: {e}")
         return False
 
 def calcola_trend_forma(df_giocate, squadra):
@@ -606,26 +604,17 @@ with tab1:
 
             # --- LOGICA SALVATAGGIO ROBUSTA ---
             if st.button("💾 Salva in Cronologia", use_container_width=True):
-                dati_puliti = d.copy()
+                # Calcola la fatica prima di salvare
+                df_c = pd.read_csv(FILE_DB_CALCIO)
+                f_h = controlla_fatica(df_c, res['casa_nome'], res['Data'])
+                f_a = controlla_fatica(df_c, res['fuori_nome'], res['Data'])
+                res['Fatica'] = "SÌ" if (f_h or f_a) else "NO"
                 
-                # Aggiunta Fatica al dizionario
-                nota_fatica = "Nessuna"
-                if fatica_casa and fatica_fuori: nota_fatica = "Entrambe"
-                elif fatica_casa: nota_fatica = f"Solo {casa_nome}"
-                elif fatica_fuori: nota_fatica = f"Solo {fuori_nome}"
-                dati_puliti["Fatica"] = nota_fatica
-
-                # Pulizia stringhe quote
-                campi_con_quote = ["SGF", "SGC", "SGO", "Top 6 RE Finali", "Top 3 RE 1°T"]
-                for campo in campi_con_quote:
-                    if campo in dati_puliti:
-                        dati_puliti[campo] = re.sub(r'\s\(Q:\s\d+\.\d+\)', '', str(dati_puliti[campo]))
-
-                if salva_completo_in_locale(dati_puliti):
-                    st.toast("Pronostico salvato con successo!", icon="✅")
-                    time.sleep(2) # Pausa per vedere il messaggio
+                if salva_completo_in_locale(res):
+                    st.toast("Salvato con successo!", icon="✅")
+                    time.sleep(1)
                     st.rerun()
-
+            
 with tab2:
     st.info(f"⏰ Aggiorneremo Serie A, Premier League, Championship, Liga, Bundesliga, Ligue 1,Primeira Liga, Eredivisie, Brasileirao Betano, UEFA Champions League ed Europa League e FIFA World Cup")
 
@@ -668,6 +657,31 @@ with tab3:
     else:
         st.warning("Nessun pronostico salvato finora.")
 
-#with tab4:
-    #st.header("📜 Statistiche")
+with tab4:
+    st.header("📊 Performance Delphi Predictor Pro")
+    if os.path.exists(FILE_DB_PRONOSTICI):
+        df_stat = pd.read_csv(FILE_DB_PRONOSTICI)
+        # Filtra solo i match che hanno un risultato reale inserito
+        df_conclusi = df_stat[df_stat['Risultato_Reale'] != "N/D"].copy()
+        
+        if not df_conclusi.empty:
+            def calcola_win(r):
+                try:
+                    h, a = map(int, str(r['Risultato_Reale']).split('-'))
+                    return check_1x2(r['1X2'], h, a)
+                except: return False
+
+            df_conclusi['Esito'] = df_conclusi.apply(calcola_win, axis=1)
+            wr = df_conclusi['Esito'].mean()
+            
+            c1, c2 = st.columns(2)
+            c1.metric("Win Rate 1X2", f"{wr:.1%}")
+            c2.metric("Match Analizzati", len(df_conclusi))
+            
+            st.subheader("Dettaglio Ultime Giocate")
+            st.table(df_conclusi[['Partita', '1X2', 'Risultato_Reale', 'Esito']].tail(10))
+        else:
+            st.info("Aggiorna i risultati in 'Cronologia' per vedere le statistiche.")
+    else:
+        st.warning("Nessun dato disponibile. Salva prima qualche pronostico.")
     
