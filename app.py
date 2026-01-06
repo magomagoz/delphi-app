@@ -49,49 +49,34 @@ def check_in_list(pred_string, value_to_find):
 
 # --- 3. FUNZIONI DATABASE ---
 def inizializza_db():
+    # Definiamo la lista colonne definitiva
+    columns = [
+        "Data", "Ora", "Partita", "Fiducia", "Affidabilità", 
+        "1X2", "U/O 2.5", "G/NG", "SGF", "SGC", "SGO", 
+        "Top 6 RE Finali", "Top 3 RE 1°T", "Fatica", "Match_ID", "Risultato_Reale", "PT_Reale"
+    ]
     if not os.path.exists(FILE_DB_PRONOSTICI):
-        columns = [
-            "Data", "Ora", "Partita", "Fiducia", "Affidabilità", 
-            "1X2", "U/O 2.5", "G/NG", "SGF", "SGC", "SGO", 
-            "Top 6 RE Finali", "Top 3 RE 1°T", "Fatica", "Match_ID", "Risultato_Reale", "PT_Reale"
-        ]
         df = pd.DataFrame(columns=columns)
         df.to_csv(FILE_DB_PRONOSTICI, index=False)
-
-inizializza_db()
+    else:
+        # Verifica se la colonna Fatica esiste nel file vecchio, altrimenti la aggiunge
+        df_esistente = pd.read_csv(FILE_DB_PRONOSTICI)
+        if "Fatica" not in df_esistente.columns:
+            df_esistente["Fatica"] = "N.D."
+            df_esistente.to_csv(FILE_DB_PRONOSTICI, index=False)
 
 def salva_completo_in_locale(data_dict):
     try:
-        # Carichiamo il database esistente
         df = pd.read_csv(FILE_DB_PRONOSTICI)
+        # Creiamo la riga prendendo i valori dal dizionario
+        # Usiamo data_dict.get(chiave, "N/D") per evitare errori se una chiave manca
+        nuova_riga = {col: data_dict.get(col, "N/D") for col in df.columns}
         
-        # Creiamo una riga compatibile con le colonne definite in inizializza_db
-        nuova_riga = {
-            "Data": data_dict.get("Data"),
-            "Ora": data_dict.get("Ora"),
-            "Partita": data_dict.get("Partita"),
-            "Fiducia": data_dict.get("Fiducia"),
-            "Affidabilità": data_dict.get("Affidabilità"),
-            "1X2": data_dict.get("1X2"),
-            "U/O 2.5": data_dict.get("U/O 2.5"),
-            "G/NG": data_dict.get("G/NG"),
-            "SGF": data_dict.get("SGF"),
-            "SGC": data_dict.get("SGC"),
-            "SGO": data_dict.get("SGO"),
-            "Top 6 RE Finali": data_dict.get("Top 6 RE Finali"),
-            "Top 3 RE 1°T": data_dict.get("Top 3 RE 1°T"),
-            "Fatica": data_dict.get("Fatica"),
-            "Match_ID": data_dict.get("Match_ID"),
-            "Risultato_Reale": data_dict.get("Risultato_Reale"),
-            "PT_Reale": data_dict.get("PT_Reale")
-        }
-        
-        # Aggiungiamo la riga e salviamo
         df = pd.concat([df, pd.DataFrame([nuova_riga])], ignore_index=True)
         df.to_csv(FILE_DB_PRONOSTICI, index=False)
         return True
     except Exception as e:
-        st.error(f"Errore salvataggio: {e}")
+        st.error(f"Errore critico salvataggio: {e}")
         return False
 
 def calcola_trend_forma(df_giocate, squadra):
@@ -764,32 +749,33 @@ with tab1:
             import re
             dati_puliti = d.copy()
 
-            # Prepariamo la stringa fatica usando i nomi nel dizionario
-            nome_h = d.get('casa_nome', 'Casa')
-            nome_a = d.get('fuori_nome', 'Fuori')
-            
-            # Prepariamo la stringa fatica
+            # Calcolo nota fatica
             nota_fatica = "Nessuna"
             if fatica_casa and fatica_fuori: nota_fatica = "Entrambe"
             elif fatica_casa: nota_fatica = f"Solo {casa_nome}"
             elif fatica_fuori: nota_fatica = f"Solo {fuori_nome}"
+            
+            # INSERIMENTO CRUCIALE: aggiungiamo la fatica al dizionario prima di pulire
             dati_puliti["Fatica"] = nota_fatica
 
-
-            # Pulizia quote come prima
+            # Pulizia quote dai testi (per non sporcare il database)
             campi_con_quote = ["SGF", "SGC", "SGO", "Top 6 RE Finali", "Top 3 RE 1°T"]
             for campo in campi_con_quote:
                 if campo in dati_puliti:
                     testo_pulito = re.sub(r'\s\(Q:\s\d+\.\d+\)', '', str(dati_puliti[campo]))
                     dati_puliti[campo] = testo_pulito
 
-            escludi = ['p1', 'px', 'p2', 'pu', 'pg', 'lg', 'arbitro', 'molt_arbitro']
+            # Specifichiamo quali campi NON vogliamo nel CSV (quelli tecnici/probabilità)
+            escludi = ['p1', 'px', 'p2', 'pu', 'pg', 'lg', 'arbitro', 'molt_arbitro', 
+                       'dist_1t_h', 'dist_2t_h', 'dist_1t_a', 'dist_2t_a', 'tempo_top', 
+                       'casa_nome', 'fuori_nome', 'h2h_info', 'm_h2h_h', 'm_h2h_a', 'is_big_match']
+            
             dati_per_csv = {k: v for k, v in dati_puliti.items() if k not in escludi}
 
-            # Specifichiamo i campi da mantenere (devono coincidere con salva_completo_in_locale)
-            if salva_completo_in_locale(dati_puliti):
-                st.success("✅ Salvato in cronologia!")
-                time.sleep(1)
+            # Chiamata alla funzione di salvataggio
+            if salva_completo_in_locale(dati_per_csv):
+                st.success("✅ Salvato con successo!")
+                time.sleep(0.5)
                 st.rerun()
 
 with tab2:
@@ -804,12 +790,18 @@ with tab3:
     if os.path.exists(FILE_DB_PRONOSTICI):
         # 1. CARICAMENTO E PULIZIA AUTOMATICA DUPLICATI
         df_cronologia = pd.read_csv(FILE_DB_PRONOSTICI)
-        
+
         if not df_cronologia.empty:
             # Rimuove righe identiche (stessa Partita e stessa Data)
             initial_count = len(df_cronologia)
             df_cronologia = df_cronologia.drop_duplicates(subset=['Data', 'Partita'], keep='last')
 
+            # Opzioni di esportazione
+            col_ex1, col_ex2 = st.columns([1, 4])
+            with col_ex1:
+                csv_data = df_cron.to_csv(index=False).encode('utf-8')
+                st.download_button("📥 Scarica Excel (CSV)", data=csv_data, file_name=f"pronostici_{date.today()}.csv", mime='text/csv')
+            
             # Se sono stati rimossi duplicati, salva subito il file pulito
             if len(df_cronologia) < initial_count:
                 df_cronologia.to_csv(FILE_DB_PRONOSTICI, index=False)
@@ -867,4 +859,5 @@ with tab3:
             st.info("La cronologia è vuota.")
     else:
         st.warning("Database non trovato.")
-        
+            
+            st.dataframe(df_disp.style.apply(highlight_winners, axis=1), use_container_width=True, hide_index=True)
