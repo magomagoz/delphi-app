@@ -506,6 +506,7 @@ with tab1:
         if st.button("🎯 Genera Pronostico", type="primary", use_container_width=True):
             risultati = esegui_analisi(sq, pen_h, pen_a, is_big_match)
             st.session_state['pronostico_corrente'] = risultati
+            st.rerun()
         
         if st.session_state.get('pronostico_corrente'):
             d = st.session_state['pronostico_corrente']
@@ -516,7 +517,6 @@ with tab1:
             st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}")
             st.subheader(f"📅 Data: {d['Data']} ore {d['Ora']}")
         
-
             if d.get('is_big_match'): st.warning("🛡️ **Filtro Big Match Attivo**: probabile partita molto tattica")
 
             c_trend1, c_trend2 = st.columns(2)
@@ -578,25 +578,25 @@ with tab1:
             with col_uo: st.warning(f"**UNDER 2.5:** {d['pu']:.1%} (Q:{stima_quota(d['pu'])})\n\n**OVER 2.5:** {p_over:.1%} (Q:{stima_quota(p_over)})")
             with col_gng: st.warning(f"**GOL:** {d['pg']:.1%} (Q:{stima_quota(d['pg'])})\n\n**NOGOL:** {p_nogol:.1%} (Q:{stima_quota(p_nogol)})")
             
-        # --- RISULTATI E SOMME GOL CON QUOTE ---
-        st.divider()
-        st.subheader("⚽ Analisi Somma Gol")
-        cr1, cr2 = st.columns(2)
-        with cr1:
-            # Mostra i Top 3 esiti del match con le relative quote
-            st.error(f"🎯 **Somma Gol Finale (Top 3)**\n\n{d['SGF']}")           
-        with cr2:
-            # Mostra i Top 2 esiti per squadra con le relative quote
-            st.error(f"🏠 **Somma Gol Casa:** {d['SGC']}\n\n🚀 **Somma Gol Ospite:** {d['SGO']}")
+            # --- RISULTATI E SOMME GOL CON QUOTE ---
+            st.divider()
+            st.subheader("⚽ Analisi Somma Gol")
+            cr1, cr2 = st.columns(2)
+            with cr1:
+                # Mostra i Top 3 esiti del match con le relative quote
+                st.error(f"🎯 **Somma Gol Finale (Top 3)**\n\n{d['SGF']}")           
+            with cr2:
+                # Mostra i Top 2 esiti per squadra con le relative quote
+                st.error(f"🏠 **Somma Gol Casa:** {d['SGC']}\n\n🚀 **Somma Gol Ospite:** {d['SGO']}")
 
-        # --- RISULTATI ESATTI ---
-        st.divider()
-        st.subheader("🎯 Risultati Esatti")
-        cfe1, cfe2 = st.columns(2)
-        with cfe1:
-            st.success(f"🏁 **Top 6 Risultati Esatti Finali**\n\n{d['Top 6 RE Finali']}")
-        with cfe2:
-            st.info(f"⏱️ **Top 3 Risultati Esatti 1° Tempo**\n\n{d['Top 3 RE 1°T']}")
+            # --- RISULTATI ESATTI ---
+            st.divider()
+            st.subheader("🎯 Risultati Esatti")
+            cfe1, cfe2 = st.columns(2)
+            with cfe1:
+                st.success(f"🏁 **Top 6 Risultati Esatti Finali**\n\n{d['Top 6 RE Finali']}")
+            with cfe2:
+                st.info(f"⏱️ **Top 3 Risultati Esatti 1° Tempo**\n\n{d['Top 3 RE 1°T']}")
 
             # --- LOGICA SALVATAGGIO ROBUSTA ---
             if st.button("💾 Salva in Cronologia", use_container_width=True):
