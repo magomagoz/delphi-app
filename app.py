@@ -796,25 +796,29 @@ with tab3:
             initial_count = len(df_cronologia)
             df_cronologia = df_cronologia.drop_duplicates(subset=['Data', 'Partita'], keep='last')
 
-            # Opzioni di esportazione
-            col_ex1, col_ex2 = st.columns([1, 4])
-            with col_ex1:
-                csv_data = df_cron.to_csv(index=False).encode('utf-8')
-                st.download_button("📥 Scarica Excel (CSV)", data=csv_data, file_name=f"pronostici_{date.today()}.csv", mime='text/csv')
-            
             # Se sono stati rimossi duplicati, salva subito il file pulito
             if len(df_cronologia) < initial_count:
                 df_cronologia.to_csv(FILE_DB_PRONOSTICI, index=False)
                 st.toast(f"Pulizia completata: rimossi {initial_count - len(df_cronologia)} duplicati.")
 
+            # --- SEZIONE EXPORT ---
+            col_ex1, col_ex2 = st.columns([1, 4])
+            with col_ex1:
+                # CORRETTO: Usiamo df_cronologia
+                csv_data = df_cronologia.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="📥 Scarica Excel (CSV)", 
+                    data=csv_data, 
+                    file_name=f"pronostici_{date.today()}.csv", 
+                    mime='text/csv'
+                )
+            
             # 2. FILTRO PER GIORNATA SPECIFICA
-            # Estraiamo le date uniche presenti nel DB per il menu a tendina
             date_disponibili = sorted(df_cronologia['Data'].unique(), reverse=True)
-            date_disponibili.insert(0, "Tutte") # Opzione per vedere tutto
+            date_disponibili.insert(0, "Tutte")
             
             data_scelta = st.selectbox("📅 Filtra per data:", date_disponibili)
             
-            # Applichiamo il filtro se l'utente sceglie una data specifica
             if data_scelta != "Tutte":
                 df_da_mostrare = df_cronologia[df_cronologia['Data'] == data_scelta]
             else:
@@ -833,7 +837,7 @@ with tab3:
                 hide_index=True
             )
 
-            # --- TASTO CANCELLA CRONOLOGIA CON POP-UP ROSSO ---
+            # --- TASTO CANCELLA CRONOLOGIA ---
             st.divider()
             if st.button("🗑️ Elimina Cronologia...", type="secondary"):
                 st.session_state['conferma_delete'] = True
@@ -845,8 +849,6 @@ with tab3:
                 c_del1, c_del2 = st.columns(2)
                 with c_del1:
                     if st.button("SÌ, CANCELLA", type="primary", use_container_width=True):
-
-                        # Nel blocco della cancellazione cronologia (Tab 3), aggiorna la lista colonne:
                         columns = ["Data", "Ora", "Partita", "Fiducia", "Affidabilità", "1X2", "U/O 2.5", "G/NG", "SGF", "SGC", "SGO", "Top 6 RE Finali", "Top 3 RE 1°T", "Fatica", "Match_ID", "Risultato_Reale", "PT_Reale"]
                         pd.DataFrame(columns=columns).to_csv(FILE_DB_PRONOSTICI, index=False)
                         st.session_state['conferma_delete'] = False
@@ -859,5 +861,3 @@ with tab3:
             st.info("La cronologia è vuota.")
     else:
         st.warning("Database non trovato.")
-            
-        st.dataframe(df_disp.style.apply(highlight_winners, axis=1), use_container_width=True, hide_index=True)
