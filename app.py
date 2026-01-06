@@ -514,7 +514,7 @@ with tab1:
             casa_nome, fuori_nome = d['casa_nome'], d['fuori_nome']
 
             st.header(f"🏟️ **{d['Partita']}**")
-            st.subheader("🏆 Lega: {d.get('League', 'N.D.')})
+            st.subheader("🏆 Lega: {d.get('League', 'N.D.')}")
             st.subheader("📅 Data: {d['Data']} ore {d['Ora']}")
         
 
