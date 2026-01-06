@@ -46,7 +46,8 @@ def check_gng(pred, home, away):
 
 def check_in_list(pred_string, value_to_find):
     preds = [p.strip() for p in str(pred_string).split(",")]
-    return str(value_to_find) in preds
+    return str(value_to_find).strip() in [p.strip() for p in preds]
+
 
 # --- 3. FUNZIONI DATABASE (CORRETTE) ---
 def get_db_columns():
@@ -84,7 +85,7 @@ def salva_completo_in_locale(res_dict):
         df_old = pd.read_csv(FILE_DB_PRONOSTICI) if os.path.exists(FILE_DB_PRONOSTICI) else pd.DataFrame(columns=columns)
         
         # Pulizia: rimuove "(Q: 1.50)" per non rompere i confronti futuri
-        dati_puliti = res_dict.copy()
+        dati_puliti = d_dict.copy()
         for campo in ["SGF", "SGC", "SGO", "Top 6 RE Finali", "Top 3 RE 1°T"]:
             if campo in dati_puliti:
                 dati_puliti[campo] = re.sub(r'\s\(Q:\s\d+\.\d+\)', '', str(dati_puliti[campo]))
@@ -477,7 +478,7 @@ with tab1:
         if st.button("📊 Acquisisci dati della partita", use_container_width=True):
             d_temp = esegui_analisi(sq) # Esegue l'analisi
             if d_temp:
-                st.session_state['dati_temp'] = d_temp # Salva nel database temporaneo
+                st.session_state['Data'] = d_temp # Salva nel database temporaneo
                 st.session_state['dati_acquisiti'] = True
                 st.rerun()
             else: st.error("Squadra non trovata.")
@@ -512,8 +513,8 @@ with tab1:
             casa_nome, fuori_nome = d['casa_nome'], d['fuori_nome']
 
             st.header(f"🏟️ **{d['Partita']}**")
-            st.subheader("🏆 Lega: {d.get('League', 'N.D.')}")
-            st.subheader("📅 Data: {d['Data']} ore {d['Ora']}")
+            st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}")
+            st.subheader(f"📅 Data: {d['Data']} ore {d['Ora']}")
         
 
             if d.get('is_big_match'): st.warning("🛡️ **Filtro Big Match Attivo**: probabile partita molto tattica")
@@ -603,7 +604,7 @@ with tab1:
                 df_c = pd.read_csv(FILE_DB_CALCIO)
                 f_h = controlla_fatica(df_c, d['casa_nome'], d['Data'])
                 f_a = controlla_fatica(df_c, d['fuori_nome'], d['Data'])
-                res['Fatica'] = "SÌ" if (f_h or f_a) else "NO"
+                d['Fatica'] = "SÌ" if (f_h or f_a) else "NO"
                 
                 if salva_completo_in_locale(res):
                     st.toast("Salvato con successo!", icon="✅")
