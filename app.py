@@ -567,12 +567,39 @@ with tab1:
             with col_uo: st.warning(f"**UNDER 2.5:** {d['pu']:.1%} (Q:{stima_quota(d['pu'])})\n\n**OVER 2.5:** {p_over:.1%} (Q:{stima_quota(p_over)})")
             with col_gng: st.warning(f"**GOL:** {d['pg']:.1%} (Q:{stima_quota(d['pg'])})\n\n**NOGOL:** {p_nogol:.1%} (Q:{stima_quota(p_nogol)})")
 
-            st.divider()
             st.error(f"🎯 **Top 3 Somme Gol:** {d['SGF']}")
             st.info(f"🏁 **Top 6 Risultati Esatti:** {d['Top 6 RE Finali']}")
             
             st.divider()
+        # --- RISULTATI E SOMME GOL CON QUOTE ---
+        st.divider()
+        st.subheader("⚽ Analisi Somma Gol")
+        cr1, cr2 = st.columns(2)
+        
+        with cr1:
+            # Mostra i Top 3 esiti del match con le relative quote
+            st.error(f"🎯 **Somma Gol Finale (Top 3)**\n\n{d['SGF']}")
             
+        with cr2:
+            # Mostra i Top 2 esiti per squadra con le relative quote
+            st.error(f"🏠 **Somma Gol Casa:** {d['SGC']}\n\n🚀 **Somma Gol Ospite:** {d['SGO']}")
+
+        # --- RISULTATI ESATTI ---
+        st.divider()
+        st.subheader("🎯 Risultati Esatti Probabili")
+        cfe1, cfe2 = st.columns(2)
+
+        with cfe1:
+            st.success(f"🏁 **Top 6 RE Finali**\n\n{d['Top 6 RE Finali']}")
+            
+        with cfe2:
+            st.info(f"⏱️ **Top 3 RE 1° Tempo**\n\n{d['Top 3 RE 1°T']}")
+
+
+            
+
+            
+
             # --- LOGICA SALVATAGGIO ROBUSTA ---
             if st.button("💾 Salva in Cronologia", use_container_width=True):
                 dati_puliti = d.copy()
