@@ -457,10 +457,10 @@ def highlight_winners(row):
     return colors
 
 # --- 7. MAIN ---
-tab1, tab2, tab3 = st.tabs(["🎯 **Analisi**", "⚙️ **Database**", "📜 **Cronologia**"])
+tab1, tab2, tab3, tab4 = st.tabs(["🎯 **Analisi**", "⚙️ **Database**", "📜 **Cronologia**", "📊 **Statistiche risultati**"])
 
 with tab1:
-    sq = st.text_input("🔍 Inserisci Squadra:")
+    sq = st.text_input("🔍 Inserisci Squadra")
 
     if 'dati_acquisiti' not in st.session_state: st.session_state['dati_acquisiti'] = False
     if 'squadra_precedente' not in st.session_state: st.session_state['squadra_precedente'] = ""
@@ -471,7 +471,7 @@ with tab1:
         st.session_state['squadra_precedente'] = sq
 
     if sq and not st.session_state['dati_acquisiti']:
-        if st.button("📊 Acquisisci Dati", type="secondary", use_container_width=True):
+        if st.button("📊 Acquisisci dati della partita", type="secondary", use_container_width=True):
             risultati_temp = esegui_analisi(sq)
             if risultati_temp:
                 st.session_state['dati_temp'] = risultati_temp
@@ -525,17 +525,22 @@ with tab1:
                 st.markdown("🏃‍♂️ **Allerta Stanchezza**")
                 c_fat1, c_fat2 = st.columns(2)
                 with c_fat1:
-                    if fatica_casa: st.error(f"⚠️ **{casa_nome}: ha giocato < 72h fa!**")
+                    if fatica_casa: st.error(f"⚠️ **{casa_nome} ha giocato meno di 72h fa!**")
                 with c_fat2:
-                    if fatica_fuori: st.error(f"⚠️ **{fuori_nome}: ha giocato < 72h fa!**")
+                    if fatica_fuori: st.error(f"⚠️ **{fuori_nome} ha giocato meno di 72h fa!**")
 
             st.divider()
             c_inf1, c_inf2 = st.columns(2)
             with c_inf1: st.info(f"👮 **Arbitro**: {d.get('arbitro', 'N.D.')}  |  **Impatto**: {d.get('molt_arbitro', 1.0)}x")
+            casa_nome = d['Partita'].split(" vs ")[0]
+            fuori_nome = d['Partita'].split(" vs ")[1]
+
             with c_inf2: st.info(f"⏳ **Gol nel finale: {d['lg']:.2f}**")
+            if d['lg'] > 1.2: 
+                st.error("🔥🔥🔥 **POSSIBILE GOL NEL FINALE (80+ MINUTO)**")
             
             st.divider()
-            st.subheader("⏱️ Analisi Tempi")
+            st.subheader("⏱️ Analisi Tempi (Distribuzione Gol)")
             ct1, ct2 = st.columns(2)
             with ct1:
                 st.write(f"**{casa_nome}**")
@@ -545,20 +550,22 @@ with tab1:
                 st.write(f"**{fuori_nome}**")
                 st.progress(d['dist_1t_a'] / 100, text=f"1° Tempo: {d['dist_1t_a']}%")
                 st.progress(d['dist_2t_a'] / 100, text=f"2° Tempo: {d['dist_2t_a']}%")
-            
+
+            st.info(f"💡 **Tendenza**: Il tempo con più gol previsto è il **{d['tempo_top']}**")
+
             st.divider()
             st.subheader("🏁 Esito Finale 1X2")
             c1, cx, c2 = st.columns(3)
-            with c1: st.success(f" 1: \n 📈 Prob: {d['p1']:.1%}\n 💰 Quota: {stima_quota(d['p1'])}")
-            with cx: st.success(f" X: \n 📈 Prob: {d['px']:.1%}\n 💰 Quota: {stima_quota(d['px'])}")
-            with c2: st.success(f" 2: \n 📈 Prob: {d['p2']:.1%}\n 💰 Quota: {stima_quota(d['p2'])}")
+            with c1: st.success(f"**Esito 1:** \n 📈 Prob: {d['p1']:.1%}\n 💰 Quota: {stima_quota(d['p1'])}")
+            with cx: st.success(f"**Esito X:** \n 📈 Prob: {d['px']:.1%}\n 💰 Quota: {stima_quota(d['px'])}")
+            with c2: st.success(f"**Esito 2:** \n 📈 Prob: {d['p2']:.1%}\n 💰 Quota: {stima_quota(d['p2'])}")
 
             st.divider()
             col_uo, col_gng = st.columns(2)
             p_over = 1 - d['pu']
             p_nogol = 1 - d['pg']
             with col_uo: st.warning(f"**UNDER 2.5:** {d['pu']:.1%} (Q:{stima_quota(d['pu'])})\n\n**OVER 2.5:** {p_over:.1%} (Q:{stima_quota(p_over)})")
-            with col_gng: st.warning(f"**GOL:** {d['pg']:.1%} (Q:{stima_quota(d['pg'])})\n\n**NO GOL:** {p_nogol:.1%} (Q:{stima_quota(p_nogol)})")
+            with col_gng: st.warning(f"**GOL:** {d['pg']:.1%} (Q:{stima_quota(d['pg'])})\n\n**NOGOL:** {p_nogol:.1%} (Q:{stima_quota(p_nogol)})")
 
             st.divider()
             st.error(f"🎯 **Top 3 Somme Gol:** {d['SGF']}")
