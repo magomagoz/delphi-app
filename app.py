@@ -584,7 +584,7 @@ with tab1:
         cr1, cr2 = st.columns(2)
         with cr1:
             # Mostra i Top 3 esiti del match con le relative quote
-            st.error(f"🎯 **Somma Gol Finale (Top 3)**\n\n{d['SGF']}")           
+            st.error(f"🎯 **Somma Gol Finale (Top 3)**\n\n{d['sgf']}")           
         with cr2:
             # Mostra i Top 2 esiti per squadra con le relative quote
             st.error(f"🏠 **Somma Gol Casa:** {d['SGC']}\n\n🚀 **Somma Gol Ospite:** {d['SGO']}")
