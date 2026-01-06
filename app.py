@@ -582,11 +582,9 @@ with tab1:
         st.divider()
         st.subheader("⚽ Analisi Somma Gol")
         cr1, cr2 = st.columns(2)
-        
         with cr1:
             # Mostra i Top 3 esiti del match con le relative quote
-            st.error(f"🎯 **Somma Gol Finale (Top 3)**\n\n{d['SGF']}")
-            
+            st.error(f"🎯 **Somma Gol Finale (Top 3)**\n\n{d['SGF']}")           
         with cr2:
             # Mostra i Top 2 esiti per squadra con le relative quote
             st.error(f"🏠 **Somma Gol Casa:** {d['SGC']}\n\n🚀 **Somma Gol Ospite:** {d['SGO']}")
@@ -595,10 +593,8 @@ with tab1:
         st.divider()
         st.subheader("🎯 Risultati Esatti")
         cfe1, cfe2 = st.columns(2)
-
         with cfe1:
             st.success(f"🏁 **Top 6 Risultati Esatti Finali**\n\n{d['Top 6 RE Finali']}")
-            
         with cfe2:
             st.info(f"⏱️ **Top 3 Risultati Esatti 1° Tempo**\n\n{d['Top 3 RE 1°T']}")
 
@@ -616,7 +612,7 @@ with tab1:
                     st.rerun()
             
 with tab2:
-    st.info(f"⏰ Serie A, Premier League, Championship, Liga, Bundesliga, Ligue 1,Primeira Liga, Eredivisie, Brasileirao Betano, UEFA e FIFA")
+    st.info(f"⏰  Serie A, Premier League, Championship, Liga, Bundesliga, Ligue 1,Primeira Liga, Eredivisie, Brasileirao Betano, UEFA e FIFA")
 
     if st.button("🌐 Aggiorna Database"):
         with st.spinner("Aggiornamento database in corso..."):
