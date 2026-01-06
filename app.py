@@ -27,10 +27,6 @@ API_TOKEN = 'c7a609a0580f4200add2751d787b3c68'
 FILE_DB_CALCIO = 'database_pro_2025.csv'
 FILE_DB_PRONOSTICI = 'database_pronostici.csv'
 
-# --- SOTTO LE DEFINIZIONI DEI FILE ---
-FILE_DB_CALCIO = 'database_pro_2025.csv'
-FILE_DB_PRONOSTICI = 'database_pronostici.csv'
-
 # Forza la creazione del file all'avvio dell'app
 inizializza_db() 
 
