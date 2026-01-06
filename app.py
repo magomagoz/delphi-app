@@ -53,7 +53,7 @@ def inizializza_db():
         columns = [
             "Data", "Ora", "Partita", "Fiducia", "Affidabilità", 
             "1X2", "U/O 2.5", "G/NG", "SGF", "SGC", "SGO", 
-            "Top 6 RE Finali", "Top 3 RE 1°T", "Match_ID", "Risultato_Reale", "PT_Reale"
+            "Top 6 RE Finali", "Top 3 RE 1°T", "Fatica", "Match_ID", "Risultato_Reale", "PT_Reale"
         ]
         df = pd.DataFrame(columns=columns)
         df.to_csv(FILE_DB_PRONOSTICI, index=False)
@@ -498,7 +498,7 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False): # Aggi
         "SGF": top_sgf_final, "SGC": top_sgc_final, "SGO": top_sgo_final,
         "Top 6 RE Finali": top_re_final, 
         "Top 3 RE 1°T": top_re1t_final,
-        "Fatica": "No", # Inizializzato qui, verrà sovrascritto al salvataggio
+        "Fatica": data_dict.get ("Fatica"),
         "Match_ID": match_id, "Risultato_Reale": "N/D", "PT_Reale": "N/D",
         "p1": p1, "px": px, "p2": p2, "pu": pu, "pg": pg,
         "h2h_info": testo_h2h,
@@ -762,6 +762,10 @@ with tab1:
         if st.button("💾 Salva in Cronologia", use_container_width=True):
             import re
             dati_puliti = d.copy()
+
+            # Prepariamo la stringa fatica usando i nomi nel dizionario
+            nome_h = d.get('casa_nome', 'Casa')
+            nome_a = d.get('fuori_nome', 'Fuori')
             
             # Prepariamo la stringa fatica
             nota_fatica = "Nessuna"
@@ -769,6 +773,7 @@ with tab1:
             elif fatica_casa: nota_fatica = f"Solo {casa_nome}"
             elif fatica_fuori: nota_fatica = f"Solo {fuori_nome}"
             dati_puliti["Fatica"] = nota_fatica
+
 
             # Pulizia quote come prima
             campi_con_quote = ["SGF", "SGC", "SGO", "Top 6 RE Finali", "Top 3 RE 1°T"]
@@ -779,8 +784,9 @@ with tab1:
 
             escludi = ['p1', 'px', 'p2', 'pu', 'pg', 'lg', 'arbitro', 'molt_arbitro']
             dati_per_csv = {k: v for k, v in dati_puliti.items() if k not in escludi}
-            
-            if salva_completo_in_locale(dati_per_csv):
+
+            # Specifichiamo i campi da mantenere (devono coincidere con salva_completo_in_locale)
+            if salva_completo_in_locale(dati_puliti):
                 st.success("✅ Salvato in cronologia!")
                 time.sleep(1)
                 st.rerun()
