@@ -658,11 +658,11 @@ with tab1:
                 st.error("🔥🔥🔥 **POSSIBILE GOL NEL FINALE (80+ MINUTO)**")
 
         # --- SEZIONE H2H ---
-        st.divider()
-        st.subheader("⚔️ Scontri Diretti (H2H)")
+        #st.divider()
+        #st.subheader("⚔️ Scontri Diretti (H2H)")
 
         # Usiamo .get() per evitare il KeyError se la chiave manca
-        st.write(f"📊 {d.get('h2h_info', 'Dati H2H non disponibili')}")
+        #st.write(f"📊 {d.get('h2h_info', 'Dati H2H non disponibili')}")
 
         # --- SEZIONE FASCE ORARIE ---
         st.divider()
@@ -742,7 +742,7 @@ with tab1:
         
         with cr1:
             # Mostra i Top 3 esiti del match con le relative quote
-            st.error(f"🎯 **Somma Gol Finale (Top 3)**\n{d['SGF']}")
+            st.error(f"🎯 **Somma Gol Finale (Top 3)**\n\n{d['SGF']}")
             
         with cr2:
             # Mostra i Top 2 esiti per squadra con le relative quote
