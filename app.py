@@ -483,7 +483,6 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False): # Aggi
     data_finale = dt_event_ita.strftime("%d/%m/%Y")
     ora_finale = dt_event_ita.strftime("%H:%M")
 
-
     return {
         "Data": data_finale, 
         "Ora": ora_finale,
@@ -665,30 +664,30 @@ with tab1:
         #st.write(f"📊 {d.get('h2h_info', 'Dati H2H non disponibili')}")
 
         # --- SEZIONE FASCE ORARIE ---
-        st.divider()
-        st.subheader("⏰ Analisi Momento Gol (Ultime 10)")
+        #st.divider()
+        #st.subheader("⏰ Analisi Momento Gol (Ultime 10)")
         
-        c_time1, c_time2 = st.columns(2)
-        p1_h, p2_h = analizza_pericolosita_tempi(df_calcio, casa_nome)
-        p1_a, p2_a = analizza_pericolosita_tempi(df_calcio, fuori_nome)
+        #c_time1, c_time2 = st.columns(2)
+        #p1_h, p2_h = analizza_pericolosita_tempi(df_calcio, casa_nome)
+        #p1_a, p2_a = analizza_pericolosita_tempi(df_calcio, fuori_nome)
 
-        if p1_h == 50.0 and p2_h == 50.0:
-            st.caption("⚠️ Dati parziali insufficienti nel DB per un'analisi accurata dei tempi.")
-        else:
+        #if p1_h == 50.0 and p2_h == 50.0:
+            #st.caption("⚠️ Dati parziali insufficienti nel DB per un'analisi accurata dei tempi.")
+        #else:
             # Mostra i tuoi metric/progress bar qui
-            st.write(f"Distribuzione Gol {casa_nome}: {p1_h}% (1°T) / {p2_h}% (2°T)")
+            #st.write(f"Distribuzione Gol {casa_nome}: {p1_h}% (1°T) / {p2_h}% (2°T)")
 
-        with c_time1:
-            st.write(f"**{casa_nome}**")
-            st.metric("Gol 1° Tempo", f"{p1_h}%")
-            st.metric("Gol 2° Tempo", f"{p2_h}%", delta=f"{p2_h-p1_h}%" if p2_h > p1_h else None)
-            if p2_h > 65: st.warning("⚠️ Squadra da 'Second Time Goal'")
+        #with c_time1:
+            #st.write(f"**{casa_nome}**")
+            #st.metric("Gol 1° Tempo", f"{p1_h}%")
+            #st.metric("Gol 2° Tempo", f"{p2_h}%", delta=f"{p2_h-p1_h}%" if p2_h > p1_h else None)
+            #if p2_h > 65: st.warning("⚠️ Squadra da 'Second Time Goal'")
 
-        with c_time2:
-            st.write(f"**{fuori_nome}**")
-            st.metric("Gol 1° Tempo", f"{p1_a}%")
-            st.metric("Gol 2° Tempo", f"{p2_a}%", delta=f"{p2_a-p1_a}%" if p2_a > p1_a else None)
-            if p1_a > 60: st.info("⚡ Partenza Sprint garantita")
+        #with c_time2:
+            #st.write(f"**{fuori_nome}**")
+            #st.metric("Gol 1° Tempo", f"{p1_a}%")
+            #st.metric("Gol 2° Tempo", f"{p2_a}%", delta=f"{p2_a-p1_a}%" if p2_a > p1_a else None)
+            #if p1_a > 60: st.info("⚡ Partenza Sprint garantita")
         
         # --- SEZIONE DISTRIBUZIONE TEMPI ---
         st.divider()
