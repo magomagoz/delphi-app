@@ -77,16 +77,24 @@ inizializza_db()
 
 def salva_completo_in_locale(data_dict):
     try:
-        df = pd.read_csv(FILE_DB_PRONOSTICI)
-        # Creiamo la riga prendendo i valori dal dizionario
-        # Usiamo data_dict.get(chiave, "N/D") per evitare errori se una chiave manca
-        nuova_riga = {col: data_dict.get(col, "N/D") for col in df.columns}
+        columns = get_db_columns()
+        # Se il file non esiste per qualche motivo, lo ricrea al volo
+        if not os.path.exists(FILE_DB_PRONOSTICI):
+            df_old = pd.DataFrame(columns=columns)
+        else:
+            df_old = pd.read_csv(FILE_DB_PRONOSTICI)
+
+        # Prepara la nuova riga assicurandosi che abbia tutte le chiavi
+        # Questo evita l'errore se il dizionario ha meno chiavi del CSV
+        nuova_riga_data = {col: data_dict.get(col, "N/D") for col in columns}
+        nuova_riga_df = pd.DataFrame([nuova_riga_data])
         
-        df = pd.concat([df, pd.DataFrame([nuova_riga])], ignore_index=True)
-        df.to_csv(FILE_DB_PRONOSTICI, index=False)
+        # Concatena e salva
+        df_updated = pd.concat([df_old, nuova_riga_df], ignore_index=True)
+        df_updated.to_csv(FILE_DB_PRONOSTICI, index=False)
         return True
     except Exception as e:
-        st.error(f"Errore critico salvataggio: {e}")
+        st.error(f"❌ Errore durante il salvataggio nel file CSV: {e}")
         return False
 
 def calcola_trend_forma(df_giocate, squadra):
@@ -754,39 +762,22 @@ with tab1:
         with cfe2:
             st.info(f"⏱️ **Top 3 RE 1° Tempo**\n\n{d['Top 3 RE 1°T']}")
 
-        # --- TASTO SALVATAGGIO AGGIORNATO ---
-        if st.button("💾 Salva in Cronologia", use_container_width=True):
-            import re
-            dati_puliti = d.copy()
+            # --- LOGICA SALVATAGGIO ---
+            if st.button("💾 Salva in Cronologia", use_container_width=True):
+                # Crea una copia per non modificare i dati visualizzati
+                dati_puliti = d.copy()
+                
+                # Pulisce le stringhe delle quote (toglie "Q: 1.50") per il CSV
+                campi_con_quote = ["SGF", "SGC", "SGO", "Top 6 RE Finali", "Top 3 RE 1°T"]
+                for campo in campi_con_quote:
+                    if campo in dati_puliti:
+                        # Rimuove tutto quello che c'è tra parentesi (Q: ...)
+                        dati_puliti[campo] = re.sub(r'\s\(Q:\s\d+\.\d+\)', '', str(dati_puliti[campo]))
 
-            # Calcolo nota fatica
-            nota_fatica = "Nessuna"
-            if fatica_casa and fatica_fuori: nota_fatica = "Entrambe"
-            elif fatica_casa: nota_fatica = f"Solo {casa_nome}"
-            elif fatica_fuori: nota_fatica = f"Solo {fuori_nome}"
-            
-            # INSERIMENTO CRUCIALE: aggiungiamo la fatica al dizionario prima di pulire
-            dati_puliti["Fatica"] = nota_fatica
-
-            # Pulizia quote dai testi (per non sporcare il database)
-            campi_con_quote = ["SGF", "SGC", "SGO", "Top 6 RE Finali", "Top 3 RE 1°T"]
-            for campo in campi_con_quote:
-                if campo in dati_puliti:
-                    testo_pulito = re.sub(r'\s\(Q:\s\d+\.\d+\)', '', str(dati_puliti[campo]))
-                    dati_puliti[campo] = testo_pulito
-
-            # Specifichiamo quali campi NON vogliamo nel CSV (quelli tecnici/probabilità)
-            escludi = ['p1', 'px', 'p2', 'pu', 'pg', 'lg', 'arbitro', 'molt_arbitro', 
-                       'dist_1t_h', 'dist_2t_h', 'dist_1t_a', 'dist_2t_a', 'tempo_top', 
-                       'casa_nome', 'fuori_nome', 'h2h_info', 'm_h2h_h', 'm_h2h_a', 'is_big_match']
-            
-            dati_per_csv = {k: v for k, v in dati_puliti.items() if k not in escludi}
-
-            # Chiamata alla funzione di salvataggio
-            if salva_completo_in_locale(dati_per_csv):
-                st.success("✅ Salvato con successo!")
-                time.sleep(0.5)
-                st.rerun()
+                if salva_completo_in_locale(dati_puliti):
+                    st.toast("Pronostico salvato con successo!", icon="✅")
+                    time.sleep(1.5) # Pausa estetica
+                    st.rerun() # Ricarica la pagina per mostrare il dato nella tabella sotto
 
 with tab2:
     st.info("⚠️ Aggiornerai Premier, Championship, Primera, Serie A, Liga, Ligue 1, Bundesliga, Eredivisie, Brasileirao Betano, UEFA e FIFA")
