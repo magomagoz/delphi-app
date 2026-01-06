@@ -429,7 +429,7 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
         "1X2": res_1x2, "U/O 2.5": res_uo, "G/NG": res_gng,
         "SGF": top_sgf_final, "SGC": top_sgc_final, "SGO": top_sgo_final,
         "Top 6 RE Finali": top_re_final, "Top 3 RE 1°T": top_re1t_final,
-        #"Fatica": data_dict.get("Fatica"),
+        "Fatica": "N/D",
         "Match_ID": match_id, "Risultato_Reale": "N/D", "PT_Reale": "N/D",
         "p1": p1, "px": px, "p2": p2, "pu": pu, "pg": pg,
         "h2h_info": testo_h2h, 
