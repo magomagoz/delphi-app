@@ -81,6 +81,7 @@ def salva_completo_in_locale(data_dict):
             "Top 6 RE Finali": data_dict.get("Top 6 RE Finali"),
             "Top 3 RE 1°T": data_dict.get("Top 3 RE 1°T"),
             "Match_ID": data_dict.get("Match_ID"),
+            "Fatica": data_dict.get("Fatica"),
             "Risultato_Reale": data_dict.get("Risultato_Reale"),
             "PT_Reale": data_dict.get("PT_Reale")
         }
