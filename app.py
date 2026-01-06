@@ -407,6 +407,7 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
 
     dist_1t_h, dist_2t_h = analizza_distribuzione_tempi(giocate, casa)
     dist_1t_a, dist_2t_a = analizza_distribuzione_tempi(giocate, fuori)
+    
     prob_1t_piu_gol = (dist_1t_h + dist_1t_a) / 2
     prob_2t_piu_gol = (dist_2t_h + dist_2t_a) / 2
     tempo_top = "2° Tempo" if prob_2t_piu_gol > prob_1t_piu_gol else "1° Tempo"
@@ -416,8 +417,8 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
         fuso_roma = pytz.timezone('Europe/Rome')
         dt_event_ita = dt_event.astimezone(fuso_roma)
     except:
-        dt_event_ita = datetime.now(pytz.timezone('Europe/Rome'))
-    
+        dt_event_ita = datetime.now(pytz.timezone('Europe/Rome'))    
+
     return {
         "Data": dt_event_ita.strftime("%d/%m/%Y"), 
         "Ora": dt_event_ita.strftime("%H:%M"),
@@ -430,9 +431,12 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
         "1X2": res_1x2, "U/O 2.5": res_uo, "G/NG": res_gng,
         "SGF": top_sgf_final, "SGC": top_sgc_final, "SGO": top_sgo_final,
         "Top 6 RE Finali": top_re_final, "Top 3 RE 1°T": top_re1t_final,
+        "Fatica": data_dict.get("Fatica"),
         "Match_ID": match_id, "Risultato_Reale": "N/D", "PT_Reale": "N/D",
         "p1": p1, "px": px, "p2": p2, "pu": pu, "pg": pg,
-        "h2h_info": testo_h2h, "dist_1t_h": dist_1t_h, "dist_2t_h": dist_2t_h,
+        "h2h_info": testo_h2h, 
+        "m_h2h_h": m_h2h_h, "m_h2h_a": m_h2h_a,
+        "dist_1t_h": dist_1t_h, "dist_2t_h": dist_2t_h,
         "dist_1t_a": dist_1t_a, "dist_2t_a": dist_2t_a, "tempo_top": tempo_top,
         "casa_nome": casa, "fuori_nome": fuori, "lg": calcola_late_goal_index(casa, fuori),
         "is_big_match": is_big_match, "arbitro": arbitro, "molt_arbitro": molt_arbitro
@@ -488,12 +492,16 @@ with tab1:
         
         st.success(f"✅ Dati acquisiti per {d_temp['Partita']}")
         st.markdown(f"👉 [**Controlla Formazione e Assenti per il {d_temp['Data']}**]({google_news_url})")
+
+        st.divider()
+        st.info("Regola la potenza offensiva se mancano giocatori chiave")
         
         col_p1, col_p2 = st.columns(2)
         with col_p1:
-            pen_h = st.select_slider(f"Potenza Attacco Casa", options=[0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0], value=1.0)
+            pen_h = st.select_slider(f"**Potenza Attacco Casa**", options=[0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0], value=1.0)
         with col_p2:
-            pen_a = st.select_slider(f"Potenza Attacco Fuori", options=[0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0], value=1.0)        
+            pen_a = st.select_slider(f"**Potenza Attacco Fuori**", options=[0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0], value=1.0)        
+            
             is_big_match = st.toggle("🔥 Filtro Big Match / Derby")
 
         if st.button("🎯 Genera Pronostico", type="primary", use_container_width=True):
@@ -506,9 +514,11 @@ with tab1:
             casa_nome, fuori_nome = d['casa_nome'], d['fuori_nome']
 
             st.header(f"🏟️ **{d['Partita']}**")
-            st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')} | 📅 {d['Data']} ore {d['Ora']}")
+            st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')})
+            st.subheader(f"📅 Data: {d['Data']} ore {d['Ora']}")
+        
 
-            if d.get('is_big_match'): st.warning("🛡️ **Filtro Big Match Attivo**")
+            if d.get('is_big_match'): st.warning("🛡️ **Filtro Big Match Attivo**: probabile partita molto tattica")
 
             c_trend1, c_trend2 = st.columns(2)
             with c_trend1:
@@ -552,7 +562,7 @@ with tab1:
                 st.progress(d['dist_1t_a'] / 100, text=f"1° Tempo: {d['dist_1t_a']}%")
                 st.progress(d['dist_2t_a'] / 100, text=f"2° Tempo: {d['dist_2t_a']}%")
 
-            st.info(f"💡 **Tendenza**: Il tempo con più gol previsto è il **{d['tempo_top']}**")
+            st.info(f"💡 **Tendenza**: Il tempo con più gol è il **{d['tempo_top']}**")
 
             st.divider()
             st.subheader("🏁 Esito Finale 1X2")
@@ -562,6 +572,7 @@ with tab1:
             with c2: st.success(f"**Esito 2:** \n 📈 Prob: {d['p2']:.1%}\n 💰 Quota: {stima_quota(d['p2'])}")
 
             st.divider()
+            st.subheader("⚔️ Under/Over 2,5 & Gol/NoGol")
             col_uo, col_gng = st.columns(2)
             p_over = 1 - d['pu']
             p_nogol = 1 - d['pg']
@@ -584,14 +595,14 @@ with tab1:
 
         # --- RISULTATI ESATTI ---
         st.divider()
-        st.subheader("🎯 Risultati Esatti Probabili")
+        st.subheader("🎯 Risultati Esatti")
         cfe1, cfe2 = st.columns(2)
 
         with cfe1:
-            st.success(f"🏁 **Top 6 RE Finali**\n\n{d['Top 6 RE Finali']}")
+            st.success(f"🏁 **Top 6 Risultati Esatti Finali**\n\n{d['Top 6 RE Finali']}")
             
         with cfe2:
-            st.info(f"⏱️ **Top 3 RE 1° Tempo**\n\n{d['Top 3 RE 1°T']}")
+            st.info(f"⏱️ **Top 3 Risultati Esatti 1° Tempo**\n\n{d['Top 3 RE 1°T']}")
 
             # --- LOGICA SALVATAGGIO ROBUSTA ---
             if st.button("💾 Salva in Cronologia", use_container_width=True):
@@ -616,6 +627,9 @@ with tab1:
                     st.rerun()
 
 with tab2:
+    st.info("⏰ Aggiorneremo Serie A, Premier League, Championship, Liga, Bundesliga, Ligue 1,
+    Primeira Liga, Eredivisie, Brasileirao Betano, UEFA Champions League ed Europa League e FIFA World Cup")
+
     if st.button("🌐 Aggiorna Database"):
         with st.spinner("Aggiornamento database in corso..."):
             aggiorna_database_calcio()
@@ -654,3 +668,7 @@ with tab3:
             st.info("La cronologia è vuota.")
     else:
         st.warning("Nessun pronostico salvato finora.")
+
+#with tab4:
+    #st.header("📜 Statistiche")
+    
