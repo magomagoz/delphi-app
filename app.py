@@ -809,7 +809,7 @@ with tab3:
             # Rimuove righe identiche (stessa Partita e stessa Data)
             initial_count = len(df_cronologia)
             df_cronologia = df_cronologia.drop_duplicates(subset=['Data', 'Partita'], keep='last')
-            
+
             # Se sono stati rimossi duplicati, salva subito il file pulito
             if len(df_cronologia) < initial_count:
                 df_cronologia.to_csv(FILE_DB_PRONOSTICI, index=False)
@@ -867,3 +867,4 @@ with tab3:
             st.info("La cronologia è vuota.")
     else:
         st.warning("Database non trovato.")
+        
