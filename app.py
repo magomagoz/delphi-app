@@ -616,7 +616,7 @@ with tab1:
                     st.rerun()
             
 with tab2:
-    st.info(f"⏰ Aggiorneremo Serie A, Premier League, Championship, Liga, Bundesliga, Ligue 1,Primeira Liga, Eredivisie, Brasileirao Betano, UEFA Champions League ed Europa League e FIFA World Cup")
+    st.info(f"⏰ Serie A, Premier League, Championship, Liga, Bundesliga, Ligue 1,Primeira Liga, Eredivisie, Brasileirao Betano, UEFA e FIFA")
 
     if st.button("🌐 Aggiorna Database"):
         with st.spinner("Aggiornamento database in corso..."):
