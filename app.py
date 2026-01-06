@@ -328,7 +328,7 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
     ].sort_values(by='Date')
     
     if future_matches.empty:
-        st.warning(f"Nessun match futuro trovato per '{nome_input}'."); return None
+        st.warning(f"Nessun prossimo match trovato per '{nome_input}'."); return None
 
     m = future_matches.iloc[0]
     casa, fuori = m['HomeTeam'], m['AwayTeam']
@@ -345,6 +345,7 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
     att_a, dif_a = get_stats(fuori, False, giocate)
     trend_h, molt_forma_h = calcola_trend_forma(giocate, casa)
     trend_a, molt_forma_a = calcola_trend_forma(giocate, fuori)
+
     m_h2h_h, m_h2h_a, testo_h2h = analizza_h2h(giocate, casa, fuori)
     
     exp_h = (att_h * dif_a / avg_g) * molt_forma_h * (2 - molt_arbitro) * pen_h * m_h2h_h
@@ -356,7 +357,7 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
 
     p1, px, p2, pu, pg, tot = 0,0,0,0,0,0
     sgf, sgc, sgo = {i:0 for i in range(12)}, {i:0 for i in range(6)}, {i:0 for i in range(6)}
-    re_fin, re_1t = [], []
+    re_fin = []
     
     for i in range(6):
         for j in range(6):
@@ -373,7 +374,7 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
             re_fin.append({'s': f"{i}-{j}", 'p': prob})
             
     eh1, ea1 = exp_h*0.42, exp_a*0.42
-    total_p_1t = 0
+    re_1t,total_p_1t = [], 0
     for i in range(4):
         for j in range(4):
             pb = poisson_probability(i, eh1) * poisson_probability(j, ea1)
@@ -384,7 +385,7 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
     pu, pg = pu/tot, pg/tot
     res_1x2 = "1" if p1 > px and p1 > p2 else ("X" if px > p1 and px > p2 else "2")
     res_uo = "OVER 2.5" if (1-pu) > 0.5 else "UNDER 2.5"
-    res_gng = "GOL" if pg > 0.5 else "NO GOL"
+    res_gng = "GOL" if pg > 0.5 else "NOGOL"
 
     def formatta_somma_con_quote(diz, limite, top_n):
         items = sorted(diz.items(), key=lambda x: x[1], reverse=True)[:top_n]
