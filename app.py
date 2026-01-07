@@ -79,7 +79,7 @@ def inizializza_db():
 # ESEGUIAMO SUBITO L'INIZIALIZZAZIONE
 inizializza_db()
 
-def salva_completo_in_locale(res_dict):
+def salva_completo_in_locale(d_dict):
     try:
         columns = get_db_columns()
         df_old = pd.read_csv(FILE_DB_PRONOSTICI) if os.path.exists(FILE_DB_PRONOSTICI) else pd.DataFrame(columns=columns)
