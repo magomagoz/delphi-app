@@ -32,16 +32,16 @@ FILE_DB_PRONOSTICI = 'database_pronostici.csv'
 def check_1x2(pred, home, away):
     if home > away: res = "1"
     elif away > home: res = "2"
-    else: res = "X"
+    else: d = "X"
     return str(pred).strip() == res
 
 def check_uo(pred, home, away):
     total = home + away
-    res = "OVER 2.5" if total > 2.5 else "UNDER 2.5"
+    d = "OVER 2.5" if total > 2.5 else "UNDER 2.5"
     return str(pred).strip().upper() == res
 
 def check_gng(pred, home, away):
-    res = "GOL" if home > 0 and away > 0 else "NOGOL"
+    d = "GOL" if home > 0 and away > 0 else "NOGOL"
     return str(pred).strip().upper() == res
 
 def check_in_list(pred_string, value_to_find):
@@ -382,9 +382,9 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
    
     p1, px, p2 = p1/tot, px/tot, p2/tot
     pu, pg = pu/tot, pg/tot
-    res_1x2 = "1" if p1 > px and p1 > p2 else ("X" if px > p1 and px > p2 else "2")
-    res_uo = "OVER 2.5" if (1-pu) > 0.5 else "UNDER 2.5"
-    res_gng = "GOL" if pg > 0.5 else "NOGOL"
+    d_1x2 = "1" if p1 > px and p1 > p2 else ("X" if px > p1 and px > p2 else "2")
+    d_uo = "OVER 2.5" if (1-pu) > 0.5 else "UNDER 2.5"
+    d_gng = "GOL" if pg > 0.5 else "NOGOL"
 
     def formatta_somma_con_quote(diz, limite, top_n):
         items = sorted(diz.items(), key=lambda x: x[1], reverse=True)[:top_n]
@@ -427,7 +427,7 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
         "Affidabilità": f"{85 + int(molt_arbitro*2)}%",
         "Trend_Casa": trend_h, "Trend_Fuori": trend_a,
         "Forma_H": molt_forma_h, "Forma_A": molt_forma_a,
-        "1X2": res_1x2, "U/O 2.5": res_uo, "G/NG": res_gng,
+        "1X2": d_1x2, "U/O 2.5": d_uo, "G/NG": d_gng,
         "SGF": top_sgf_final, "SGC": top_sgc_final, "SGO": top_sgo_final,
         "Top 6 RE Finali": top_re_final, "Top 3 RE 1°T": top_re1t_final,
         "Fatica": "N/D",
