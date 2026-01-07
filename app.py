@@ -609,7 +609,7 @@ with tab1:
                 f_a = controlla_fatica(df_c, d['fuori_nome'], d['Data'])
                 d['Fatica'] = "SÌ" if (f_h or f_a) else "NO"
                 
-                if salva_completo_in_locale(res):
+                if salva_completo_in_locale(d):
                     st.toast("Salvato con successo!", icon="✅")
                     time.sleep(1)
                     st.rerun()
