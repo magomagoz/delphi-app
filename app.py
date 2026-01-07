@@ -474,19 +474,22 @@ with tab1:
         st.session_state['pronostico_corrente'] = None
         st.session_state['squadra_precedente'] = sq
 
-    if sq and not st.session_state['dati_acquisiti']:
+    if sq and not st.session_state.get('dati_acquisiti', False):
         if st.button("📊 Acquisisci dati della partita", use_container_width=True):
-            d_temp = esegui_analisi(sq) # Esegue l'analisi
+            d_temp = esegui_analisi(sq)
             if d_temp:
-                st.session_state['Data'] = d_temp # Salva nel database temporaneo
+                st.session_state['dati_temp'] = d_temp
                 st.session_state['dati_acquisiti'] = True
                 st.rerun()
-            else: st.error("Squadra non trovata.")
+            else:
+                st.error("Squadra non trovata.")
 
+    # Il controllo 'if' previene il KeyError
     if st.session_state.get('dati_acquisiti'):
-        d = st.session_state['dati_temp'] # <--- QUI DEFINIAMO 'd'
+        d = st.session_state['dati_temp']
+        d_temp = d # Definiamo d_temp per compatibilità con le righe successive
         st.success(f"✅ Dati acquisiti per {d['Partita']}")
-    
+        
         search_query = f"**Formazione {sq} nella partita del {d_temp['Data']}**"
         google_news_url = f"https://www.google.com/search?q={search_query.replace(' ', '+')}&tbm=nws"
         
@@ -577,7 +580,7 @@ with tab1:
             p_nogol = 1 - d['pg']
             with col_uo: st.warning(f"**UNDER 2.5:** {d['pu']:.1%} (Q:{stima_quota(d['pu'])})\n\n**OVER 2.5:** {p_over:.1%} (Q:{stima_quota(p_over)})")
             with col_gng: st.warning(f"**GOL:** {d['pg']:.1%} (Q:{stima_quota(d['pg'])})\n\n**NOGOL:** {p_nogol:.1%} (Q:{stima_quota(p_nogol)})")
-            
+
             # --- RISULTATI E SOMME GOL CON QUOTE ---
             st.divider()
             st.subheader("⚽ Analisi Somma Gol")
