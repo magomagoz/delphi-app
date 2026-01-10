@@ -675,8 +675,8 @@ if 'pf_grid' in d:
 for esito, prob in grid_data.items():
     pf_list.append({"Combinazione": esito, "Probabilità": f"{prob:.1%}", "Quota": f"{stima_quota(prob):.2f}"
     })
-        
-   df_pf = pd.DataFrame(pf_list)
+    
+    df_pf = pd.DataFrame(pf_list)
     
     # Visualizzazione in 3 colonne
     c_pf1, c_pf2, c_pf3 = st.columns(3)
