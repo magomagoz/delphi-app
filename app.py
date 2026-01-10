@@ -119,7 +119,8 @@ def ripristina_ultimo_backup():
         return True, f"Ripristinato backup del: {files[-1].replace('pronostici_backup_', '').replace('.csv', '')}"
     except Exception as e:
         return False, f"Errore durante il ripristino: {e}"
-
+]
+        
 def salva_completo_in_locale(d_dict):
     try:
         columns = get_db_columns()
@@ -427,7 +428,7 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
     d_uo = "OVER 2.5" if (1-pu) > 0.5 else "UNDER 2.5"
     d_gng = "GOL" if pg > 0.5 else "NOGOL"
 
-    # --- Estrazione Top 3 Parziale/Finale per visualizzazione ---
+    # Estrae i migliori 3 esiti Parziale/Finale
     top_pf_final = ", ".join([
         f"{k} (Q: {stima_quota(v):.2f})" 
         for k, v in sorted(pf_final.items(), key=lambda x: x[1], reverse=True)[:3]
@@ -495,7 +496,7 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
         "1X2": d_1x2, "U/O 2.5": d_uo, "G/NG": d_gng,
         "SGF": top_sgf_final, "SGC": top_sgc_final, "SGO": top_sgo_final,
         "Top 6 RE Finali": top_re_final, "Top 3 RE 1°T": top_re1t_final,
-        "Top 3 RE HT/FT": top_pf_final, # Questa è la chiave che mancava e causava il KeyError
+        "Top 3 HT/FT": top_pf_final,  # <--- AGGIUNGI QUESTA RIGA
         "pf_grid": pf_final,
         "Fatica": "N/D",
         "Match_ID": match_id, "Risultato_Reale": "N/D", "PT_Reale": "N/D",
