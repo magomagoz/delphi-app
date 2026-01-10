@@ -373,6 +373,11 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
         st.warning(f"Nessun prossimo match trovato per '{nome_input}'."); return None
 
     m = future_matches.iloc[0]
+
+    # Convertiamo la data da UTC a Fuso Orario Roma
+    dt_utc = m['Date']
+    dt_event_ita = dt_utc.tz_convert('Europe/Rome')
+    
     casa, fuori = m['HomeTeam'], m['AwayTeam']
     match_id = m.get('ID', 'N/A')
     codice_lega = m['League']
