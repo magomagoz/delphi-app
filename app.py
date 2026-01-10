@@ -665,48 +665,59 @@ with tab1:
 if st.session_state.get('pronostico_corrente'):
     d = st.session_state['pronostico_corrente']    
 
+# --- CONTINUAZIONE TAB 1 (Indentazione Corretta) ---
+            # ... (codice precedente dei Risultati Esatti)
 
+            # Controlla se il pronostico esiste prima di visualizzare i dettagli extra
+            if st.session_state.get('pronostico_corrente'):
+                d = st.session_state['pronostico_corrente']    
 
-        st.divider()
-        st.subheader("⏱️ Griglia Completa Parziale/Finale (9 Esiti)")
-            
-        # Recupero sicuro del dato
-        grid_data = d.get('pf_grid', {})
-            
-        if grid_data:
-            pf_list = []
-            for esito, prob in grid_data.items():
-                pf_list.append({"Combinazione": esito, "Probabilità": f"{prob:.1%}", "Quota": f"{stima_quota(prob):.2f}"
-                })
-                
-            df_pf = pd.DataFrame(pf_list)
-                
-            # Evidenzia il migliore
-            best_pf = max(grid_data, key=grid_data.get)
-            st.info(f"🏆 **Esito Parziale/Finale consigliato: {best_pf}**")
+                st.divider()
+                st.subheader("⏱️ Griglia Completa Parziale/Finale (9 Esiti)")
+                    
+                # Recupero sicuro del dato
+                grid_data = d.get('pf_grid', {})
+                    
+                if grid_data:
+                    pf_list = []
+                    for esito, prob in grid_data.items():
+                        pf_list.append({
+                            "Combinazione": esito, 
+                            "Probabilità": f"{prob:.1%}", 
+                            "Quota": f"{stima_quota(prob):.2f}"
+                        })
+                        
+                    df_pf = pd.DataFrame(pf_list)
+                        
+                    # Evidenzia il migliore
+                    best_pf = max(grid_data, key=grid_data.get)
+                    st.info(f"🏆 **Esito Parziale/Finale consigliato: {best_pf}**")
 
-            c_pf1, c_pf2, c_pf3 = st.columns(3)
-            with c_pf1: st.table(df_pf.iloc[0:3])
-            with c_pf2: st.table(df_pf.iloc[3:6])
-            with c_pf3: st.table(df_pf.iloc[6:9])
-        else:
-            st.warning("Dati Parziale/Finale non disponibili per questa analisi.")
+                    c_pf1, c_pf2, c_pf3 = st.columns(3)
+                    with c_pf1: st.table(df_pf.iloc[0:3])
+                    with c_pf2: st.table(df_pf.iloc[3:6])
+                    with c_pf3: st.table(df_pf.iloc[6:9])
+                else:
+                    st.warning("Dati Parziale/Finale non disponibili per questa analisi.")
 
-        # --- LOGICA SALVATAGGIO ROBUSTA ---
-    if st.button("💾 Salva in Cronologia", use_container_width=True):
-        # Calcola la fatica prima di salvare
-        df_c = pd.read_csv(FILE_DB_CALCIO)
-        f_h = controlla_fatica(df_c, d['casa_nome'], d['Data'])
-        f_a = controlla_fatica(df_c, d['fuori_nome'], d['Data'])
-        d['Fatica'] = "SÌ" if (f_h or f_a) else "NO"
-                
-        if salva_completo_in_locale(d):
-            st.toast("Salvato con successo!", icon="✅")
-            time.sleep(2)
-            st.rerun()
+                st.divider()
+                # --- LOGICA SALVATAGGIO ROBUSTA (Sempre dentro l'if del pronostico) ---
+                if st.button("💾 Salva in Cronologia", use_container_width=True):
+                    # Calcola la fatica prima di salvare
+                    df_c = pd.read_csv(FILE_DB_CALCIO)
+                    f_h = controlla_fatica(df_c, d['casa_nome'], d['Data'])
+                    f_a = controlla_fatica(df_c, d['fuori_nome'], d['Data'])
+                    d['Fatica'] = "SÌ" if (f_h or f_a) else "NO"
+                            
+                    if salva_completo_in_locale(d):
+                        st.toast("Salvato con successo!", icon="✅")
+                        time.sleep(1)
+                        st.rerun()
+
+# --- FINE TAB 1 ---
             
 with tab2:
-    st.info(f"⏰  Aggiorna Serie A, Premier League, Championship, Liga, Bundesliga, Ligue 1,Primeira Liga, Eredivisie, Brasileirao Betano, UEFA e FIFA")
+    st.info("⏰ Aggiorna Serie A, Premier League, Championship, Liga, Bundesliga, Ligue 1, Primeira Liga, Eredivisie, Brasileirao Betano, UEFA e FIFA")
 
     if st.button("🌐 Aggiorna Database"):
         with st.spinner("Aggiornamento database in corso..."):
@@ -757,7 +768,6 @@ with tab3:
                             st.error(messaggio)
 
             with col_del:
-                # --- IL TUO VECCHIO PULSANTE ELIMINA ---
                 with st.popover("🗑️ Elimina Cronologia", use_container_width=True):
                     st.warning("⚠️ Sei sicuro? Cancellerai tutti i pronostici salvati.")
                     if st.button("Sì, cancella tutto", type="primary", use_container_width=True):
@@ -777,11 +787,9 @@ with tab4:
     st.header("📊 Performance Delphi")
     if os.path.exists(FILE_DB_PRONOSTICI):
         df_stat = pd.read_csv(FILE_DB_PRONOSTICI)
-        # Filtriamo solo i match conclusi (quelli con risultato reale)
         df_v = df_stat[df_stat['Risultato_Reale'] != "N/D"].copy()
         
         if not df_v.empty:
-            # Funzione interna per verificare se il pronostico 1X2 era corretto
             def verifica(r):
                 try:
                     h, a = map(int, str(r['Risultato_Reale']).split('-'))
