@@ -661,9 +661,9 @@ with tab1:
             with cfe2:
                 st.info(f"⏱️ **Top 3 Risultati Esatti 1° Tempo**\n\n{d['Top 3 RE 1°T']}")
 
-    # Controlla se il pronostico esiste prima di provare a leggerlo
-    if st.session_state.get('pronostico_corrente'):
-        d = st.session_state['pronostico_corrente']    
+            # Controlla se il pronostico esiste prima di provare a leggerlo
+            #if st.session_state.get('pronostico_corrente'):
+                #d = st.session_state['pronostico_corrente']    
 
             st.divider()
             st.subheader("⏱️ Griglia Completa Parziale/Finale (9 Esiti)")
