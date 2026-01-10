@@ -473,16 +473,15 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
     p1t_x = sum(v['p'] for v in re_1t if int(v['s'].split('-')[0]) == int(v['s'].split('-')[1]))
     p1t_2 = sum(v['p'] for v in re_1t if int(v['s'].split('-')[0]) < int(v['s'].split('-')[1]))
 
-    for s1 in segni:
-        for s2 in segni:
-            p1t = p1t_1 if s1=='1' else (p1t_x if s1=='X' else p1t_2)
-            pfin = p1 if s2=='1' else (px if s2=='X' else p2)
-            corr = 1.25 if s1 == s2 else 0.85 # Correzione statistica
-            pf_probs[f"{s1}-{s2}"] = (p1t * pfin * corr)
+    for s1, p1t_val in zip(['1','X','2'], [p1t_1, p1t_x, p1t_2]):
+        for s2, pfin_val in zip(['1','X','2'], [p1/tot, px/tot, p2/tot]):
+            correzione = 1.25 if s1 == s2 else 0.85 
+            pf_probs[f"{s1}-{s2}"] = p1t_val * pfin_val * correzione
 
-    # Normalizzazione
-    total_pf = sum(pf_probs.values())
+    # Normalizzazione e formattazione stringa per il DB
+    total_pf = sum(pf_probs.values()) if sum(pf_probs.values()) > 0 else 1
     pf_final = {k: v/total_pf for k, v in pf_probs.items()}
+    top_pf_final = ", ".join([f"{k} (Q: {stima_quota(v):.2f})" for k, v in sorted(pf_final.items(), key=lambda x: x[1], reverse=True)[:3]])
     
     return {
         "Data": dt_event_ita.strftime("%d/%m/%Y"), 
