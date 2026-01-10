@@ -429,6 +429,12 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
     d_uo = "OVER 2.5" if (1-pu) > 0.5 else "UNDER 2.5"
     d_gng = "GOL" if pg > 0.5 else "NOGOL"
 
+    # Creazione della stringa con le quote
+    top_pf_string = ", ".join([
+        f"{k} (Q: {stima_quota(v):.2f})" 
+        for k, v in sorted(pf_final_dict.items(), key=lambda x: x[1], reverse=True)[:3]
+        ])
+        
     def formatta_somma_con_quote(diz, limite, top_n):
         items = sorted(diz.items(), key=lambda x: x[1], reverse=True)[:top_n]
         ris = []
@@ -473,7 +479,8 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
         "1X2": d_1x2, "U/O 2.5": d_uo, "G/NG": d_gng,
         "SGF": top_sgf_final, "SGC": top_sgc_final, "SGO": top_sgo_final,
         "Top 6 RE Finali": top_re_final, "Top 3 RE 1°T": top_re1t_final,
-        "Top 3 HT/FT": Real_htft,
+        "Top 3 HT/FT": top_pf,  # <--- QUI VIENE DEFINITA LA CHIAVE
+        "pf_grid": pf_final_dict,
         "Fatica": "N/D",
         "Match_ID": match_id, "Risultato_Reale": "N/D", "PT_Reale": "N/D",
         "p1": p1, "px": px, "p2": p2, "pu": pu, "pg": pg,
@@ -516,7 +523,7 @@ def highlight_winners(row):
     if check_in_list(row['SGO'], a): colors[10] = green
     if check_in_list(row['Top 6 RE Finali'], row['Risultato_Reale']): colors[11] = green
     if check_in_list(row['Top 3 RE 1°T'], row['PT_Reale']): colors[12] = green
-    if check_in_list(row['Top 3 HT/FT'], row['Real_htft']): colors[13] = green 
+    if check_in_list(row['Top 3 HT/FT'], row['top_pf']): colors[13] = green 
         
     return colors
 
