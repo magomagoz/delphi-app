@@ -424,6 +424,8 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
     eh1, ea1 = exp_h * 0.42, exp_a * 0.42
     prob_1t = {'1': 0, 'X': 0, '2': 0}
     re_1t = []
+    
+    # Calcolo probabilità primo tempo
     for i in range(4):
         for j in range(4):
             pb = poisson_probability(i, eh1) * poisson_probability(j, ea1)
@@ -434,7 +436,7 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
     # Probabilità Finale (già calcolate prima nel tuo codice)
     prob_ft = {'1': p1, 'X': px, '2': p2}
     
-    # Inizializziamo pf_final_dict PRIMA di usarlo
+    # Inizializziamo pf_final_dict (FONDAMENTALE PER EVITARE L'ERRORE UnboundLocalError)
     pf_final_dict = {}
     for s1 in ['1', 'X', '2']:
         for s2 in ['1', 'X', '2']:
@@ -449,12 +451,34 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
         for k in pf_final_dict: pf_final_dict[k] /= total_pf
 
     # Generazione stringa TOP 3 HT/FT
-    top_pf_string = ", ".join([
-        f"{k} (Q: {stima_quota(v):.2f})" 
-        for k, v in sorted(pf_final_dict.items(), key=lambda x: x[1], reverse=True)[:3]
-    ])
+    # Ordiniamo e prendiamo i primi 3. Gestiamo il caso in cui il dizionario sia vuoto.
+    items_htft = sorted(pf_final_dict.items(), key=lambda x: x[1], reverse=True)[:3]
+    top_pf_string = ", ".join([f"{k} (Q: {stima_quota(v):.2f})" for k, v in items_htft])
 
-    # Funzioni di formattazione
+    # --- CALCOLO VARIABILI MANCANTI (RISOLVE I NAME ERROR) ---
+    
+    # 1. Calcolo stringhe pronostici 1X2, U/O, G/NG
+    if p1 >= px and p1 >= p2: d_1x2 = "1"
+    elif p2 >= p1 and p2 >= px: d_1x2 = "2"
+    else: d_1x2 = "X"
+    
+    d_uo = "UNDER 2.5" if pu >= 0.5 else "OVER 2.5"
+    d_gng = "GOL" if pg >= 0.5 else "NOGOL"
+
+    # 2. Calcolo statistiche tempi (dist_1t_h, ecc.)
+    dist_1t_h, dist_2t_h = analizza_pericolosita_tempi(giocate, casa)
+    dist_1t_a, dist_2t_a = analizza_pericolosita_tempi(giocate, fuori)
+    
+    avg_1t = (dist_1t_h + dist_1t_a) / 2
+    avg_2t = (dist_2t_h + dist_2t_a) / 2
+    tempo_top = "1° Tempo" if avg_1t > avg_2t else "2° Tempo"
+
+    # 3. Controllo sicurezza data
+    if 'dt_event_ita' not in locals():
+        # Se per qualche motivo dt_event_ita non è definita sopra, la ricalcoliamo
+        dt_event_ita = m['Date'].tz_convert('Europe/Rome')
+
+    # Funzioni di formattazione interne
     def formatta_somma_con_quote(diz, limite, top_n):
         items = sorted(diz.items(), key=lambda x: x[1], reverse=True)[:top_n]
         return ", ".join([f"{str(k) if k < limite else '>'+str(limite-1)} (Q: {stima_quota(v):.2f})" for k, v in items])
@@ -462,23 +486,8 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
     def formatta_re_con_quote(lista, top_n):
         items = sorted(lista, key=lambda x: x['p'], reverse=True)[:top_n]
         return ", ".join([f"{v['s']} (Q: {stima_quota(v['p']):.2f})" for v in items])
-    
-    # 1. Calcolo della stringa 1X2 basata sulle probabilità
-    if p1 >= px and p1 >= p2:
-        d_1x2 = "1"
-    elif p2 >= p1 and p2 >= px:
-        d_1x2 = "2"
-    else:
-        d_1x2 = "X"
 
-    # 2. Calcolo stringhe U/O e G/NG
-    d_uo = "UNDER 2.5" if pu >= 0.5 else "OVER 2.5"
-    d_gng = "GOL" if pg >= 0.5 else "NOGOL"
-    
-    # 3. Controllo sicurezza data (nel caso mancasse la definizione sopra)
-    if 'dt_event_ita' not in locals():
-        dt_event_ita = m['Date'].tz_convert('Europe/Rome')
-
+    # --- RETURN FINALE COMPLETO ---
     return {
         "Data": dt_event_ita.strftime("%d/%m/%Y"), 
         "Ora": dt_event_ita.strftime("%H:%M"),
@@ -492,7 +501,7 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
         "SGO": formatta_somma_con_quote(sgo, 3, 2),
         "Top 6 RE Finali": formatta_re_con_quote(re_fin, 6), 
         "Top 3 RE 1°T": formatta_re_con_quote(re_1t, 3),
-        "Top 3 HT/FT": top_pf_string, # Variabile corretta calcolata sopra
+        "Top 3 HT/FT": top_pf_string,
         "Match_ID": match_id, "Risultato_Reale": "N/D", "PT_Reale": "N/D",
         "p1": p1, "px": px, "p2": p2, "pu": pu, "pg": pg,
         "dist_1t_h": dist_1t_h, "dist_2t_h": dist_2t_h,
@@ -501,6 +510,7 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
         "arbitro": arbitro, "molt_arbitro": molt_arbitro,
         "Trend_Casa": trend_h, "Trend_Fuori": trend_a,
         "Forma_H": molt_forma_h, "Forma_A": molt_forma_a,
+        "is_big_match": is_big_match # Aggiunto per evitare errori nel frontend
     }
 
 def highlight_winners(row):
