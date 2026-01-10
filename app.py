@@ -415,105 +415,48 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
             sgo[j] += prob
             re_fin.append({'s': f"{i}-{j}", 'p': prob})
             
-    eh1, ea1 = exp_h*0.42, exp_a*0.42
-    re_1t,total_p_1t = [], 0
-    for i in range(4):
-        for j in range(4):
-            pb = poisson_probability(i, eh1) * poisson_probability(j, ea1)
-            total_p_1t += pb
-            re_1t.append({'s': f"{i}-{j}", 'p': pb})
-   
-    p1, px, p2 = p1/tot, px/tot, p2/tot
-    pu, pg = pu/tot, pg/tot
-    d_1x2 = "1" if p1 > px and p1 > p2 else ("X" if px > p1 and px > p2 else "2")
-    d_uo = "OVER 2.5" if (1-pu) > 0.5 else "UNDER 2.5"
-    d_gng = "GOL" if pg > 0.5 else "NOGOL"
-
-    # Creazione della stringa con le quote
-    top_pf_string = ", ".join([
-        f"{k} (Q: {stima_quota(v):.2f})" 
-        for k, v in sorted(pf_final_dict.items(), key=lambda x: x[1], reverse=True)[:3]
-        ])
-        
-    def formatta_somma_con_quote(diz, limite, top_n):
-        items = sorted(diz.items(), key=lambda x: x[1], reverse=True)[:top_n]
-        ris = []
-        for k, v in items:
-            label = f">{limite-1}" if k >= limite else str(k)
-            ris.append(f"{label} (Q: {stima_quota(v):.2f})")
-        return ", ".join(ris)
-
-    def formatta_re_con_quote(lista, top_n):
-        items = sorted(lista, key=lambda x: x['p'], reverse=True)[:top_n]
-        return ", ".join([f"{v['s']} (Q: {stima_quota(v['p']):.2f})" for v in items])
-
-    top_sgf_final = formatta_somma_con_quote(sgf, 5, 3)
-    top_sgc_final = formatta_somma_con_quote(sgc, 3, 2)
-    top_sgo_final = formatta_somma_con_quote(sgo, 3, 2)
-    top_re_final = formatta_re_con_quote(re_fin, 6)
-    top_re1t_final = formatta_re_con_quote(re_1t, 3)
-
-    dist_1t_h, dist_2t_h = analizza_distribuzione_tempi(giocate, casa)
-    dist_1t_a, dist_2t_a = analizza_distribuzione_tempi(giocate, fuori)
-    
-    prob_1t_piu_gol = (dist_1t_h + dist_1t_a) / 2
-    prob_2t_piu_gol = (dist_2t_h + dist_2t_a) / 2
-    tempo_top = "2° Tempo" if prob_2t_piu_gol > prob_1t_piu_gol else "1° Tempo"
-    
-    try:
-        dt_event = pd.to_datetime(m['Date'], utc=True)
-        fuso_roma = pytz.timezone('Europe/Rome')
-        dt_event_ita = dt_event.astimezone(fuso_roma)
-    except:
-        dt_event_ita = datetime.now(pytz.timezone('Europe/Rome'))    
-
-    # --- CALCOLO HT/FT ---
-    # Definiamo le probabilità dei segni 1X2 per il 1° Tempo e il Finale
+    # --- CALCOLO HT/FT (LOGICA CORRETTA) ---
+    eh1, ea1 = exp_h * 0.42, exp_a * 0.42
     prob_1t = {'1': 0, 'X': 0, '2': 0}
+    re_1t = []
     for i in range(4):
         for j in range(4):
             pb = poisson_probability(i, eh1) * poisson_probability(j, ea1)
+            re_1t.append({'s': f"{i}-{j}", 'p': pb})
             sign = "1" if i > j else ("2" if j > i else "X")
             prob_1t[sign] += pb
 
+    # Probabilità Finale (già calcolate prima nel tuo codice)
     prob_ft = {'1': p1, 'X': px, '2': p2}
     
-    # Calcolo approssimativo HT/FT basato sulla correlazione dei tempi
+    # Inizializziamo pf_final_dict PRIMA di usarlo
     pf_final_dict = {}
     for s1 in ['1', 'X', '2']:
         for s2 in ['1', 'X', '2']:
             comb = f"{s1}-{s2}"
-            # Logica statistica: il finale dipende in parte dal parziale
-            if s1 == s2: weight = 0.6  # Più probabile che il segno resti uguale
-            elif s1 == 'X': weight = 0.3 # Pareggio a metà tempo, poi decide il finale
-            else: weight = 0.1 # Ribaltone (più raro)
-            
+            # Peso statistico per rendere il calcolo realistico
+            weight = 0.6 if s1 == s2 else (0.3 if s1 == 'X' else 0.1)
             pf_final_dict[comb] = (prob_1t[s1] * prob_ft[s2]) * weight
 
-    # Normalizzazione probabilità HT/FT
+    # Normalizzazione
     total_pf = sum(pf_final_dict.values())
-    for k in pf_final_dict: pf_final_dict[k] /= total_pf
+    if total_pf > 0:
+        for k in pf_final_dict: pf_final_dict[k] /= total_pf
 
-    # Formattazione stringhe con quote
+    # Generazione stringa TOP 3 HT/FT
     top_pf_string = ", ".join([
         f"{k} (Q: {stima_quota(v):.2f})" 
         for k, v in sorted(pf_final_dict.items(), key=lambda x: x[1], reverse=True)[:3]
     ])
 
+    # Funzioni di formattazione
     def formatta_somma_con_quote(diz, limite, top_n):
         items = sorted(diz.items(), key=lambda x: x[1], reverse=True)[:top_n]
-        ris = []
-        for k, v in items:
-            label = f">{limite-1}" if k >= limite else str(k)
-            ris.append(f"{label} (Q: {stima_quota(v):.2f})")
-        return ", ".join(ris)
+        return ", ".join([f"{str(k) if k < limite else '>'+str(limite-1)} (Q: {stima_quota(v):.2f})" for k, v in items])
 
     def formatta_re_con_quote(lista, top_n):
         items = sorted(lista, key=lambda x: x['p'], reverse=True)[:top_n]
         return ", ".join([f"{v['s']} (Q: {stima_quota(v['p']):.2f})" for v in items])
-
-    top_re_final = formatta_re_con_quote(re_fin, 6)
-    top_re1t_final = formatta_re_con_quote(re_1t, 3)
 
     # --- RETURN DIZIONARIO ---
     return {
@@ -527,9 +470,9 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
         "SGF": formatta_somma_con_quote(sgf, 5, 3), 
         "SGC": formatta_somma_con_quote(sgc, 3, 2), 
         "SGO": formatta_somma_con_quote(sgo, 3, 2),
-        "Top 6 RE Finali": top_re_final, 
-        "Top 3 RE 1°T": top_re1t_final,
-        "Top 3 HT/FT": top_pf_string, # <--- CHIAVE CORRETTA
+        "Top 6 RE Finali": formatta_re_con_quote(re_fin, 6), 
+        "Top 3 RE 1°T": formatta_re_con_quote(re_1t, 3),
+        "Top 3 HT/FT": top_pf_string, # Nome chiave definitivo
         "Match_ID": match_id, "Risultato_Reale": "N/D", "PT_Reale": "N/D",
         "p1": p1, "px": px, "p2": p2, "pu": pu, "pg": pg,
         "dist_1t_h": dist_1t_h, "dist_2t_h": dist_2t_h,
@@ -714,8 +657,9 @@ with tab1:
                 st.info(f"⏱️ **Top 3 Risultati Esatti 1° Tempo**\n\n{d['Top 3 RE 1°T']}")
 
             st.divider()
-            st.warning(f"🏆 **Top 3 HT/FT (Parziale/Finale)**\n\n{d.get('Top 3 HT/FT', 'Dato non calcolato')}")
-
+            st.warning(f"🏆 **Top 3 Parziale/Finale (HT/FT)**\n\n{d.get('Top 3 HT/FT', 'Dato non disponibile')}")
+            
+            
             # --- LOGICA SALVATAGGIO ROBUSTA ---
             if st.button("💾 Salva in Cronologia", use_container_width=True):
                 # Calcola la fatica prima di salvare
