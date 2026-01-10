@@ -462,8 +462,23 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
     def formatta_re_con_quote(lista, top_n):
         items = sorted(lista, key=lambda x: x['p'], reverse=True)[:top_n]
         return ", ".join([f"{v['s']} (Q: {stima_quota(v['p']):.2f})" for v in items])
+    
+    # 1. Calcolo della stringa 1X2 basata sulle probabilità
+    if p1 >= px and p1 >= p2:
+        d_1x2 = "1"
+    elif p2 >= p1 and p2 >= px:
+        d_1x2 = "2"
+    else:
+        d_1x2 = "X"
 
-    # --- CORREZIONE RIGA 463 (Nomi variabili allineati) ---
+    # 2. Calcolo stringhe U/O e G/NG
+    d_uo = "UNDER 2.5" if pu >= 0.5 else "OVER 2.5"
+    d_gng = "GOL" if pg >= 0.5 else "NOGOL"
+    
+    # 3. Controllo sicurezza data (nel caso mancasse la definizione sopra)
+    if 'dt_event_ita' not in locals():
+        dt_event_ita = m['Date'].tz_convert('Europe/Rome')
+
     return {
         "Data": dt_event_ita.strftime("%d/%m/%Y"), 
         "Ora": dt_event_ita.strftime("%H:%M"),
