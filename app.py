@@ -1,4 +1,4 @@
-Mi confermi che se aggiorno il DB non si cancella la cronologia? ‘’’import streamlit as st
+import streamlit as st
 import pandas as pd
 import math
 import requests
@@ -691,4 +691,3 @@ with tab4:
             st.info("Aggiorna i risultati reali nella Cronologia per generare le statistiche.")
     else:
         st.warning("Database pronostici non trovato.")
-‘’’
