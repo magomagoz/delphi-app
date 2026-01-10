@@ -53,7 +53,7 @@ def get_db_columns():
     return [
         "Data", "Ora", "Partita", "Fiducia", "Affidabilità", 
         "1X2", "U/O 2.5", "G/NG", "SGF", "SGC", "SGO", 
-        "Top 6 RE Finali", "Top 3 RE 1°T", "Fatica", "Match_ID", "Risultato_Reale", "PT_Reale"
+        "Top 6 RE Finali", "Top 3 RE 1°T", "Top 3 HT/FT", "Fatica", "Match_ID", "Risultato_Reale", "PT_Reale"
     ]
 
 def inizializza_db():
@@ -127,7 +127,7 @@ def salva_completo_in_locale(d_dict):
         
         # Pulizia: rimuove "(Q: 1.50)" per non rompere i confronti futuri
         dati_puliti = d_dict.copy()
-        for campo in ["SGF", "SGC", "SGO", "Top 6 RE Finali", "Top 3 RE 1°T"]:
+        for campo in ["SGF", "SGC", "SGO", "Top 6 RE Finali", "Top 3 RE 1°T", "Top 3 HT/FT"]:
             if campo in dati_puliti:
                 dati_puliti[campo] = re.sub(r'\s\(Q:\s\d+\.\d+\)', '', str(dati_puliti[campo]))
 
@@ -518,6 +518,7 @@ def highlight_winners(row):
     if check_in_list(row['SGO'], a): colors[10] = green
     if check_in_list(row['Top 6 RE Finali'], row['Risultato_Reale']): colors[11] = green
     if check_in_list(row['Top 3 RE 1°T'], row['PT_Reale']): colors[12] = green
+    if check_in_list(row['Top 3 RE HT/FT'], row['HTFT']): colors[13] = green
     return colors
 
 # --- 7. MAIN ---
@@ -577,8 +578,7 @@ with tab1:
             casa_nome, fuori_nome = d['casa_nome'], d['fuori_nome']
 
             st.header(f"🏟️ **{d['Partita']}**")
-            st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}")
-            st.subheader(f"📅 Data: {d['Data']} ore {d['Ora']}")
+            st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}", f"📅 Data: {d['Data']} ore {d['Ora']}")
         
             if d.get('is_big_match'): st.warning("🛡️ **Filtro Big Match Attivo**: probabile partita molto tattica")
 
@@ -667,47 +667,21 @@ with tab1:
 
             st.divider()
             st.subheader("⏱️ Griglia Completa Parziale/Finale (9 Esiti)")
-                    
-            # Recupero sicuro del dato
-            grid_data = d.get('pf_grid', {})
-                    
-            if grid_data:
-                pf_list = []
-                for esito, prob in grid_data.items():
-                    pf_list.append({
-                        "Combinazione": esito, 
-                        "Probabilità": f"{prob:.1%}", 
-                        "Quota": f"{stima_quota(prob):.2f}"
-                    })
-                    
-                df_pf = pd.DataFrame(pf_list)
-                    
-                # Evidenzia il migliore
-                best_pf = max(grid_data, key=grid_data.get)
-                st.info(f"🏆 **Esito Parziale/Finale consigliato: {best_pf}**")
+            st.info(f"🏆 **Top 3 Risultati 1°Tempo/Finale**\n\n{d['Top 3 RE HT/FT']}")
 
-                c_pf1, c_pf2, c_pf3 = st.columns(3)
-                with c_pf1: st.table(df_pf.iloc[0:3])
-                with c_pf2: st.table(df_pf.iloc[3:6])
-                with c_pf3: st.table(df_pf.iloc[6:9])
-            else:
-                st.warning("Dati Parziale/Finale non disponibili per questa analisi.")
-
-                st.divider()
-                # --- LOGICA SALVATAGGIO ROBUSTA (Sempre dentro l'if del pronostico) ---
-                if st.button("💾 Salva in Cronologia", use_container_width=True):
-                    # Calcola la fatica prima di salvare
-                    df_c = pd.read_csv(FILE_DB_CALCIO)
-                    f_h = controlla_fatica(df_c, d['casa_nome'], d['Data'])
-                    f_a = controlla_fatica(df_c, d['fuori_nome'], d['Data'])
-                    d['Fatica'] = "SÌ" if (f_h or f_a) else "NO"
+            st.divider()
+            # --- LOGICA SALVATAGGIO ROBUSTA (Sempre dentro l'if del pronostico) ---
+            if st.button("💾 Salva in Cronologia", use_container_width=True):
+                # Calcola la fatica prima di salvare
+                df_c = pd.read_csv(FILE_DB_CALCIO)
+                f_h = controlla_fatica(df_c, d['casa_nome'], d['Data'])
+                f_a = controlla_fatica(df_c, d['fuori_nome'], d['Data'])
+                d['Fatica'] = "SÌ" if (f_h or f_a) else "NO"
                             
-                    if salva_completo_in_locale(d):
-                        st.toast("Salvato con successo!", icon="✅")
-                        time.sleep(1)
-                        st.rerun()
-
-# --- FINE TAB 1 ---
+                if salva_completo_in_locale(d):
+                    st.toast("Salvato con successo!", icon="✅")
+                    time.sleep(1)
+                    st.rerun()
             
 with tab2:
     st.info("⏰ Aggiorna Serie A, Premier League, Championship, Liga, Bundesliga, Ligue 1, Primeira Liga, Eredivisie, Brasileirao Betano, UEFA e FIFA")
