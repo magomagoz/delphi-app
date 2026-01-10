@@ -53,7 +53,7 @@ def get_db_columns():
     return [
         "Data", "Ora", "Partita", "Fiducia", "Affidabilità", 
         "1X2", "U/O 2.5", "G/NG", "SGF", "SGC", "SGO", 
-        "Top 6 RE Finali", "Top 3 RE 1°T", "Fatica", "Match_ID", "Risultato_Reale", "PT_Reale"
+        "Top 6 RE Finali", "Top 3 RE 1°T", "Top 3 HT/FT", "Fatica", "Match_ID", "Risultato_Reale", "PT_Reale"
     ]
 
 def inizializza_db():
@@ -125,10 +125,12 @@ def salva_completo_in_locale(d_dict):
         columns = get_db_columns()
         df_old = pd.read_csv(FILE_DB_PRONOSTICI) if os.path.exists(FILE_DB_PRONOSTICI) else pd.DataFrame(columns=columns)
         
-        # Pulizia: rimuove "(Q: 1.50)" per non rompere i confronti futuri
         dati_puliti = d_dict.copy()
-        for campo in ["SGF", "SGC", "SGO", "Top 6 RE Finali", "Top 3 RE 1°T"]:
+        # Aggiungi 'Top 3 HT/FT' alla lista dei campi da pulire dalle quote
+        campi_da_pulire = ["SGF", "SGC", "SGO", "Top 6 RE Finali", "Top 3 RE 1°T", "Top 3 HT/FT"]
+        for campo in campi_da_pulire:
             if campo in dati_puliti:
+                # Questa regex rimuove tutto ciò che somiglia a (Q: 1.23)
                 dati_puliti[campo] = re.sub(r'\s\(Q:\s\d+\.\d+\)', '', str(dati_puliti[campo]))
 
         nuova_riga = {col: dati_puliti.get(col, "N/D") for col in columns}
@@ -471,6 +473,7 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
         "1X2": d_1x2, "U/O 2.5": d_uo, "G/NG": d_gng,
         "SGF": top_sgf_final, "SGC": top_sgc_final, "SGO": top_sgo_final,
         "Top 6 RE Finali": top_re_final, "Top 3 RE 1°T": top_re1t_final,
+        "Top 3 HT/FT": Real_htft,
         "Fatica": "N/D",
         "Match_ID": match_id, "Risultato_Reale": "N/D", "PT_Reale": "N/D",
         "p1": p1, "px": px, "p2": p2, "pu": pu, "pg": pg,
@@ -484,13 +487,27 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
 
 def highlight_winners(row):
     colors = [''] * len(row)
-    if row['Risultato_Reale'] == "N/D": return colors
+    # Se non c'è il risultato finale o quello del primo tempo, non colorare
+    if row['Risultato_Reale'] == "N/D" or pd.isna(row['PT_Reale']) or row['PT_Reale'] == "N/D": 
+        return colors
+    
     try:
-        h, a = map(int, row['Risultato_Reale'].split('-'))
-        ph, pa = map(int, row['PT_Reale'].split('-'))
-    except: return colors
+        # 1. Estraggo i gol reali
+        h, a = map(int, str(row['Risultato_Reale']).split('-'))
+        ph, pa = map(int, str(row['PT_Reale']).split('-'))
+        
+        # 2. Calcolo i segni reali
+        real_1t = "1" if ph > pa else ("2" if pa > ph else "X")
+        real_ft = "1" if h > a else ("2" if a > h else "X")
+        
+        # 3. Creo la combinazione HT/FT reale (es. "1-X")
+        real_htft = f"{real_1t}-{real_ft}"
+    except: 
+        return colors
 
     green = 'background-color: #d4edda; color: #155724; font-weight: bold'
+    
+    # Colorazione basata sugli indici della tabella (controlla che corrispondano al tuo get_db_columns)
     if check_1x2(row['1X2'], h, a): colors[5] = green
     if check_uo(row['U/O 2.5'], h, a): colors[6] = green
     if check_gng(row['G/NG'], h, a): colors[7] = green
@@ -499,6 +516,8 @@ def highlight_winners(row):
     if check_in_list(row['SGO'], a): colors[10] = green
     if check_in_list(row['Top 6 RE Finali'], row['Risultato_Reale']): colors[11] = green
     if check_in_list(row['Top 3 RE 1°T'], row['PT_Reale']): colors[12] = green
+    if check_in_list(row['Top 3 HT/FT'], row['Real_htft']): colors[13] = green 
+        
     return colors
 
 # --- 7. MAIN ---
@@ -641,6 +660,9 @@ with tab1:
                 st.success(f"🏁 **Top 6 Risultati Esatti Finali**\n\n{d['Top 6 RE Finali']}")
             with cfe2:
                 st.info(f"⏱️ **Top 3 Risultati Esatti 1° Tempo**\n\n{d['Top 3 RE 1°T']}")
+
+            st.divider()
+            st.warning(f"🏆 **Top 3 HT/FT (Parziale/Finale)**\n\n{d.get('Top 3 HT/FT', 'Dato non calcolato')}")
 
             # --- LOGICA SALVATAGGIO ROBUSTA ---
             if st.button("💾 Salva in Cronologia", use_container_width=True):
