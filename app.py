@@ -1,4 +1,4 @@
-import streamlit as st
+Mi confermi che se aggiorno il DB non si cancella la cronologia? ‘’’import streamlit as st
 import pandas as pd
 import math
 import requests
@@ -30,19 +30,19 @@ FILE_DB_PRONOSTICI = 'database_pronostici.csv'
 
 # --- 2. FUNZIONI LOGICHE DI VERIFICA ---
 def check_1x2(pred, home, away):
-    if home > away: d = "1"
-    elif away > home: d = "2"
+    if home > away: res = "1"
+    elif away > home: res = "2"
     else: d = "X"
-    return str(pred).strip() == d
+    return str(pred).strip() == res
 
 def check_uo(pred, home, away):
     total = home + away
-    valore_reale = "OVER 2.5" if total > 2.5 else "UNDER 2.5"
-    return str(pred).strip().upper() == valore_reale
+    d = "OVER 2.5" if total > 2.5 else "UNDER 2.5"
+    return str(pred).strip().upper() == res
 
 def check_gng(pred, home, away):
-    valore_reale = "GOL" if home > 0 and away > 0 else "NOGOL"
-    return str(pred).strip().upper() == valore_reale
+    d = "GOL" if home > 0 and away > 0 else "NOGOL"
+    return str(pred).strip().upper() == res
 
 def check_in_list(pred_string, value_to_find):
     preds = [p.strip() for p in str(pred_string).split(",")]
@@ -53,7 +53,7 @@ def get_db_columns():
     return [
         "Data", "Ora", "Partita", "Fiducia", "Affidabilità", 
         "1X2", "U/O 2.5", "G/NG", "SGF", "SGC", "SGO", 
-        "Top 6 RE Finali", "Top 3 RE 1°T", "Top 3 HT/FT", "Fatica", "Match_ID", "Risultato_Reale", "PT_Reale"
+        "Top 6 RE Finali", "Top 3 RE 1°T", "Fatica", "Match_ID", "Risultato_Reale", "PT_Reale"
     ]
 
 def inizializza_db():
@@ -78,55 +78,14 @@ def inizializza_db():
 # ESEGUIAMO SUBITO L'INIZIALIZZAZIONE
 inizializza_db()
 
-def crea_backup_automatico():
-    # Crea la cartella backup se non esiste
-    if not os.path.exists("backups"):
-        os.makedirs("backups")
-    
-    # Se il file pronostici esiste, fanne una copia
-    if os.path.exists(FILE_DB_PRONOSTICI):
-        data_oggi = datetime.now().strftime("%Y-%m-%d")
-        nome_backup = f"backups/pronostici_backup_{data_oggi}.csv"
-        
-        # Crea il backup solo se non è già stato fatto oggi (per non rallentare l'app)
-        if not os.path.exists(nome_backup):
-            try:
-                df_backup = pd.read_csv(FILE_DB_PRONOSTICI)
-                df_backup.to_csv(nome_backup, index=False)
-                # Opzionale: tieni solo gli ultimi 7 backup per non occupare troppo spazio
-                files_backup = sorted([f for f in os.listdir("backups") if f.startswith("pronostici_backup")])
-                if len(files_backup) > 7:
-                    os.remove(os.path.join("backups", files_backup[0]))
-            except Exception as e:
-                print(f"Errore backup: {e}")
-
-# Esegui il backup all'avvio
-crea_backup_automatico()
-
-def ripristina_ultimo_backup():
-    if not os.path.exists("backups"):
-        return False, "Cartella backup non trovata."
-    
-    # Prende la lista dei backup ordinata per data
-    files = sorted([f for f in os.listdir("backups") if f.startswith("pronostici_backup")])
-    if not files:
-        return False, "Nessun file di backup disponibile."
-    
-    ultimo_file = os.path.join("backups", files[-1])
-    try:
-        df_backup = pd.read_csv(ultimo_file)
-        df_backup.to_csv(FILE_DB_PRONOSTICI, index=False)
-        return True, f"Ripristinato backup del: {files[-1].replace('pronostici_backup_', '').replace('.csv', '')}"
-    except Exception as e:
-        return False, f"Errore durante il ripristino: {e}"
-       
 def salva_completo_in_locale(d_dict):
     try:
         columns = get_db_columns()
         df_old = pd.read_csv(FILE_DB_PRONOSTICI) if os.path.exists(FILE_DB_PRONOSTICI) else pd.DataFrame(columns=columns)
         
+        # Pulizia: rimuove "(Q: 1.50)" per non rompere i confronti futuri
         dati_puliti = d_dict.copy()
-        for campo in ["SGF", "SGC", "SGO", "Top 6 RE Finali", "Top 3 RE 1°T", "Top 3 HT/FT"]:
+        for campo in ["SGF", "SGC", "SGO", "Top 6 RE Finali", "Top 3 RE 1°T"]:
             if campo in dati_puliti:
                 dati_puliti[campo] = re.sub(r'\s\(Q:\s\d+\.\d+\)', '', str(dati_puliti[campo]))
 
@@ -425,15 +384,7 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
     d_1x2 = "1" if p1 > px and p1 > p2 else ("X" if px > p1 and px > p2 else "2")
     d_uo = "OVER 2.5" if (1-pu) > 0.5 else "UNDER 2.5"
     d_gng = "GOL" if pg > 0.5 else "NOGOL"
-    total_pf = sum(pf_probs.values()) if sum(pf_probs.values()) > 0 else 1
-    pt_final = {k: v/total_pf for k, v in pf_probs.items()}
 
-    # Estrae i migliori 3 esiti Parziale/Finale
-    top_pf_final = ", ".join([
-        f"{k} (Q: {stima_quota(v):.2f})" 
-        for k, v in sorted(pf_final.items(), key=lambda x: x[1], reverse=True)[:3]
-    ])
-        
     def formatta_somma_con_quote(diz, limite, top_n):
         items = sorted(diz.items(), key=lambda x: x[1], reverse=True)[:top_n]
         ris = []
@@ -466,23 +417,6 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
     except:
         dt_event_ita = datetime.now(pytz.timezone('Europe/Rome'))    
 
-    # --- CALCOLO 9 ESITI PARZIALE/FINALE ---
-    pf_probs = {}
-    segni = ['1', 'X', '2']
-    p1t_1 = sum(v['p'] for v in re_1t if int(v['s'].split('-')[0]) > int(v['s'].split('-')[1]))
-    p1t_x = sum(v['p'] for v in re_1t if int(v['s'].split('-')[0]) == int(v['s'].split('-')[1]))
-    p1t_2 = sum(v['p'] for v in re_1t if int(v['s'].split('-')[0]) < int(v['s'].split('-')[1]))
-
-    for s1, p1t_val in zip(['1','X','2'], [p1t_1, p1t_x, p1t_2]):
-        for s2, pfin_val in zip(['1','X','2'], [p1/tot, px/tot, p2/tot]):
-            correzione = 1.25 if s1 == s2 else 0.85 
-            pf_probs[f"{s1}-{s2}"] = p1t_val * pfin_val * correzione
-
-    # Normalizzazione e formattazione stringa per il DB
-    total_pf = sum(pf_probs.values()) if sum(pf_probs.values()) > 0 else 1
-    pf_final = {k: v/total_pf for k, v in pf_probs.items()}
-    top_pf_final = ", ".join([f"{k} (Q: {stima_quota(v):.2f})" for k, v in sorted(pf_final.items(), key=lambda x: x[1], reverse=True)[:3]])
-    
     return {
         "Data": dt_event_ita.strftime("%d/%m/%Y"), 
         "Ora": dt_event_ita.strftime("%H:%M"),
@@ -495,8 +429,6 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
         "1X2": d_1x2, "U/O 2.5": d_uo, "G/NG": d_gng,
         "SGF": top_sgf_final, "SGC": top_sgc_final, "SGO": top_sgo_final,
         "Top 6 RE Finali": top_re_final, "Top 3 RE 1°T": top_re1t_final,
-        "Top 3 HT/FT": top_pf_final,  # <--- AGGIUNGI QUESTA RIGA
-        "pf_grid": pf_final,
         "Fatica": "N/D",
         "Match_ID": match_id, "Risultato_Reale": "N/D", "PT_Reale": "N/D",
         "p1": p1, "px": px, "p2": p2, "pu": pu, "pg": pg,
@@ -505,26 +437,16 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
         "dist_1t_h": dist_1t_h, "dist_2t_h": dist_2t_h,
         "dist_1t_a": dist_1t_a, "dist_2t_a": dist_2t_a, "tempo_top": tempo_top,
         "casa_nome": casa, "fuori_nome": fuori, "lg": calcola_late_goal_index(casa, fuori),
-        "is_big_match": is_big_match, "arbitro": arbitro, "molt_arbitro": molt_arbitro,
+        "is_big_match": is_big_match, "arbitro": arbitro, "molt_arbitro": molt_arbitro
     }
 
 def highlight_winners(row):
     colors = [''] * len(row)
-    if row['Risultato_Reale'] == "N/D" or pd.isna(row['PT_Reale']): return colors
+    if row['Risultato_Reale'] == "N/D": return colors
     try:
-        # Recupero risultati reali
-        h, a = map(int, str(row['Risultato_Reale']).split('-'))
-        ph, pa = map(int, str(row['PT_Reale']).split('-'))
-        # Calcolo esiti reali
-        real_1t = "1" if ph > pa else ("2" if pa > ph else "X")
-        real_ft = "1" if h > a else ("2" if a > h else "X")
-        real_htft = f"{real_1t}-{real_ft}"
+        h, a = map(int, row['Risultato_Reale'].split('-'))
+        ph, pa = map(int, row['PT_Reale'].split('-'))
     except: return colors
-
-    if check_in_list(row['Top 6 RE Finali'], row['Risultato_Reale']): colors[11] = g
-    
-    return colors
-
 
     green = 'background-color: #d4edda; color: #155724; font-weight: bold'
     if check_1x2(row['1X2'], h, a): colors[5] = green
@@ -535,10 +457,7 @@ def highlight_winners(row):
     if check_in_list(row['SGO'], a): colors[10] = green
     if check_in_list(row['Top 6 RE Finali'], row['Risultato_Reale']): colors[11] = green
     if check_in_list(row['Top 3 RE 1°T'], row['PT_Reale']): colors[12] = green
-    if check_in_list(row['Top 3 HT/FT'], real_htft): colors[13] = green # Nuova colonna HT/FT
     return colors
-
-
 
 # --- 7. MAIN ---
 tab1, tab2, tab3, tab4 = st.tabs(["🎯 **Analisi**", "⚙️ **Database**", "📜 **Cronologia**", "📊 **Statistiche**"])
@@ -556,9 +475,9 @@ with tab1:
 
     if sq and not st.session_state.get('dati_acquisiti', False):
         if st.button("📊 Acquisisci dati della partita", use_container_width=True):
-            d_acq = esegui_analisi(sq)
-            if d_acq:
-                st.session_state['dati_temp'] = d_acq
+            d_temp = esegui_analisi(sq)
+            if d_temp:
+                st.session_state['dati_temp'] = d_temp
                 st.session_state['dati_acquisiti'] = True
                 st.rerun()
             else:
@@ -566,14 +485,14 @@ with tab1:
 
     # Il controllo 'if' previene il KeyError
     if st.session_state.get('dati_acquisiti'):
-        d_acq = st.session_state['dati_temp']
-        #d_temp = d # Definiamo d_temp per compatibilità con le righe successive
-        st.success(f"✅ Dati acquisiti per {d_acq['Partita']}")
+        d = st.session_state['dati_temp']
+        d_temp = d # Definiamo d_temp per compatibilità con le righe successive
+        st.success(f"✅ Dati acquisiti per {d['Partita']}")
         
-        search_query = f"**Formazione {sq} nella partita del {d_acq['Data']}**"
+        search_query = f"**Formazione {sq} nella partita del {d_temp['Data']}**"
         google_news_url = f"https://www.google.com/search?q={search_query.replace(' ', '+')}&tbm=nws"
         
-        st.markdown(f"👉 [**Controlla Formazione e Assenti per il {d_acq['Data']}**]({google_news_url})")
+        st.markdown(f"👉 [**Controlla Formazione e Assenti per il {d_temp['Data']}**]({google_news_url})")
 
         st.divider()
         st.info("Regola la potenza offensiva se mancano giocatori chiave")
@@ -597,7 +516,8 @@ with tab1:
             casa_nome, fuori_nome = d['casa_nome'], d['fuori_nome']
 
             st.header(f"🏟️ **{d['Partita']}**")
-            st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}", "📅 Data: {d['Data']} ore {d['Ora']}")
+            st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}")
+            st.subheader(f"📅 Data: {d['Data']} ore {d['Ora']}")
         
             if d.get('is_big_match'): st.warning("🛡️ **Filtro Big Match Attivo**: probabile partita molto tattica")
 
@@ -680,39 +600,21 @@ with tab1:
             with cfe2:
                 st.info(f"⏱️ **Top 3 Risultati Esatti 1° Tempo**\n\n{d['Top 3 RE 1°T']}")
 
-            # --- NUOVO BOX HT/FT RICHIESTO ---
-            st.info(f"🏆 **Top 3 HT/FT (Parziale/Finale)**\n\n{d.get('Top 3 HT/FT', 'Dato non disponibile')}")
-
-            st.divider()
-            st.subheader("⏱️ Griglia Completa Parziale/Finale (9 Esiti)")
-            
-            grid_data = d.get('pf_grid', {})
-            if grid_data:
-                pf_list = [{"Combinazione": esito, "Probabilità": f"{prob:.1%}", "Quota": f"{stima_quota(prob):.2f}"} 
-                           for esito, prob in grid_data.items()]
-                df_pf = pd.DataFrame(pf_list)
-                
-                c_pf1, c_pf2, c_pf3 = st.columns(3)
-                with c_pf1: st.table(df_pf.iloc[0:3])
-                with c_pf2: st.table(df_pf.iloc[3:6])
-                with c_pf3: st.table(df_pf.iloc[6:9])
-            
-            st.divider()
-            # --- LOGICA SALVATAGGIO ROBUSTA (Sempre dentro l'if del pronostico) ---
+            # --- LOGICA SALVATAGGIO ROBUSTA ---
             if st.button("💾 Salva in Cronologia", use_container_width=True):
                 # Calcola la fatica prima di salvare
                 df_c = pd.read_csv(FILE_DB_CALCIO)
                 f_h = controlla_fatica(df_c, d['casa_nome'], d['Data'])
                 f_a = controlla_fatica(df_c, d['fuori_nome'], d['Data'])
                 d['Fatica'] = "SÌ" if (f_h or f_a) else "NO"
-                            
+                
                 if salva_completo_in_locale(d):
                     st.toast("Salvato con successo!", icon="✅")
-                    time.sleep(1)
+                    time.sleep(2)
                     st.rerun()
             
 with tab2:
-    st.info("⏰ Aggiorna Serie A, Premier League, Championship, Liga, Bundesliga, Ligue 1, Primeira Liga, Eredivisie, Brasileirao Betano, UEFA e FIFA")
+    st.info(f"⏰  Aggiorna Serie A, Premier League, Championship, Liga, Bundesliga, Ligue 1,Primeira Liga, Eredivisie, Brasileirao Betano, UEFA e FIFA")
 
     if st.button("🌐 Aggiorna Database"):
         with st.spinner("Aggiornamento database in corso..."):
@@ -744,35 +646,18 @@ with tab3:
                     st.rerun()
 
             st.dataframe(df_da_mostrare.style.apply(highlight_winners, axis=1), use_container_width=True, hide_index=True)
-
-            st.divider()
-            st.subheader("🛠️ Gestione Dati ed Emergenze")
             
-            col_back, col_del = st.columns(2)
-            
-            with col_back:
-                with st.popover("⏪ Ripristino Backup", use_container_width=True):
-                    st.info("Questa azione sovrascriverà la cronologia attuale con l'ultimo backup giornaliero salvato.")
-                    if st.button("Conferma Ripristino", type="secondary", use_container_width=True):
-                        successo, messaggio = ripristina_ultimo_backup()
-                        if successo:
-                            st.success(messaggio)
-                            time.sleep(2)
-                            st.rerun()
-                        else:
-                            st.error(messaggio)
-
-            with col_del:
-                with st.popover("🗑️ Elimina Cronologia", use_container_width=True):
-                    st.warning("⚠️ Sei sicuro? Cancellerai tutti i pronostici salvati.")
-                    if st.button("Sì, cancella tutto", type="primary", use_container_width=True):
-                        try:
-                            os.remove(FILE_DB_PRONOSTICI)
-                            st.success("Cronologia eliminata!")
-                            time.sleep(1)
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"Errore: {e}")
+            # --- PULSANTE ELIMINA CON WARNING ---
+            with st.popover("🗑️ Elimina Cronologia"):
+                st.warning("⚠️ Sei sicuro? Questa operazione cancellerà tutti i pronostici salvati e non può essere annullata.")
+                if st.button("Sì, cancella tutto", type="primary", use_container_width=True):
+                    try:
+                        os.remove(FILE_DB_PRONOSTICI)
+                        st.success("Cronologia eliminata!")
+                        time.sleep(1)
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Errore: {e}")
         else:
             st.info("La cronologia è vuota.")
     else:
@@ -782,9 +667,11 @@ with tab4:
     st.header("📊 Performance Delphi")
     if os.path.exists(FILE_DB_PRONOSTICI):
         df_stat = pd.read_csv(FILE_DB_PRONOSTICI)
+        # Filtriamo solo i match conclusi (quelli con risultato reale)
         df_v = df_stat[df_stat['Risultato_Reale'] != "N/D"].copy()
         
         if not df_v.empty:
+            # Funzione interna per verificare se il pronostico 1X2 era corretto
             def verifica(r):
                 try:
                     h, a = map(int, str(r['Risultato_Reale']).split('-'))
@@ -804,3 +691,4 @@ with tab4:
             st.info("Aggiorna i risultati reali nella Cronologia per generare le statistiche.")
     else:
         st.warning("Database pronostici non trovato.")
+‘’’
