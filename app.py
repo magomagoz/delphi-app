@@ -506,6 +506,7 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
         "dist_1t_a": dist_1t_a, "dist_2t_a": dist_2t_a, "tempo_top": tempo_top,
         "casa_nome": casa, "fuori_nome": fuori, "lg": calcola_late_goal_index(casa, fuori),
         "is_big_match": is_big_match, "arbitro": arbitro, "molt_arbitro": molt_arbitro
+        "pf_grid": pf_final
     }
 
 def highlight_winners(row):
@@ -553,14 +554,14 @@ with tab1:
 
     # Il controllo 'if' previene il KeyError
     if st.session_state.get('dati_acquisiti'):
-        d = st.session_state['dati_temp']
-        d_temp = d # Definiamo d_temp per compatibilità con le righe successive
-        st.success(f"✅ Dati acquisiti per {d['Partita']}")
+        d_acq = st.session_state['dati_temp']
+        #d_temp = d # Definiamo d_temp per compatibilità con le righe successive
+        st.success(f"✅ Dati acquisiti per {d_acq['Partita']}")
         
-        search_query = f"**Formazione {sq} nella partita del {d_temp['Data']}**"
+        search_query = f"**Formazione {sq} nella partita del {d_acq['Data']}**"
         google_news_url = f"https://www.google.com/search?q={search_query.replace(' ', '+')}&tbm=nws"
         
-        st.markdown(f"👉 [**Controlla Formazione e Assenti per il {d_temp['Data']}**]({google_news_url})")
+        st.markdown(f"👉 [**Controlla Formazione e Assenti per il {d_acq['Data']}**]({google_news_url})")
 
         st.divider()
         st.info("Regola la potenza offensiva se mancano giocatori chiave")
@@ -670,12 +671,7 @@ with tab1:
 
 # Controlla se il pronostico esiste prima di provare a leggerlo
 if st.session_state.get('pronostico_corrente'):
-    d = st.session_state['pronostico_corrente']
-    
-    # Ora la riga 558 (e le successive) funzionerà correttamente
-    st.header(f"🏟️ **{d.get('Partita', 'Match')}**") 
-    st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}")
-    st.subheader(f"📅 Data: {d.get('Data', 'N.D.')} ore {d.get('Ora', 'N.D.')}")
+    d = st.session_state['pronostico_corrente']    
     
     # --- QUI AGGIUNGIAMO LA GRIGLIA PARZIALE/FINALE ---
     if 'pf_grid' in d:
