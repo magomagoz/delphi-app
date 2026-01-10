@@ -665,13 +665,6 @@ with tab1:
 if st.session_state.get('pronostico_corrente'):
     d = st.session_state['pronostico_corrente']    
 
-# --- CONTINUAZIONE TAB 1 (Indentazione Corretta) ---
-            # ... (codice precedente dei Risultati Esatti)
-
-            # Controlla se il pronostico esiste prima di visualizzare i dettagli extra
-            if st.session_state.get('pronostico_corrente'):
-                d = st.session_state['pronostico_corrente']    
-
                 st.divider()
                 st.subheader("⏱️ Griglia Completa Parziale/Finale (9 Esiti)")
                     
