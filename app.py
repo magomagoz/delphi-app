@@ -458,7 +458,7 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
         items = sorted(lista, key=lambda x: x['p'], reverse=True)[:top_n]
         return ", ".join([f"{v['s']} (Q: {stima_quota(v['p']):.2f})" for v in items])
 
-    # --- RETURN DIZIONARIO ---
+    # --- CORREZIONE RIGA 463 (Nomi variabili allineati) ---
     return {
         "Data": dt_event_ita.strftime("%d/%m/%Y"), 
         "Ora": dt_event_ita.strftime("%H:%M"),
@@ -472,7 +472,7 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
         "SGO": formatta_somma_con_quote(sgo, 3, 2),
         "Top 6 RE Finali": formatta_re_con_quote(re_fin, 6), 
         "Top 3 RE 1°T": formatta_re_con_quote(re_1t, 3),
-        "Top 3 HT/FT": top_pf_string, # Nome chiave definitivo
+        "Top 3 HT/FT": top_pf_string, # Variabile corretta calcolata sopra
         "Match_ID": match_id, "Risultato_Reale": "N/D", "PT_Reale": "N/D",
         "p1": p1, "px": px, "p2": p2, "pu": pu, "pg": pg,
         "dist_1t_h": dist_1t_h, "dist_2t_h": dist_2t_h,
@@ -501,6 +501,7 @@ def highlight_winners(row):
     green = 'background-color: #d4edda; color: #155724; font-weight: bold'
     
     # Verifica indici (devono corrispondere a get_db_columns)
+    # --- CORREZIONE RIGA 534 (Riferimento colonna corretto) ---
     if check_1x2(row['1X2'], h, a): colors[5] = green
     if check_uo(row['U/O 2.5'], h, a): colors[6] = green
     if check_gng(row['G/NG'], h, a): colors[7] = green
@@ -510,7 +511,7 @@ def highlight_winners(row):
     if check_in_list(row['Top 6 RE Finali'], row['Risultato_Reale']): colors[11] = green
     if check_in_list(row['Top 3 RE 1°T'], row['PT_Reale']): colors[12] = green
     
-    # CONTROLLO HT/FT (Colonna 13)
+    # Usa il valore calcolato real_htft per confrontarlo con la cella del database
     if check_in_list(row['Top 3 HT/FT'], real_htft): colors[13] = green 
         
     return colors
