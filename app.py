@@ -48,7 +48,6 @@ def check_in_list(pred_string, value_to_find):
     preds = [p.strip() for p in str(pred_string).split(",")]
     return str(value_to_find).strip() in [p.strip() for p in preds]
 
-
 # --- 3. FUNZIONI DATABASE (CORRETTE) ---
 def get_db_columns():
     return [
@@ -461,7 +460,7 @@ def highlight_winners(row):
     return colors
 
 # --- 7. MAIN ---
-tab1, tab2, tab3, tab4 = st.tabs(["🎯 **Analisi**", "⚙️ **Database**", "📜 **Cronologia**", "📊 **Statistiche risultati**"])
+tab1, tab2, tab3, tab4 = st.tabs(["🎯 **Analisi**", "⚙️ **Database**", "📜 **Cronologia**", "📊 **Statistiche**"])
 
 with tab1:
     sq = st.text_input("🔍 Inserisci Squadra")
@@ -611,18 +610,18 @@ with tab1:
                 
                 if salva_completo_in_locale(d):
                     st.toast("Salvato con successo!", icon="✅")
-                    time.sleep(1)
+                    time.sleep(2)
                     st.rerun()
             
 with tab2:
-    st.info(f"⏰  Serie A, Premier League, Championship, Liga, Bundesliga, Ligue 1,Primeira Liga, Eredivisie, Brasileirao Betano, UEFA e FIFA")
+    st.info(f"⏰  Aggiorna Serie A, Premier League, Championship, Liga, Bundesliga, Ligue 1,Primeira Liga, Eredivisie, Brasileirao Betano, UEFA e FIFA")
 
     if st.button("🌐 Aggiorna Database"):
         with st.spinner("Aggiornamento database in corso..."):
             aggiorna_database_calcio()
 
 with tab3:
-    st.header("📜 Cronologia Pronostici")
+    st.header("📜 Cronologia")
     
     if os.path.exists(FILE_DB_PRONOSTICI):
         df_cronologia = pd.read_csv(FILE_DB_PRONOSTICI)
@@ -633,7 +632,7 @@ with tab3:
             col_ex1, col_ex2 = st.columns([1, 4])
             with col_ex1:
                 csv_data = df_cronologia.to_csv(index=False).encode('utf-8')
-                st.download_button("📥 Scarica CSV", csv_data, f"pronostici_{date.today()}.csv", 'text/csv')
+                st.download_button("📥 Scarica file CSV", csv_data, f"pronostici_{date.today()}.csv", 'text/csv')
             
             date_disponibili = sorted(df_cronologia['Data'].unique(), reverse=True)
             date_disponibili.insert(0, "Tutte")
@@ -648,7 +647,7 @@ with tab3:
 
             st.dataframe(df_da_mostrare.style.apply(highlight_winners, axis=1), use_container_width=True, hide_index=True)
             
-            if st.button("🗑️ Elimina Cronologia..."):
+            if st.button("🗑️ Elimina Cronologia"):
                 os.remove(FILE_DB_PRONOSTICI)
                 st.rerun()
         else:
@@ -657,7 +656,7 @@ with tab3:
         st.warning("Nessun pronostico salvato finora.")
 
 with tab4:
-    st.header("📊 Performance Delphi Predictor Pro")
+    st.header("📊 Performance Delphi")
     if os.path.exists(FILE_DB_PRONOSTICI):
         df_stat = pd.read_csv(FILE_DB_PRONOSTICI)
         # Filtriamo solo i match conclusi (quelli con risultato reale)
