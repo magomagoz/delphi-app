@@ -119,8 +119,7 @@ def ripristina_ultimo_backup():
         return True, f"Ripristinato backup del: {files[-1].replace('pronostici_backup_', '').replace('.csv', '')}"
     except Exception as e:
         return False, f"Errore durante il ripristino: {e}"
-]
-        
+       
 def salva_completo_in_locale(d_dict):
     try:
         columns = get_db_columns()
