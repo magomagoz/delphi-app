@@ -689,21 +689,35 @@ with tab3:
 
             st.dataframe(df_da_mostrare.style.apply(highlight_winners, axis=1), use_container_width=True, hide_index=True)
             
-            # --- PULSANTE ELIMINA CON WARNING ---
-            with st.popover("🗑️ Elimina Cronologia"):
-                st.warning("⚠️ Sei sicuro? Questa operazione cancellerà tutti i pronostici salvati e non può essere annullata.")
-                if st.button("Sì, cancella tutto", type="primary", use_container_width=True):
-                    try:
-                        os.remove(FILE_DB_PRONOSTICI)
-                        st.success("Cronologia eliminata!")
-                        time.sleep(1)
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Errore: {e}")
-        else:
-            st.info("La cronologia è vuota.")
-    else:
-        st.warning("Nessun pronostico salvato finora.")
+            st.divider()
+            st.subheader("🛠️ Gestione Dati ed Emergenze")
+            
+            col_back, col_del = st.columns(2)
+            
+            with col_back:
+                with st.popover("⏪ Ripristino Backup", use_container_width=True):
+                    st.info("Questa azione sovrascriverà la cronologia attuale con l'ultimo backup giornaliero salvato.")
+                    if st.button("Conferma Ripristino", type="secondary", use_container_width=True):
+                        successo, messaggio = ripristina_ultimo_backup()
+                        if successo:
+                            st.success(messaggio)
+                            time.sleep(2)
+                            st.rerun()
+                        else:
+                            st.error(messaggio)
+
+            with col_del:
+                # --- IL TUO VECCHIO PULSANTE ELIMINA ---
+                with st.popover("🗑️ Elimina Cronologia", use_container_width=True):
+                    st.warning("⚠️ Sei sicuro? Cancellerai tutti i pronostici salvati.")
+                    if st.button("Sì, cancella tutto", type="primary", use_container_width=True):
+                        try:
+                            os.remove(FILE_DB_PRONOSTICI)
+                            st.success("Cronologia eliminata!")
+                            time.sleep(1)
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Errore: {e}")
 
 with tab4:
     st.header("📊 Performance Delphi")
