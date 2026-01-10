@@ -510,11 +510,21 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
 
 def highlight_winners(row):
     colors = [''] * len(row)
-    if row['Risultato_Reale'] == "N/D": return colors
+    if row['Risultato_Reale'] == "N/D" or pd.isna(row['PT_Reale']): return colors
     try:
-        h, a = map(int, row['Risultato_Reale'].split('-'))
-        ph, pa = map(int, row['PT_Reale'].split('-'))
+        # Recupero risultati reali
+        h, a = map(int, str(row['Risultato_Reale']).split('-'))
+        ph, pa = map(int, str(row['PT_Reale']).split('-'))
+        # Calcolo esiti reali
+        real_1t = "1" if ph > pa else ("2" if pa > ph else "X")
+        real_ft = "1" if h > a else ("2" if a > h else "X")
+        real_htft = f"{real_1t}-{real_ft}"
     except: return colors
+
+    if check_in_list(row['Top 6 RE Finali'], row['Risultato_Reale']): colors[11] = g
+    
+    return colors
+
 
     green = 'background-color: #d4edda; color: #155724; font-weight: bold'
     if check_1x2(row['1X2'], h, a): colors[5] = green
@@ -525,8 +535,10 @@ def highlight_winners(row):
     if check_in_list(row['SGO'], a): colors[10] = green
     if check_in_list(row['Top 6 RE Finali'], row['Risultato_Reale']): colors[11] = green
     if check_in_list(row['Top 3 RE 1°T'], row['PT_Reale']): colors[12] = green
-    if check_in_list(row['Top 3 RE HT/FT'], row['HTFT']): colors[13] = green
+    if check_in_list(row['Top 3 HT/FT'], real_htft): colors[13] = green # Nuova colonna HT/FT
     return colors
+
+
 
 # --- 7. MAIN ---
 tab1, tab2, tab3, tab4 = st.tabs(["🎯 **Analisi**", "⚙️ **Database**", "📜 **Cronologia**", "📊 **Statistiche**"])
