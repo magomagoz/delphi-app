@@ -30,10 +30,10 @@ FILE_DB_PRONOSTICI = 'database_pronostici.csv'
 
 # --- 2. FUNZIONI LOGICHE DI VERIFICA ---
 def check_1x2(pred, home, away):
-    if home > away: res = "1"
-    elif away > home: res = "2"
+    if home > away: d = "1"
+    elif away > home: d = "2"
     else: d = "X"
-    return str(pred).strip() == res
+    return str(pred).strip() == d
 
 def check_uo(pred, home, away):
     total = home + away
