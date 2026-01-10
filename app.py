@@ -666,17 +666,17 @@ if st.session_state.get('pronostico_corrente'):
     d = st.session_state['pronostico_corrente']    
     
         # --- QUI AGGIUNGIAMO LA GRIGLIA PARZIALE/FINALE ---
-if 'pf_grid' in d:
-    st.divider()
-    st.subheader("⏱️ Griglia Completa Parziale/Finale (9 Esiti)")
+    if 'pf_grid' in d:
+        st.divider()
+        st.subheader("⏱️ Griglia Completa Parziale/Finale (9 Esiti)")
         
-    grid_data = d['pf_grid']
-    pf_list = []
-for esito, prob in grid_data.items():
-    pf_list.append({"Combinazione": esito, "Probabilità": f"{prob:.1%}", "Quota": f"{stima_quota(prob):.2f}"
-    })
+        grid_data = d['pf_grid']
+        pf_list = []
+    for esito, prob in grid_data.items():
+        pf_list.append({"Combinazione": esito, "Probabilità": f"{prob:.1%}", "Quota": f"{stima_quota(prob):.2f}"
+        })
     
-    df_pf = pd.DataFrame(pf_list)
+        df_pf = pd.DataFrame(pf_list)
     
     # Visualizzazione in 3 colonne
     c_pf1, c_pf2, c_pf3 = st.columns(3)
