@@ -37,12 +37,12 @@ def check_1x2(pred, home, away):
 
 def check_uo(pred, home, away):
     total = home + away
-    d = "OVER 2.5" if total > 2.5 else "UNDER 2.5"
-    return str(pred).strip().upper() == res
+    valore_reale = "OVER 2.5" if total > 2.5 else "UNDER 2.5"
+    return str(pred).strip().upper() == valore_reale
 
 def check_gng(pred, home, away):
-    d = "GOL" if home > 0 and away > 0 else "NOGOL"
-    return str(pred).strip().upper() == res
+    valore_reale = "GOL" if home > 0 and away > 0 else "NOGOL"
+    return str(pred).strip().upper() == valore_reale
 
 def check_in_list(pred_string, value_to_find):
     preds = [p.strip() for p in str(pred_string).split(",")]
@@ -77,6 +77,48 @@ def inizializza_db():
 
 # ESEGUIAMO SUBITO L'INIZIALIZZAZIONE
 inizializza_db()
+
+def crea_backup_automatico():
+    # Crea la cartella backup se non esiste
+    if not os.path.exists("backups"):
+        os.makedirs("backups")
+    
+    # Se il file pronostici esiste, fanne una copia
+    if os.path.exists(FILE_DB_PRONOSTICI):
+        data_oggi = datetime.now().strftime("%Y-%m-%d")
+        nome_backup = f"backups/pronostici_backup_{data_oggi}.csv"
+        
+        # Crea il backup solo se non è già stato fatto oggi (per non rallentare l'app)
+        if not os.path.exists(nome_backup):
+            try:
+                df_backup = pd.read_csv(FILE_DB_PRONOSTICI)
+                df_backup.to_csv(nome_backup, index=False)
+                # Opzionale: tieni solo gli ultimi 7 backup per non occupare troppo spazio
+                files_backup = sorted([f for f in os.listdir("backups") if f.startswith("pronostici_backup")])
+                if len(files_backup) > 7:
+                    os.remove(os.path.join("backups", files_backup[0]))
+            except Exception as e:
+                print(f"Errore backup: {e}")
+
+# Esegui il backup all'avvio
+crea_backup_automatico()
+
+def ripristina_ultimo_backup():
+    if not os.path.exists("backups"):
+        return False, "Cartella backup non trovata."
+    
+    # Prende la lista dei backup ordinata per data
+    files = sorted([f for f in os.listdir("backups") if f.startswith("pronostici_backup")])
+    if not files:
+        return False, "Nessun file di backup disponibile."
+    
+    ultimo_file = os.path.join("backups", files[-1])
+    try:
+        df_backup = pd.read_csv(ultimo_file)
+        df_backup.to_csv(FILE_DB_PRONOSTICI, index=False)
+        return True, f"Ripristinato backup del: {files[-1].replace('pronostici_backup_', '').replace('.csv', '')}"
+    except Exception as e:
+        return False, f"Errore durante il ripristino: {e}"
 
 def salva_completo_in_locale(d_dict):
     try:
@@ -646,18 +688,36 @@ with tab3:
                     st.rerun()
 
             st.dataframe(df_da_mostrare.style.apply(highlight_winners, axis=1), use_container_width=True, hide_index=True)
+
+            st.divider()
+            st.subheader("🛠️ Gestione Dati ed Emergenze")
             
-            # --- PULSANTE ELIMINA CON WARNING ---
-            with st.popover("🗑️ Elimina Cronologia"):
-                st.warning("⚠️ Sei sicuro? Questa operazione cancellerà tutti i pronostici salvati e non può essere annullata.")
-                if st.button("Sì, cancella tutto", type="primary", use_container_width=True):
-                    try:
-                        os.remove(FILE_DB_PRONOSTICI)
-                        st.success("Cronologia eliminata!")
-                        time.sleep(1)
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Errore: {e}")
+            col_back, col_del = st.columns(2)
+            
+            with col_back:
+                with st.popover("⏪ Ripristino Backup", use_container_width=True):
+                    st.info("Questa azione sovrascriverà la cronologia attuale con l'ultimo backup giornaliero salvato.")
+                    if st.button("Conferma Ripristino", type="secondary", use_container_width=True):
+                        successo, messaggio = ripristina_ultimo_backup()
+                        if successo:
+                            st.success(messaggio)
+                            time.sleep(2)
+                            st.rerun()
+                        else:
+                            st.error(messaggio)
+
+            with col_del:
+                # --- IL TUO VECCHIO PULSANTE ELIMINA ---
+                with st.popover("🗑️ Elimina Cronologia", use_container_width=True):
+                    st.warning("⚠️ Sei sicuro? Cancellerai tutti i pronostici salvati.")
+                    if st.button("Sì, cancella tutto", type="primary", use_container_width=True):
+                        try:
+                            os.remove(FILE_DB_PRONOSTICI)
+                            st.success("Cronologia eliminata!")
+                            time.sleep(1)
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Errore: {e}")
         else:
             st.info("La cronologia è vuota.")
     else:
