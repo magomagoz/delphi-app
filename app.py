@@ -460,35 +460,30 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
         dt_event_ita = datetime.now(pytz.timezone('Europe/Rome'))    
 
     # --- CALCOLO 9 ESITI PARZIALE/FINALE ---
-    # Approssimazione statistica basata su Poisson 1T e Finale
     pf_probs = {}
     segni = ['1', 'X', '2']
-    
-    # Probabilità segni 1° Tempo (già calcolate su eh1, ea1)
-    p1t_1, p1t_x, p1t_2 = 0, 0, 0
-    for v in re_1t:
-        h, a = map(int, v['s'].split('-'))
-        if h > a: p1t_1 += v['p']
-        elif h == a: p1t_x += v['p']
-        else: p1t_2 += v['p']
-    
-    # Distribuzione pesata per i 9 esiti
+    p1t_1 = sum(v['p'] for v in re_1t if int(v['s'].split('-')[0]) > int(v['s'].split('-')[1]))
+    p1t_x = sum(v['p'] for v in re_1t if int(v['s'].split('-')[0]) == int(v['s'].split('-')[1]))
+    p1t_2 = sum(v['p'] for v in re_1t if int(v['s'].split('-')[0]) < int(v['s'].split('-')[1]))
+
     for s1 in segni:
         for s2 in segni:
             p1t = p1t_1 if s1=='1' else (p1t_x if s1=='X' else p1t_2)
             pfin = p1 if s2=='1' else (px if s2=='X' else p2)
-            # Correzione di correlazione (un team che vince il 1T ha più probabilità di vincere il finale)
-            corr = 1.2 if s1 == s2 else 0.8
-            prob_pf = (p1t * pfin * corr) / total_p_1t
-            pf_probs[f"{s1}-{s2}"] = prob_pf
+            corr = 1.25 if s1 == s2 else 0.85 # Correzione statistica
+            pf_probs[f"{s1}-{s2}"] = (p1t * pfin * corr)
 
     # Normalizzazione
-    sum_pf = sum(pf_probs.values())
-    for k in pf_probs: pf_probs[k] /= sum_pf
-    
-    # Aggiungi al dizionario di ritorno
-    # (Aggiungi questo alla lista dei valori ritornati dalla funzione)
-    # "pf_grid": pf_probs
+    total_pf = sum(pf_probs.values())
+    pf_final = {k: v/total_pf for k, v in pf_probs.items()}
+
+    # --- ORA AGGIUNGI "pf_grid" AL RETURN ---
+    return {
+        "Data": dt_event_ita.strftime("%d/%m/%Y"), 
+        # ... (tutte le altre voci che hai già) ...
+        "pf_grid": pf_final, # <--- QUESTA È LA RIGA FONDAMENTALE
+        "casa_nome": casa, "fuori_nome": fuori
+    }
     
     return {
         "Data": dt_event_ita.strftime("%d/%m/%Y"), 
@@ -673,34 +668,33 @@ with tab1:
             with cfe2:
                 st.info(f"⏱️ **Top 3 Risultati Esatti 1° Tempo**\n\n{d['Top 3 RE 1°T']}")
 
-            # --- RISULTATI PARZIALE/FINALE ---
             st.divider()
             st.subheader("⏱️ Griglia Completa Parziale/Finale (9 Esiti)")
             
-            # Recuperiamo la griglia dal dizionario d (se l'hai aggiunta al return)
-            # Se non vuoi rifare tutto il return, la ricalcoliamo al volo qui per sicurezza
-            pf_data = []
-            for esito, prob in d['pf_grid'].items():
-                pf_data.append({
-                    "Combinazione": esito,
-                    "Probabilità": f"{prob:.1%}",
-                    "Quota Stimata": f"{stima_quota(prob):.2f}"
-                })
+            # Recupero sicuro del dato
+            grid_data = d.get('pf_grid', {})
             
-            # Trasformiamo in DataFrame per una visualizzazione pulita
-            df_pf = pd.DataFrame(pf_data)
-            
-            # Mostriamo i dati in 3 colonne per non allungare troppo la pagina
-            c_pf1, c_pf2, c_pf3 = st.columns(3)
-            
-            with c_pf1:
-                st.dataframe(df_pf.iloc[0:3], hide_index=True, use_container_width=True)
-            with c_pf2:
-                st.dataframe(df_pf.iloc[3:6], hide_index=True, use_container_width=True)
-            with c_pf3:
-                st.dataframe(df_pf.iloc[6:9], hide_index=True, use_container_width=True)
+            if grid_data:
+                pf_list = []
+                for esito, prob in grid_data.items():
+                    pf_list.append({
+                        "Combinazione": esito,
+                        "Probabilità": f"{prob:.1%}",
+                        "Quota": f"{stima_quota(prob):.2f}"
+                    })
+                
+                df_pf = pd.DataFrame(pf_list)
+                
+                # Evidenzia il migliore
+                best_pf = max(grid_data, key=grid_data.get)
+                st.info(f"🏆 **Esito Parziale/Finale consigliato: {best_pf}**")
 
-            st.caption("ℹ️ Legenda: Il primo segno è il risultato al 45', il secondo al 90'.")
+                c_pf1, c_pf2, c_pf3 = st.columns(3)
+                with c_pf1: st.table(df_pf.iloc[0:3])
+                with c_pf2: st.table(df_pf.iloc[3:6])
+                with c_pf3: st.table(df_pf.iloc[6:9])
+            else:
+                st.warning("Dati Parziale/Finale non disponibili per questa analisi.")
 
             # --- LOGICA SALVATAGGIO ROBUSTA ---
             if st.button("💾 Salva in Cronologia", use_container_width=True):
