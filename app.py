@@ -78,6 +78,48 @@ def inizializza_db():
 # ESEGUIAMO SUBITO L'INIZIALIZZAZIONE
 inizializza_db()
 
+def crea_backup_automatico():
+    # Crea la cartella backup se non esiste
+    if not os.path.exists("backups"):
+        os.makedirs("backups")
+    
+    # Se il file pronostici esiste, fanne una copia
+    if os.path.exists(FILE_DB_PRONOSTICI):
+        data_oggi = datetime.now().strftime("%Y-%m-%d")
+        nome_backup = f"backups/pronostici_backup_{data_oggi}.csv"
+        
+        # Crea il backup solo se non è già stato fatto oggi (per non rallentare l'app)
+        if not os.path.exists(nome_backup):
+            try:
+                df_backup = pd.read_csv(FILE_DB_PRONOSTICI)
+                df_backup.to_csv(nome_backup, index=False)
+                # Opzionale: tieni solo gli ultimi 7 backup per non occupare troppo spazio
+                files_backup = sorted([f for f in os.listdir("backups") if f.startswith("pronostici_backup")])
+                if len(files_backup) > 7:
+                    os.remove(os.path.join("backups", files_backup[0]))
+            except Exception as e:
+                print(f"Errore backup: {e}")
+
+# Esegui il backup all'avvio
+crea_backup_automatico()
+
+def ripristina_ultimo_backup():
+    if not os.path.exists("backups"):
+        return False, "Cartella backup non trovata."
+    
+    # Prende la lista dei backup ordinata per data
+    files = sorted([f for f in os.listdir("backups") if f.startswith("pronostici_backup")])
+    if not files:
+        return False, "Nessun file di backup disponibile."
+    
+    ultimo_file = os.path.join("backups", files[-1])
+    try:
+        df_backup = pd.read_csv(ultimo_file)
+        df_backup.to_csv(FILE_DB_PRONOSTICI, index=False)
+        return True, f"Ripristinato backup del: {files[-1].replace('pronostici_backup_', '').replace('.csv', '')}"
+    except Exception as e:
+        return False, f"Errore durante il ripristino: {e}"
+
 def salva_completo_in_locale(d_dict):
     try:
         columns = get_db_columns()
