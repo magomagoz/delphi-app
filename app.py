@@ -497,7 +497,7 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
         "dist_1t_h": dist_1t_h, "dist_2t_h": dist_2t_h,
         "dist_1t_a": dist_1t_a, "dist_2t_a": dist_2t_a, "tempo_top": tempo_top,
         "casa_nome": casa, "fuori_nome": fuori, "lg": calcola_late_goal_index(casa, fuori),
-        "is_big_match": is_big_match, "arbitro": arbitro, "molt_arbitro": molt_arbitro
+        "is_big_match": is_big_match, "arbitro": arbitro, "molt_arbitro": molt_arbitro,
         "pf_grid": pf_final
     }
 
