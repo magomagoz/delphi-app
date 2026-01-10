@@ -692,10 +692,10 @@ if st.button("💾 Salva in Cronologia", use_container_width=True):
     f_a = controlla_fatica(df_c, d['fuori_nome'], d['Data'])
     d['Fatica'] = "SÌ" if (f_h or f_a) else "NO"
                 
-if salva_completo_in_locale(d):
-    st.toast("Salvato con successo!", icon="✅")
-    time.sleep(2)
-    st.rerun()
+    if salva_completo_in_locale(d):
+        st.toast("Salvato con successo!", icon="✅")
+        time.sleep(2)
+        st.rerun()
             
 with tab2:
     st.info(f"⏰  Aggiorna Serie A, Premier League, Championship, Liga, Bundesliga, Ligue 1,Primeira Liga, Eredivisie, Brasileirao Betano, UEFA e FIFA")
