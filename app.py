@@ -647,9 +647,17 @@ with tab3:
 
             st.dataframe(df_da_mostrare.style.apply(highlight_winners, axis=1), use_container_width=True, hide_index=True)
             
-            if st.button("🗑️ Elimina Cronologia"):
-                os.remove(FILE_DB_PRONOSTICI)
-                st.rerun()
+            # --- PULSANTE ELIMINA CON WARNING ---
+            with st.popover("🗑️ Elimina Cronologia"):
+                st.warning("⚠️ Sei sicuro? Questa operazione cancellerà tutti i pronostici salvati e non può essere annullata.")
+                if st.button("Sì, cancella tutto", type="primary", use_container_width=True):
+                    try:
+                        os.remove(FILE_DB_PRONOSTICI)
+                        st.success("Cronologia eliminata!")
+                        time.sleep(1)
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Errore: {e}")
         else:
             st.info("La cronologia è vuota.")
     else:
