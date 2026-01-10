@@ -30,8 +30,8 @@ FILE_DB_PRONOSTICI = 'database_pronostici.csv'
 
 # --- 2. FUNZIONI LOGICHE DI VERIFICA ---
 def check_1x2(pred, home, away):
-    if home > away: res = "1"
-    elif away > home: res = "2"
+    if home > away: d = "1"
+    elif away > home: d = "2"
     else: d = "X"
     return str(pred).strip() == d
 
@@ -467,6 +467,55 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
     except:
         dt_event_ita = datetime.now(pytz.timezone('Europe/Rome'))    
 
+    # --- CALCOLO HT/FT ---
+    # Definiamo le probabilità dei segni 1X2 per il 1° Tempo e il Finale
+    prob_1t = {'1': 0, 'X': 0, '2': 0}
+    for i in range(4):
+        for j in range(4):
+            pb = poisson_probability(i, eh1) * poisson_probability(j, ea1)
+            sign = "1" if i > j else ("2" if j > i else "X")
+            prob_1t[sign] += pb
+
+    prob_ft = {'1': p1, 'X': px, '2': p2}
+    
+    # Calcolo approssimativo HT/FT basato sulla correlazione dei tempi
+    pf_final_dict = {}
+    for s1 in ['1', 'X', '2']:
+        for s2 in ['1', 'X', '2']:
+            comb = f"{s1}-{s2}"
+            # Logica statistica: il finale dipende in parte dal parziale
+            if s1 == s2: weight = 0.6  # Più probabile che il segno resti uguale
+            elif s1 == 'X': weight = 0.3 # Pareggio a metà tempo, poi decide il finale
+            else: weight = 0.1 # Ribaltone (più raro)
+            
+            pf_final_dict[comb] = (prob_1t[s1] * prob_ft[s2]) * weight
+
+    # Normalizzazione probabilità HT/FT
+    total_pf = sum(pf_final_dict.values())
+    for k in pf_final_dict: pf_final_dict[k] /= total_pf
+
+    # Formattazione stringhe con quote
+    top_pf_string = ", ".join([
+        f"{k} (Q: {stima_quota(v):.2f})" 
+        for k, v in sorted(pf_final_dict.items(), key=lambda x: x[1], reverse=True)[:3]
+    ])
+
+    def formatta_somma_con_quote(diz, limite, top_n):
+        items = sorted(diz.items(), key=lambda x: x[1], reverse=True)[:top_n]
+        ris = []
+        for k, v in items:
+            label = f">{limite-1}" if k >= limite else str(k)
+            ris.append(f"{label} (Q: {stima_quota(v):.2f})")
+        return ", ".join(ris)
+
+    def formatta_re_con_quote(lista, top_n):
+        items = sorted(lista, key=lambda x: x['p'], reverse=True)[:top_n]
+        return ", ".join([f"{v['s']} (Q: {stima_quota(v['p']):.2f})" for v in items])
+
+    top_re_final = formatta_re_con_quote(re_fin, 6)
+    top_re1t_final = formatta_re_con_quote(re_1t, 3)
+
+    # --- RETURN DIZIONARIO ---
     return {
         "Data": dt_event_ita.strftime("%d/%m/%Y"), 
         "Ora": dt_event_ita.strftime("%H:%M"),
@@ -474,47 +523,41 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
         "Partita": f"{casa} vs {fuori}",
         "Fiducia": f"{int(max(p1,px,p2)*100)}%", 
         "Affidabilità": f"{85 + int(molt_arbitro*2)}%",
-        "Trend_Casa": trend_h, "Trend_Fuori": trend_a,
-        "Forma_H": molt_forma_h, "Forma_A": molt_forma_a,
         "1X2": d_1x2, "U/O 2.5": d_uo, "G/NG": d_gng,
-        "SGF": top_sgf_final, "SGC": top_sgc_final, "SGO": top_sgo_final,
-        "Top 6 RE Finali": top_re_final, "Top 3 RE 1°T": top_re1t_final,
-        "Top 3 HT/FT": top_pf,  # <--- QUI VIENE DEFINITA LA CHIAVE
-        "pf_grid": pf_final_dict,
-        "Fatica": "N/D",
+        "SGF": formatta_somma_con_quote(sgf, 5, 3), 
+        "SGC": formatta_somma_con_quote(sgc, 3, 2), 
+        "SGO": formatta_somma_con_quote(sgo, 3, 2),
+        "Top 6 RE Finali": top_re_final, 
+        "Top 3 RE 1°T": top_re1t_final,
+        "Top 3 HT/FT": top_pf_string, # <--- CHIAVE CORRETTA
         "Match_ID": match_id, "Risultato_Reale": "N/D", "PT_Reale": "N/D",
         "p1": p1, "px": px, "p2": p2, "pu": pu, "pg": pg,
-        "h2h_info": testo_h2h, 
-        "m_h2h_h": m_h2h_h, "m_h2h_a": m_h2h_a,
         "dist_1t_h": dist_1t_h, "dist_2t_h": dist_2t_h,
         "dist_1t_a": dist_1t_a, "dist_2t_a": dist_2t_a, "tempo_top": tempo_top,
         "casa_nome": casa, "fuori_nome": fuori, "lg": calcola_late_goal_index(casa, fuori),
-        "is_big_match": is_big_match, "arbitro": arbitro, "molt_arbitro": molt_arbitro
+        "arbitro": arbitro, "molt_arbitro": molt_arbitro,
+        "Trend_Casa": trend_h, "Trend_Fuori": trend_a,
+        "Forma_H": molt_forma_h, "Forma_A": molt_forma_a,
     }
 
 def highlight_winners(row):
     colors = [''] * len(row)
-    # Se non c'è il risultato finale o quello del primo tempo, non colorare
     if row['Risultato_Reale'] == "N/D" or pd.isna(row['PT_Reale']) or row['PT_Reale'] == "N/D": 
         return colors
     
     try:
-        # 1. Estraggo i gol reali
         h, a = map(int, str(row['Risultato_Reale']).split('-'))
         ph, pa = map(int, str(row['PT_Reale']).split('-'))
         
-        # 2. Calcolo i segni reali
         real_1t = "1" if ph > pa else ("2" if pa > ph else "X")
         real_ft = "1" if h > a else ("2" if a > h else "X")
-        
-        # 3. Creo la combinazione HT/FT reale (es. "1-X")
         real_htft = f"{real_1t}-{real_ft}"
     except: 
         return colors
 
     green = 'background-color: #d4edda; color: #155724; font-weight: bold'
     
-    # Colorazione basata sugli indici della tabella (controlla che corrispondano al tuo get_db_columns)
+    # Verifica indici (devono corrispondere a get_db_columns)
     if check_1x2(row['1X2'], h, a): colors[5] = green
     if check_uo(row['U/O 2.5'], h, a): colors[6] = green
     if check_gng(row['G/NG'], h, a): colors[7] = green
@@ -523,7 +566,9 @@ def highlight_winners(row):
     if check_in_list(row['SGO'], a): colors[10] = green
     if check_in_list(row['Top 6 RE Finali'], row['Risultato_Reale']): colors[11] = green
     if check_in_list(row['Top 3 RE 1°T'], row['PT_Reale']): colors[12] = green
-    if check_in_list(row['Top 3 HT/FT'], row['top_pf']): colors[13] = green 
+    
+    # CONTROLLO HT/FT (Colonna 13)
+    if check_in_list(row['Top 3 HT/FT'], real_htft): colors[13] = green 
         
     return colors
 
