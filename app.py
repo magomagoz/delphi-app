@@ -532,9 +532,9 @@ with tab1:
 
     if sq and not st.session_state.get('dati_acquisiti', False):
         if st.button("📊 Acquisisci dati della partita", use_container_width=True):
-            d_acq = esegui_analisi(sq)
-            if d_acq:
-                st.session_state['dati_temp'] = d_acq
+            d_temp = esegui_analisi(sq)
+            if d_temp:
+                st.session_state['dati_temp'] = d_temp
                 st.session_state['dati_acquisiti'] = True
                 st.rerun()
             else:
