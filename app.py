@@ -665,33 +665,33 @@ with tab1:
 if st.session_state.get('pronostico_corrente'):
     d = st.session_state['pronostico_corrente']    
 
-                st.divider()
-                st.subheader("⏱️ Griglia Completa Parziale/Finale (9 Esiti)")
+            st.divider()
+            st.subheader("⏱️ Griglia Completa Parziale/Finale (9 Esiti)")
                     
-                # Recupero sicuro del dato
-                grid_data = d.get('pf_grid', {})
+            # Recupero sicuro del dato
+            grid_data = d.get('pf_grid', {})
                     
-                if grid_data:
-                    pf_list = []
-                    for esito, prob in grid_data.items():
-                        pf_list.append({
-                            "Combinazione": esito, 
-                            "Probabilità": f"{prob:.1%}", 
-                            "Quota": f"{stima_quota(prob):.2f}"
-                        })
-                        
-                    df_pf = pd.DataFrame(pf_list)
-                        
-                    # Evidenzia il migliore
-                    best_pf = max(grid_data, key=grid_data.get)
-                    st.info(f"🏆 **Esito Parziale/Finale consigliato: {best_pf}**")
+            if grid_data:
+                pf_list = []
+                for esito, prob in grid_data.items():
+                    pf_list.append({
+                        "Combinazione": esito, 
+                        "Probabilità": f"{prob:.1%}", 
+                        "Quota": f"{stima_quota(prob):.2f}"
+                    })
+                    
+                df_pf = pd.DataFrame(pf_list)
+                    
+                # Evidenzia il migliore
+                best_pf = max(grid_data, key=grid_data.get)
+                st.info(f"🏆 **Esito Parziale/Finale consigliato: {best_pf}**")
 
-                    c_pf1, c_pf2, c_pf3 = st.columns(3)
-                    with c_pf1: st.table(df_pf.iloc[0:3])
-                    with c_pf2: st.table(df_pf.iloc[3:6])
-                    with c_pf3: st.table(df_pf.iloc[6:9])
-                else:
-                    st.warning("Dati Parziale/Finale non disponibili per questa analisi.")
+                c_pf1, c_pf2, c_pf3 = st.columns(3)
+                with c_pf1: st.table(df_pf.iloc[0:3])
+                with c_pf2: st.table(df_pf.iloc[3:6])
+                with c_pf3: st.table(df_pf.iloc[6:9])
+            else:
+                st.warning("Dati Parziale/Finale non disponibili per questa analisi.")
 
                 st.divider()
                 # --- LOGICA SALVATAGGIO ROBUSTA (Sempre dentro l'if del pronostico) ---
