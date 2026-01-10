@@ -427,6 +427,12 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
     d_uo = "OVER 2.5" if (1-pu) > 0.5 else "UNDER 2.5"
     d_gng = "GOL" if pg > 0.5 else "NOGOL"
 
+    # --- Estrazione Top 3 Parziale/Finale per visualizzazione ---
+    top_pf_final = ", ".join([
+        f"{k} (Q: {stima_quota(v):.2f})" 
+        for k, v in sorted(pf_final.items(), key=lambda x: x[1], reverse=True)[:3]
+    ])
+        
     def formatta_somma_con_quote(diz, limite, top_n):
         items = sorted(diz.items(), key=lambda x: x[1], reverse=True)[:top_n]
         ris = []
@@ -489,6 +495,8 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
         "1X2": d_1x2, "U/O 2.5": d_uo, "G/NG": d_gng,
         "SGF": top_sgf_final, "SGC": top_sgc_final, "SGO": top_sgo_final,
         "Top 6 RE Finali": top_re_final, "Top 3 RE 1°T": top_re1t_final,
+        "Top 3 RE HT/FT": top_pf_final, # Questa è la chiave che mancava e causava il KeyError
+        "pf_grid": pf_final,
         "Fatica": "N/D",
         "Match_ID": match_id, "Risultato_Reale": "N/D", "PT_Reale": "N/D",
         "p1": p1, "px": px, "p2": p2, "pu": pu, "pg": pg,
@@ -498,7 +506,6 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
         "dist_1t_a": dist_1t_a, "dist_2t_a": dist_2t_a, "tempo_top": tempo_top,
         "casa_nome": casa, "fuori_nome": fuori, "lg": calcola_late_goal_index(casa, fuori),
         "is_big_match": is_big_match, "arbitro": arbitro, "molt_arbitro": molt_arbitro,
-        "pf_grid": pf_final
     }
 
 def highlight_winners(row):
@@ -578,7 +585,7 @@ with tab1:
             casa_nome, fuori_nome = d['casa_nome'], d['fuori_nome']
 
             st.header(f"🏟️ **{d['Partita']}**")
-            st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}", f"📅 Data: {d['Data']} ore {d['Ora']}")
+            st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}", "📅 Data: {d['Data']} ore {d['Ora']}")
         
             if d.get('is_big_match'): st.warning("🛡️ **Filtro Big Match Attivo**: probabile partita molto tattica")
 
@@ -661,14 +668,23 @@ with tab1:
             with cfe2:
                 st.info(f"⏱️ **Top 3 Risultati Esatti 1° Tempo**\n\n{d['Top 3 RE 1°T']}")
 
-            # Controlla se il pronostico esiste prima di provare a leggerlo
-            #if st.session_state.get('pronostico_corrente'):
-                #d = st.session_state['pronostico_corrente']    
+            st.divider() 
+            st.info(f"🏆 **Top 3 Risultati 1°Tempo/Finale**\n\n{d['Top 3 RE HT/FT']}")
 
             st.divider()
             st.subheader("⏱️ Griglia Completa Parziale/Finale (9 Esiti)")
-            st.info(f"🏆 **Top 3 Risultati 1°Tempo/Finale**\n\n{d['Top 3 RE HT/FT']}")
-
+            
+            grid_data = d.get('pf_grid', {})
+            if grid_data:
+                pf_list = [{"Combinazione": esito, "Probabilità": f"{prob:.1%}", "Quota": f"{stima_quota(prob):.2f}"} 
+                           for esito, prob in grid_data.items()]
+                df_pf = pd.DataFrame(pf_list)
+                
+                c_pf1, c_pf2, c_pf3 = st.columns(3)
+                with c_pf1: st.table(df_pf.iloc[0:3])
+                with c_pf2: st.table(df_pf.iloc[3:6])
+                with c_pf3: st.table(df_pf.iloc[6:9])
+            
             st.divider()
             # --- LOGICA SALVATAGGIO ROBUSTA (Sempre dentro l'if del pronostico) ---
             if st.button("💾 Salva in Cronologia", use_container_width=True):
