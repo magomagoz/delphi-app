@@ -476,14 +476,6 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
     # Normalizzazione
     total_pf = sum(pf_probs.values())
     pf_final = {k: v/total_pf for k, v in pf_probs.items()}
-
-    # --- ORA AGGIUNGI "pf_grid" AL RETURN ---
-    return {
-        "Data": dt_event_ita.strftime("%d/%m/%Y"), 
-        # ... (tutte le altre voci che hai già) ...
-        "pf_grid": pf_final, # <--- QUESTA È LA RIGA FONDAMENTALE
-        "casa_nome": casa, "fuori_nome": fuori
-    }
     
     return {
         "Data": dt_event_ita.strftime("%d/%m/%Y"), 
