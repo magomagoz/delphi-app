@@ -664,25 +664,40 @@ with tab1:
 # Controlla se il pronostico esiste prima di provare a leggerlo
 if st.session_state.get('pronostico_corrente'):
     d = st.session_state['pronostico_corrente']    
+
+
+
+            st.divider()
+            st.subheader("⏱️ Griglia Completa Parziale/Finale (9 Esiti)")
+            
+            # Recupero sicuro del dato
+            grid_data = d.get('pf_grid', {})
+            
+            if grid_data:
+                pf_list = []
+                for esito, prob in grid_data.items():
+                    pf_list.append({
+                        "Combinazione": esito,
+                        "Probabilità": f"{prob:.1%}",
+                        "Quota": f"{stima_quota(prob):.2f}"
+                    })
+                
+                df_pf = pd.DataFrame(pf_list)
+                
+                # Evidenzia il migliore
+                best_pf = max(grid_data, key=grid_data.get)
+                st.info(f"🏆 **Esito Parziale/Finale consigliato: {best_pf}**")
+
+                c_pf1, c_pf2, c_pf3 = st.columns(3)
+                with c_pf1: st.table(df_pf.iloc[0:3])
+                with c_pf2: st.table(df_pf.iloc[3:6])
+                with c_pf3: st.table(df_pf.iloc[6:9])
+            else:
+                st.warning("Dati Parziale/Finale non disponibili per questa analisi.")
+
+
+
     
-        # --- QUI AGGIUNGIAMO LA GRIGLIA PARZIALE/FINALE ---
-    if 'pf_grid' in d:
-        st.divider()
-        st.subheader("⏱️ Griglia Completa Parziale/Finale (9 Esiti)")
-        
-        grid_data = d['pf_grid']
-        pf_list = []
-    for esito, prob in grid_data.items():
-        pf_list.append({"Combinazione": esito, "Probabilità": f"{prob:.1%}", "Quota": f"{stima_quota(prob):.2f}"
-        })
-    
-        df_pf = pd.DataFrame(pf_list)
-    
-    # Visualizzazione in 3 colonne
-    c_pf1, c_pf2, c_pf3 = st.columns(3)
-    with c_pf1: st.table(df_pf.iloc[0:3])
-    with c_pf2: st.table(df_pf.iloc[3:6])
-    with c_pf3: st.table(df_pf.iloc[6:9])
 
         # --- LOGICA SALVATAGGIO ROBUSTA ---
     if st.button("💾 Salva in Cronologia", use_container_width=True):
@@ -692,10 +707,10 @@ if st.session_state.get('pronostico_corrente'):
         f_a = controlla_fatica(df_c, d['fuori_nome'], d['Data'])
         d['Fatica'] = "SÌ" if (f_h or f_a) else "NO"
                 
-    if salva_completo_in_locale(d):
-        st.toast("Salvato con successo!", icon="✅")
-        time.sleep(2)
-        st.rerun()
+        if salva_completo_in_locale(d):
+            st.toast("Salvato con successo!", icon="✅")
+            time.sleep(2)
+            st.rerun()
             
 with tab2:
     st.info(f"⏰  Aggiorna Serie A, Premier League, Championship, Liga, Bundesliga, Ligue 1,Primeira Liga, Eredivisie, Brasileirao Betano, UEFA e FIFA")
