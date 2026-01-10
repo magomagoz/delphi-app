@@ -33,16 +33,16 @@ def check_1x2(pred, home, away):
     if home > away: res = "1"
     elif away > home: res = "2"
     else: d = "X"
-    return str(pred).strip() == res
+    return str(pred).strip() == d
 
 def check_uo(pred, home, away):
     total = home + away
     d = "OVER 2.5" if total > 2.5 else "UNDER 2.5"
-    return str(pred).strip().upper() == res
+    return str(pred).strip().upper() == d
 
 def check_gng(pred, home, away):
     d = "GOL" if home > 0 and away > 0 else "NOGOL"
-    return str(pred).strip().upper() == res
+    return str(pred).strip().upper() == d
 
 def check_in_list(pred_string, value_to_find):
     preds = [p.strip() for p in str(pred_string).split(",")]
