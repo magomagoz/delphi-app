@@ -125,7 +125,6 @@ def salva_completo_in_locale(d_dict):
         columns = get_db_columns()
         df_old = pd.read_csv(FILE_DB_PRONOSTICI) if os.path.exists(FILE_DB_PRONOSTICI) else pd.DataFrame(columns=columns)
         
-        # Pulizia: rimuove "(Q: 1.50)" per non rompere i confronti futuri
         dati_puliti = d_dict.copy()
         for campo in ["SGF", "SGC", "SGO", "Top 6 RE Finali", "Top 3 RE 1°T", "Top 3 HT/FT"]:
             if campo in dati_puliti:
@@ -426,6 +425,8 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
     d_1x2 = "1" if p1 > px and p1 > p2 else ("X" if px > p1 and px > p2 else "2")
     d_uo = "OVER 2.5" if (1-pu) > 0.5 else "UNDER 2.5"
     d_gng = "GOL" if pg > 0.5 else "NOGOL"
+    total_pf = sum(pf_probs.values()) if sum(pf_probs.values()) > 0 else 1
+    pt_final = {k: v/total_pf for k, v in pf_probs.items()}
 
     # Estrae i migliori 3 esiti Parziale/Finale
     top_pf_final = ", ".join([
@@ -668,8 +669,8 @@ with tab1:
             with cfe2:
                 st.info(f"⏱️ **Top 3 Risultati Esatti 1° Tempo**\n\n{d['Top 3 RE 1°T']}")
 
-            st.divider() 
-            st.info(f"🏆 **Top 3 Risultati 1°Tempo/Finale**\n\n{d['Top 3 RE HT/FT']}")
+            # --- NUOVO BOX HT/FT RICHIESTO ---
+            st.info(f"🏆 **Top 3 HT/FT (Parziale/Finale)**\n\n{d.get('Top 3 HT/FT', 'Dato non disponibile')}")
 
             st.divider()
             st.subheader("⏱️ Griglia Completa Parziale/Finale (9 Esiti)")
