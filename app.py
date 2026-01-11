@@ -354,6 +354,103 @@ def analizza_pericolosita_tempi(df_giocate, squadra):
     perc_2t = round((gol_fatti_2t / tot * 100), 1)
     return perc_1t, perc_2t
 
+def analizza_performance_campionato(camp_filtro):
+    if not os.path.exists(FILE_DB_PRONOSTICI):
+        st.warning("Cronologia pronostici non trovata.")
+        return
+
+    try:
+        df_cron = pd.read_csv(FILE_DB_PRONOSTICI)
+        # Filtriamo solo i match con risultati reali completi
+        df_v = df_cron[(df_cron['Risultato_Reale'] != "N/D") & (df_cron['PT_Reale'] != "N/D")].copy()
+        
+        if camp_filtro != 'TUTTI':
+            df_v = df_v[df_v['League'] == camp_filtro]
+
+        if df_v.empty:
+            st.info(f"Nessun match con dati completi trovato per {camp_filtro}.")
+            return
+
+        match_contati = len(df_v)
+
+        # Dizionario per accumulare i successi [Vinti, Totali]
+        stats = {k: [0, 0] for k in ['1X2', 'U/O 2.5', 'G/NG', 'SGF', 'SGC (Casa)', 'SGO (Ospite)', 'RE Finali', 'RE 1°T', 'HT/FT']}
+
+        for _, row in df_v.iterrows():
+            try:
+                h, a = map(int, str(row['Risultato_Reale']).split('-'))
+
+                ph, pa = map(int, str(row['PT_Reale']).split('-'))
+
+                # Calcolo segni reali per verifica
+                real_1t = "1" if ph > pa else ("2" if pa > ph else "X")
+                real_ft = "1" if h > a else ("2" if a > h else "X")
+                real_htft = f"{real_1t}-{real_ft}"
+
+                # 1. Mercati Standard
+                stats['1X2'][1] += 1
+                if check_1x2(row['1X2'], h, a): stats['1X2'][0] += 1
+                
+                stats['U/O 2.5'][1] += 1
+                if check_uo(row['U/O 2.5'], h, a): stats['U/O 2.5'][0] += 1
+                
+                stats['G/NG'][1] += 1
+                if check_gng(row['G/NG'], h, a): stats['G/NG'][0] += 1
+
+                # 2. Somma Gol (SGF, SGC, SGO)
+                stats['SGF'][1] += 1
+                if check_in_list(row['SGF'], h+a): stats['SGF'][0] += 1
+
+                stats['SGC (Casa)'][1] += 1
+                if check_in_list(row['SGC'], h): stats['SGC (Casa)'][0] += 1
+
+                stats['SGO (Ospite)'][1] += 1
+                if check_in_list(row['SGO'], a): stats['SGO (Ospite)'][0] += 1
+
+                # 3. Verifica RE Finali
+                stats['RE Finali'][1] += 1
+                if check_in_list(row['Top 6 RE Finali'], row['Risultato_Reale']): stats['RE Finali'][0] += 1
+
+                # 4. Mercati Avanzati (RE 1°T e HT/FT)
+                stats['RE 1°T'][1] += 1
+                if check_in_list(row['Top 3 RE 1°T'], f"{ph}-{pa}"): stats['RE 1°T'][0] += 1
+
+                stats['HT/FT'][1] += 1
+                if check_in_list(row['Top 3 HT/FT'], real_htft): stats['HT/FT'][0] += 1
+                
+            except Exception as e:
+                continue
+
+        # --- INTERFACCIA GRAFICA ---
+        st.subheader(f"📊 Report Gold: {camp_filtro}")
+        
+        # Visualizzazione a griglia (2 righe da 4 colonne)
+        keys = list(stats.keys())
+        for i in range(0, len(keys), 4):
+            cols = st.columns(4)
+            for j in range(4):
+                if i + j < len(keys):
+                    market = keys[i+j]
+                    v = stats[market]
+                    if v[1] > 0:
+                        wr = v[0] / v[1]
+                        is_gold = wr >= 0.75
+                        with cols[j]:
+                            st.metric(market, f"{wr:.1%}", f"{v[0]}/{v[1]}", delta_color="normal" if not is_gold else "inverse")
+                            if is_gold: st.markdown("🏆 **SOGLIA GOLD**")
+
+        # Grafico comparativo
+        st.divider()
+        st.write("### 📈 Precisione per Mercato")
+        chart_data = pd.DataFrame({
+            'Mercato': stats.keys(),
+            'Win Rate': [v[0]/v[1] if v[1]>0 else 0 for v in stats.values()]
+        })
+        st.bar_chart(chart_data.set_index('Mercato'))
+
+    except Exception as e:
+        st.error(f"Errore analisi: {e}")
+
 def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
     if not os.path.exists(FILE_DB_CALCIO):
         st.error("Database Calcio mancante. Aggiorna il DB"); return None
@@ -769,30 +866,23 @@ with tab3:
                             st.error(f"Errore: {e}")
 
 with tab4:
-    st.header("📊 Performance Delphi")
+    st.header("📊 Performance Delphi Pro")
+    
+    # Selettore Campionato
+    opzioni_camp = ['TUTTI', 'Serie A', 'Premier League', 'La Liga', 'Bundesliga', 'Ligue 1', 'Eredivisie', 'Champions League']
+    scelta_camp = st.selectbox("Seleziona Campionato da analizzare:", opzioni_camp)
+    
+    if st.button("Avvia Analisi Approfondita"):
+        analizza_performance_campionato(scelta_camp)
+    
+    st.divider()
+    
+    # Selettore Squadra specifica
     if os.path.exists(FILE_DB_PRONOSTICI):
-        df_stat = pd.read_csv(FILE_DB_PRONOSTICI)
-        # Filtriamo solo i match conclusi (quelli con risultato reale)
-        df_v = df_stat[df_stat['Risultato_Reale'] != "N/D"].copy()
+        df_cron = pd.read_csv(FILE_DB_PRONOSTICI)
+        squadre = sorted(list(set(df_cron['Partita'].str.split(' vs ').str[0])))
+        scelta_sq = st.selectbox("Analizza performance per singola squadra:", squadre)
         
-        if not df_v.empty:
-            # Funzione interna per verificare se il pronostico 1X2 era corretto
-            def verifica(r):
-                try:
-                    h, a = map(int, str(r['Risultato_Reale']).split('-'))
-                    return check_1x2(r['1X2'], h, a)
-                except: return False
-            
-            df_v['Vinto'] = df_v.apply(verifica, axis=1)
-            win_rate = df_v['Vinto'].mean()
-            
-            c1, c2 = st.columns(2)
-            c1.metric("Win Rate 1X2", f"{win_rate:.1%}")
-            c2.metric("Match Totali", len(df_v))
-            
-            st.subheader("Ultime 10 Giocate Verificate")
-            st.dataframe(df_v[['Partita', '1X2', 'Risultato_Reale', 'Vinto']].tail(10), use_container_width=True)
-        else:
-            st.info("Aggiorna i risultati reali nella Cronologia per generare le statistiche.")
-    else:
-        st.warning("Database pronostici non trovato.")
+        if st.button("Vedi storico squadra"):
+            df_sq = df_cron[df_cron['Partita'].str.contains(scelta_sq)]
+            st.dataframe(df_sq[['Data', 'Partita', '1X2', 'Risultato_Reale']], use_container_width=True)
