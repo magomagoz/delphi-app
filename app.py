@@ -906,7 +906,7 @@ with tab4:
                 st.write(f"Storico partite trovate: **{len(df_sq)}**")
                 # Mostriamo colonne utili per l'analisi rapida
                 st.dataframe(
-                    df_sq[['Data', 'Partita', '1X2', 'Risultato_Reale', '1X2']].style.apply(highlight_winners, axis=1), 
+                    df_sq[['Data', 'Partita', '1X2', 'Risultato_Reale']].style.apply(highlight_winners, axis=1), 
                     use_container_width=True, 
                     hide_index=True
                 )
