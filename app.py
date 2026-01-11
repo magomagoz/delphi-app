@@ -701,6 +701,7 @@ with tab1:
             st.header(f"🏟️ **{d['Partita']}**")
             st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}") 
             st.markdown(f"📅 Data: {d['Data']} ore {d['Ora']}")
+            st.divider()
         
             if d.get('is_big_match'): st.warning("🛡️ **Filtro Big Match Attivo**: probabile partita molto tattica")
 
