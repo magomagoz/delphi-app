@@ -699,7 +699,7 @@ with tab1:
             casa_nome, fuori_nome = d['casa_nome'], d['fuori_nome']
 
             st.header(f"🏟️ **{d['Partita']}**")
-            st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')} | f"📅 Data: {d['Data']} ore {d['Ora']}")
+            st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')} | 📅 Data: {d['Data']} ore {d['Ora']}")
         
             if d.get('is_big_match'): st.warning("🛡️ **Filtro Big Match Attivo**: probabile partita molto tattica")
 
