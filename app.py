@@ -876,12 +876,37 @@ with tab4:
     
     st.divider()
     
-    # Selettore Squadra specifica
+    # Selettore Squadra specifica (CORRETTO E COMPLETO)
     if os.path.exists(FILE_DB_PRONOSTICI):
         df_cron = pd.read_csv(FILE_DB_PRONOSTICI)
-        squadre = sorted(list(set(df_cron['Partita'].str.split(' vs ').str[0])))
-        scelta_sq = st.selectbox("Analizza performance per singola squadra:", squadre)
+        
+        # --- LOGICA DI ESTRAZIONE SQUADRE (CASA + OSPITE) ---
+        tutte_squadre = set() # Usiamo un set per eliminare automaticamente i duplicati
+        
+        for partita in df_cron['Partita'].dropna():
+            # Divide la stringa "Milan vs Inter" in ["Milan", "Inter"]
+            if ' vs ' in str(partita):
+                teams = str(partita).split(' vs ')
+                if len(teams) == 2:
+                    tutte_squadre.add(teams[0].strip()) # Aggiunge Casa
+                    tutte_squadre.add(teams[1].strip()) # Aggiunge Ospite
+        
+        # Convertiamo il set in lista e ordiniamo alfabeticamente
+        lista_pulita = sorted(list(tutte_squadre))
+        
+        scelta_sq = st.selectbox("Analizza performance per singola squadra:", lista_pulita)
         
         if st.button("Vedi storico squadra"):
-            df_sq = df_cron[df_cron['Partita'].str.contains(scelta_sq)]
-            st.dataframe(df_sq[['Data', 'Partita', '1X2', 'Risultato_Reale']], use_container_width=True)
+            # Filtriamo tutte le righe dove il nome della squadra appare (sia come casa che fuori)
+            df_sq = df_cron[df_cron['Partita'].str.contains(scelta_sq, case=False, regex=False)]
+            
+            if not df_sq.empty:
+                st.write(f"Storico partite trovate: **{len(df_sq)}**")
+                # Mostriamo colonne utili per l'analisi rapida
+                st.dataframe(
+                    df_sq[['Data', 'Partita', '1X2', 'Risultato_Reale', '1X2']].style.apply(highlight_winners, axis=1), 
+                    use_container_width=True, 
+                    hide_index=True
+                )
+            else:
+                st.warning("Nessuna partita trovata per questa squadra.")
