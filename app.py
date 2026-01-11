@@ -551,8 +551,6 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
     # Ordiniamo e prendiamo i primi 3. Gestiamo il caso in cui il dizionario sia vuoto.
     items_htft = sorted(pf_final_dict.items(), key=lambda x: x[1], reverse=True)[:3]
     top_pf_string = ", ".join([f"{k} (Q: {stima_quota(v):.2f})" for k, v in items_htft])
-
-    # --- CALCOLO VARIABILI MANCANTI (RISOLVE I NAME ERROR) ---
     
     # 1. Calcolo stringhe pronostici 1X2, U/O, G/NG
     if p1 >= px and p1 >= p2: d_1x2 = "1"
@@ -637,6 +635,7 @@ def highlight_winners(row):
     if check_in_list(row['SGO'], a): colors[10] = green
     if check_in_list(row['Top 6 RE Finali'], row['Risultato_Reale']): colors[11] = green
     if check_in_list(row['Top 3 RE 1°T'], row['PT_Reale']): colors[12] = green
+    if check_in_list(row['Top 3 HT/FT'], row['PT_Reale']): colors[13] = green
     
     # Usa il valore calcolato real_htft per confrontarlo con la cella del database
     if check_in_list(row['Top 3 HT/FT'], real_htft): colors[13] = green 
@@ -700,8 +699,7 @@ with tab1:
             casa_nome, fuori_nome = d['casa_nome'], d['fuori_nome']
 
             st.header(f"🏟️ **{d['Partita']}**")
-            st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}")
-            st.subheader(f"📅 Data: {d['Data']} ore {d['Ora']}")
+            st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')} | f"📅 Data: {d['Data']} ore {d['Ora']}")
         
             if d.get('is_big_match'): st.warning("🛡️ **Filtro Big Match Attivo**: probabile partita molto tattica")
 
@@ -785,6 +783,7 @@ with tab1:
                 st.info(f"⏱️ **Top 3 Risultati Esatti 1° Tempo**\n\n{d['Top 3 RE 1°T']}")
 
             st.divider()
+            st.subheader("🌓 **Esito Parziale/finale**")
             st.warning(f"🏆 **Top 3 Parziale/Finale (HT/FT)**\n\n{d.get('Top 3 HT/FT', 'Dato non disponibile')}")
             
             
@@ -866,10 +865,10 @@ with tab3:
                             st.error(f"Errore: {e}")
 
 with tab4:
-    st.header("📊 Performance Delphi Pro")
+    st.header("📊 Performance Delphi")
     
     # Selettore Campionato
-    opzioni_camp = ['TUTTI', 'Serie A', 'Premier League', 'La Liga', 'Bundesliga', 'Ligue 1', 'Eredivisie', 'Champions League']
+    opzioni_camp = ['TUTTI', 'Serie A', 'Premier League', 'Championship', 'La Liga', 'Bundesliga', 'Ligue 1', 'Primeira Liga', 'Eredivisie', 'Champions League', 'Europa League', 'Brasileirao Betano']
     scelta_camp = st.selectbox("Seleziona Campionato da analizzare:", opzioni_camp)
     
     if st.button("Avvia Analisi Approfondita"):
