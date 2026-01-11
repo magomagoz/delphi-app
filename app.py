@@ -51,7 +51,7 @@ def check_in_list(pred_string, value_to_find):
 # --- 3. FUNZIONI DATABASE (CORRETTE) ---
 def get_db_columns():
     return [
-        "Data", "Ora", "Partita", "Fiducia", "Affidabilità", 
+        "Data", "Ora", "League", "Partita", "Fiducia", "Affidabilità", 
         "1X2", "U/O 2.5", "G/NG", "SGF", "SGC", "SGO", 
         "Top 6 RE Finali", "Top 3 RE 1°T", "Top 3 HT/FT", "Fatica", "Match_ID", "Risultato_Reale", "PT_Reale"
     ]
@@ -441,7 +441,7 @@ def analizza_performance_campionato(camp_filtro):
 
         # Grafico comparativo
         st.divider()
-        st.write("### 📈 Precisione per Mercato")
+        st.write("### 📈 Precisione per tipo di Pronostico")
         chart_data = pd.DataFrame({
             'Mercato': stats.keys(),
             'Win Rate': [v[0]/v[1] if v[1]>0 else 0 for v in stats.values()]
@@ -873,7 +873,7 @@ with tab4:
     opzioni_camp = ['TUTTI', 'Serie A', 'Premier League', 'Championship', 'La Liga', 'Bundesliga', 'Ligue 1', 'Primeira Liga', 'Eredivisie', 'Champions League', 'Europa League', 'Brasileirao Betano']
     scelta_camp = st.selectbox("Seleziona Campionato da analizzare:", opzioni_camp)
     
-    if st.button("Avvia Analisi Approfondita"):
+    if st.button("Avvia Analisi"):
         analizza_performance_campionato(scelta_camp)
     
     st.divider()
@@ -896,7 +896,7 @@ with tab4:
         # Convertiamo il set in lista e ordiniamo alfabeticamente
         lista_pulita = sorted(list(tutte_squadre))
         
-        scelta_sq = st.selectbox("Analizza performance per singola squadra:", lista_pulita)
+        scelta_sq = st.selectbox("Performance per singola squadra:", lista_pulita)
         
         if st.button("Vedi storico squadra"):
             # Filtriamo tutte le righe dove il nome della squadra appare (sia come casa che fuori)
@@ -906,7 +906,7 @@ with tab4:
                 st.write(f"Storico partite trovate: **{len(df_sq)}**")
                 # Mostriamo colonne utili per l'analisi rapida
                 st.dataframe(
-                    df_sq[['Data', 'Partita', '1X2', 'Risultato_Reale']].style.apply(highlight_winners, axis=1), 
+                    df_sq[['Data', 'Partita', '1X2', 'U/O 2.5', 'G/NG', 'SGF', 'SGC', 'SGO', 'Top 6 RE Finali', 'Top 3 RE 1°T', 'Top 3 HT/FT', 'Risultato_Reale']].style.apply(highlight_winners, axis=1), 
                     use_container_width=True, 
                     hide_index=True
                 )
