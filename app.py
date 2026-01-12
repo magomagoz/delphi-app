@@ -79,44 +79,50 @@ def inizializza_db():
 inizializza_db()
 
 def crea_backup_automatico():
-    # Crea la cartella backup se non esiste
     if not os.path.exists("backups"):
         os.makedirs("backups")
     
-    # Se il file pronostici esiste, fanne una copia
     if os.path.exists(FILE_DB_PRONOSTICI):
+        # Controlliamo che il file non sia vuoto (almeno più di 100 byte per sicurezza)
+        if os.path.getsize(FILE_DB_PRONOSTICI) < 50: 
+            return # Evitiamo di backuppare un file vuoto o solo intestazioni
+
         data_oggi = datetime.now().strftime("%Y-%m-%d")
         nome_backup = f"backups/pronostici_backup_{data_oggi}.csv"
         
-        # Crea il backup solo se non è già stato fatto oggi (per non rallentare l'app)
+        # Facciamo il backup solo se non esiste già per oggi
         if not os.path.exists(nome_backup):
             try:
                 df_backup = pd.read_csv(FILE_DB_PRONOSTICI)
                 df_backup.to_csv(nome_backup, index=False)
-                # Opzionale: tieni solo gli ultimi 7 backup per non occupare troppo spazio
-                files_backup = sorted([f for f in os.listdir("backups") if f.startswith("pronostici_backup")])
-                if len(files_backup) > 7:
-                    os.remove(os.path.join("backups", files_backup[0]))
+                
+                # Pulizia: tieni solo gli ultimi 10 backup
+                files = [os.path.join("backups", f) for f in os.listdir("backups") if f.endswith(".csv")]
+                files.sort(key=os.path.getmtime) # Ordina dal più vecchio
+                while len(files) > 10:
+                    os.remove(files.pop(0))
             except Exception as e:
                 print(f"Errore backup: {e}")
-
-# Esegui il backup all'avvio
-crea_backup_automatico()
 
 def ripristina_ultimo_backup():
     if not os.path.exists("backups"):
         return False, "Cartella backup non trovata."
     
-    # Prende la lista dei backup ordinata per data
-    files = sorted([f for f in os.listdir("backups") if f.startswith("pronostici_backup")])
+    # Prende i file e li ordina per DATA DI MODIFICA (il più recente per ultimo)
+    files = [os.path.join("backups", f) for f in os.listdir("backups") if f.startswith("pronostici_backup")]
+    files.sort(key=os.path.getmtime) 
+    
     if not files:
         return False, "Nessun file di backup disponibile."
     
-    ultimo_file = os.path.join("backups", files[-1])
+    ultimo_file = files[-1] # Il più recente effettivamente scritto su disco
     try:
         df_backup = pd.read_csv(ultimo_file)
+        if df_backup.empty:
+            return False, "L'ultimo backup trovato è vuoto!"
+            
         df_backup.to_csv(FILE_DB_PRONOSTICI, index=False)
-        return True, f"Ripristinato backup del: {files[-1].replace('pronostici_backup_', '').replace('.csv', '')}"
+        return True, f"Ripristinato backup del: {datetime.fromtimestamp(os.path.getmtime(ultimo_file)).strftime('%d/%m/%Y %H:%M')}"
     except Exception as e:
         return False, f"Errore durante il ripristino: {e}"
 
