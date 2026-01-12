@@ -371,8 +371,30 @@ def analizza_performance_campionato(camp_filtro):
             st.info(f"Nessun match con dati completi trovato per {camp_filtro}.")
             return
 
+        if 'League' not in df_cron.columns:
+            st.error("Il database non contiene la colonna 'League'. Prova a fare una nuova analisi per rigenerare il file correttamente.")
+            return
+
+        # Assicuriamoci che esistano tutte le colonne necessarie
+        colonne_necessarie = ['Risultato_Reale', 'PT_Reale', '1X2', 'U/O 2.5', 'G/NG', 'SGF', 'SGC', 'SGO']
+        for col in colonne_necessarie:
+            if col not in df_cron.columns:
+                df_cron[col] = "N/D" # Crea colonna vuota se manca
+
+        # Filtro match completati
+        df_v = df_cron[(df_cron['Risultato_Reale'] != "N/D") & (df_cron['PT_Reale'] != "N/D")].copy()
+        
+        if camp_filtro != 'TUTTI':
+            df_v = df_v[df_v['League'] == camp_filtro]
+
+        if df_v.empty:
+            st.info(f"Nessun match con dati reali trovato per {camp_filtro}.")
+            return
+        
         match_contati = len(df_v)
 
+        st.success(f"Analisi completata su {match_contati} match per {camp_filtro}")
+        
         # Dizionario per accumulare i successi [Vinti, Totali]
         stats = {k: [0, 0] for k in ['1X2', 'U/O 2.5', 'G/NG', 'SGF', 'SGC (Casa)', 'SGO (Ospite)', 'RE Finali', 'RE 1°T', 'HT/FT']}
 
@@ -420,7 +442,7 @@ def analizza_performance_campionato(camp_filtro):
                 
             except Exception as e:
                 continue
-
+        
         # --- INTERFACCIA GRAFICA ---
         st.subheader(f"📊 Report Gold: {camp_filtro}")
         
@@ -898,17 +920,47 @@ with tab4:
         
         scelta_sq = st.selectbox("Performance per singola squadra:", lista_pulita)
         
+
+        
+
         if st.button("Vedi storico squadra"):
-            # Filtriamo tutte le righe dove il nome della squadra appare (sia come casa che fuori)
-            df_sq = df_cron[df_cron['Partita'].str.contains(scelta_sq, case=False, regex=False)]
+            # Filtro per nome squadra
+            df_sq = df_cron[df_cron['Partita'].str.contains(scelta_sq, case=False, na=False)]
             
             if not df_sq.empty:
-                st.write(f"Storico partite trovate: **{len(df_sq)}**")
-                # Mostriamo colonne utili per l'analisi rapida
-                st.dataframe(
-                    df_sq[['Data', 'Partita', '1X2', 'U/O 2.5', 'G/NG', 'SGF', 'SGC', 'SGO', 'Top 6 RE Finali', 'Top 3 RE 1°T', 'Top 3 HT/FT', 'Risultato_Reale']].style.apply(highlight_winners, axis=1), 
-                    use_container_width=True, 
-                    hide_index=True
-                )
+                st.write(f"Storico per **{scelta_sq}**: {len(df_sq)} partite")
+                
+                # --- FIX: RIMOSSO IL DOPPIO '1X2' E AGGIUNTO IL RESET INDEX ---
+                # Selezioniamo solo colonne univoche
+                colonne_vista = ['Data', 'Partita', '1X2', 'Risultato_Reale']
+                # Verifichiamo che le colonne esistano nel DF prima di mostrarle
+                esistenti = [c for c in colonne_vista if c in df_sq.columns]
+                
+                tabella_finale = df_sq[esistenti].reset_index(drop=True)
+                
+                # Visualizzazione semplice senza styler (per evitare crash mentre debugghiamo)
+                st.dataframe(tabella_finale, use_container_width=True)
             else:
-                st.warning("Nessuna partita trovata per questa squadra.")
+                st.warning("Nessuna partita trovata.")
+
+        if st.button("Vedi storico squadra"):
+            # Filtro per nome squadra
+            df_sq = df_cron[df_cron['Partita'].str.contains(scelta_sq, case=False, na=False)]
+            
+            if not df_sq.empty:
+                st.write(f"Storico per **{scelta_sq}**: {len(df_sq)} partite")
+                
+                # --- FIX: RIMOSSO IL DOPPIO '1X2' E AGGIUNTO IL RESET INDEX ---
+                # Selezioniamo solo colonne univoche
+                colonne_vista = [['Data', 'Partita', '1X2', 'U/O 2.5', 'G/NG', 'SGF', 'SGC', 'SGO', 'Top 6 RE Finali', 'Top 3 RE 1°T', 'Top 3 HT/FT', 'Risultato_Reale']].style.apply(highlight_winners, axis=1]
+                # Verifichiamo che le colonne esistano nel DF prima di mostrarle
+                esistenti = [c for c in colonne_vista if c in df_sq.columns]
+                
+                tabella_finale = df_sq[esistenti].reset_index(drop=True)
+                
+                # Visualizzazione semplice senza styler (per evitare crash mentre debugghiamo)
+                st.dataframe(tabella_finale, use_container_width=True)
+            else:
+                st.warning("Nessuna partita trovata.")
+        
+ 
