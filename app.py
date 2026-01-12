@@ -631,36 +631,46 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
     }
 
 def highlight_winners(row):
+    # Creiamo una lista di stili vuoti lunga quanto la riga
     colors = [''] * len(row)
-    if row['Risultato_Reale'] == "N/D" or pd.isna(row['PT_Reale']) or row['PT_Reale'] == "N/D": 
+    
+    # Se non c'è il risultato reale, non coloriamo nulla
+    if row.get('Risultato_Reale') == "N/D" or pd.isna(row.get('Risultato_Reale')):
         return colors
     
     try:
+        # 1. Recupero dati reali
         h, a = map(int, str(row['Risultato_Reale']).split('-'))
         ph, pa = map(int, str(row['PT_Reale']).split('-'))
         
-        real_1t = "1" if ph > pa else ("2" if pa > ph else "X")
-        real_ft = "1" if h > a else ("2" if a > h else "X")
-        real_htft = f"{real_1t}-{real_ft}"
-    except: 
-        return colors
+        real_1t_sign = "1" if ph > pa else ("2" if pa > ph else "X")
+        real_ft_sign = "1" if h > a else ("2" if a > h else "X")
+        real_htft = f"{real_1t_sign}-{real_ft_sign}"
+        
+        green = 'background-color: #d4edda; color: #155724; font-weight: bold'
 
-    green = 'background-color: #d4edda; color: #155724; font-weight: bold'
-    
-    # Verifica indici (devono corrispondere a get_db_columns)
-    # --- CORREZIONE RIGA 534 (Riferimento colonna corretto) ---
-    if check_1x2(row['1X2'], h, a): colors[5] = green
-    if check_uo(row['U/O 2.5'], h, a): colors[6] = green
-    if check_gng(row['G/NG'], h, a): colors[7] = green
-    if check_in_list(row['SGF'], h+a): colors[8] = green
-    if check_in_list(row['SGC'], h): colors[9] = green
-    if check_in_list(row['SGO'], a): colors[10] = green
-    if check_in_list(row['Top 6 RE Finali'], row['Risultato_Reale']): colors[11] = green
-    if check_in_list(row['Top 3 RE 1°T'], row['PT_Reale']): colors[12] = green
-    if check_in_list(row['Top 3 HT/FT'], row['PT_Reale']): colors[13] = green
-    
-    # Usa il valore calcolato real_htft per confrontarlo con la cella del database
-    if check_in_list(row['Top 3 HT/FT'], real_htft): colors[13] = green 
+        # 2. Mappatura colonne per nome (evita errori di indice)
+        # Cerchiamo la posizione della colonna nella riga corrente
+        cols_list = list(row.index)
+
+        checks = [
+            ('1X2', lambda: check_1x2(row['1X2'], h, a)),
+            ('U/O 2.5', lambda: check_uo(row['U/O 2.5'], h, a)),
+            ('G/NG', lambda: check_gng(row['G/NG'], h, a)),
+            ('SGF', lambda: check_in_list(row['SGF'], h+a)),
+            ('SGC', lambda: check_in_list(row['SGC'], h)),
+            ('SGO', lambda: check_in_list(row['SGO'], a)),
+            ('Top 6 RE Finali', lambda: check_in_list(row['Top 6 RE Finali'], row['Risultato_Reale'])),
+            ('Top 3 RE 1°T', lambda: check_in_list(row['Top 3 RE 1°T'], row['PT_Reale'])),
+            ('Top 3 HT/FT', lambda: check_in_list(row['Top 3 HT/FT'], real_htft))
+        ]
+
+        for col_name, condition_func in checks:
+            if col_name in cols_list and condition_func():
+                colors[cols_list.index(col_name)] = green
+
+    except Exception as e:
+        pass # In caso di errore nel parsing (es. dati sporchi), non colora
         
     return colors
 
@@ -891,76 +901,47 @@ with tab3:
 with tab4:
     st.header("📊 Performance Delphi")
     
-    # Selettore Campionato
     opzioni_camp = ['TUTTI', 'Serie A', 'Premier League', 'Championship', 'La Liga', 'Bundesliga', 'Ligue 1', 'Primeira Liga', 'Eredivisie', 'Champions League', 'Europa League', 'Brasileirao Betano']
     scelta_camp = st.selectbox("Seleziona Campionato da analizzare:", opzioni_camp)
     
-    if st.button("Avvia Analisi"):
+    if st.button("Avvia Analisi Campionato"):
         analizza_performance_campionato(scelta_camp)
     
     st.divider()
     
-    # Selettore Squadra specifica (CORRETTO E COMPLETO)
     if os.path.exists(FILE_DB_PRONOSTICI):
         df_cron = pd.read_csv(FILE_DB_PRONOSTICI)
         
-        # --- LOGICA DI ESTRAZIONE SQUADRE (CASA + OSPITE) ---
-        tutte_squadre = set() # Usiamo un set per eliminare automaticamente i duplicati
-        
+        # Estrazione nomi squadre puliti
+        tutte_squadre = set()
         for partita in df_cron['Partita'].dropna():
-            # Divide la stringa "Milan vs Inter" in ["Milan", "Inter"]
             if ' vs ' in str(partita):
                 teams = str(partita).split(' vs ')
-                if len(teams) == 2:
-                    tutte_squadre.add(teams[0].strip()) # Aggiunge Casa
-                    tutte_squadre.add(teams[1].strip()) # Aggiunge Ospite
+                tutte_squadre.update([t.strip() for t in teams])
         
-        # Convertiamo il set in lista e ordiniamo alfabeticamente
         lista_pulita = sorted(list(tutte_squadre))
-        
         scelta_sq = st.selectbox("Performance per singola squadra:", lista_pulita)
         
-
-        
-
         if st.button("Vedi storico squadra"):
-            # Filtro per nome squadra
-            df_sq = df_cron[df_cron['Partita'].str.contains(scelta_sq, case=False, na=False)]
+            df_sq = df_cron[df_cron['Partita'].str.contains(scelta_sq, case=False, na=False)].copy()
             
             if not df_sq.empty:
                 st.write(f"Storico per **{scelta_sq}**: {len(df_sq)} partite")
                 
-                # --- FIX: RIMOSSO IL DOPPIO '1X2' E AGGIUNTO IL RESET INDEX ---
-                # Selezioniamo solo colonne univoche
-                colonne_vista = ['Data', 'Partita', '1X2', 'Risultato_Reale']
-                # Verifichiamo che le colonne esistano nel DF prima di mostrarle
-                esistenti = [c for c in colonne_vista if c in df_sq.columns]
+                # Definiamo le colonne che vogliamo vedere
+                cols_to_show = [
+                    'Data', 'Partita', '1X2', 'U/O 2.5', 'G/NG', 'SGF', 
+                    'Top 6 RE Finali', 'Top 3 RE 1°T', 'Top 3 HT/FT', 'Risultato_Reale'
+                ]
                 
-                tabella_finale = df_sq[esistenti].reset_index(drop=True)
+                # Filtriamo solo quelle esistenti nel DB per sicurezza
+                cols_presenti = [c for c in cols_to_show if c in df_sq.columns]
                 
-                # Visualizzazione semplice senza styler (per evitare crash mentre debugghiamo)
-                st.dataframe(tabella_finale, use_container_width=True)
+                # Applichiamo lo stile al dataframe filtrato
+                st.dataframe(
+                    df_sq[cols_presenti].style.apply(highlight_winners, axis=1), 
+                    use_container_width=True,
+                    hide_index=True
+                )
             else:
                 st.warning("Nessuna partita trovata.")
-
-        if st.button("Vedi storico squadra"):
-            # Filtro per nome squadra
-            df_sq = df_cron[df_cron['Partita'].str.contains(scelta_sq, case=False, na=False)]
-            
-            if not df_sq.empty:
-                st.write(f"Storico per **{scelta_sq}**: {len(df_sq)} partite")
-                
-                # --- FIX: RIMOSSO IL DOPPIO '1X2' E AGGIUNTO IL RESET INDEX ---
-                # Selezioniamo solo colonne univoche
-                colonne_vista = [('Data', 'Partita', '1X2', 'U/O 2.5', 'G/NG', 'SGF', 'SGC', 'SGO', 'Top 6 RE Finali', 'Top 3 RE 1°T', 'Top 3 HT/FT', 'Risultato_Reale').style.apply(highlight_winners, axis=1)]
-                # Verifichiamo che le colonne esistano nel DF prima di mostrarle
-                esistenti = [c for c in colonne_vista if c in df_sq.columns]
-                
-                tabella_finale = df_sq[esistenti].reset_index(drop=True)
-                
-                # Visualizzazione semplice senza styler (per evitare crash mentre debugghiamo)
-                st.dataframe(tabella_finale, use_container_width=True)
-            else:
-                st.warning("Nessuna partita trovata.")
-        
- 
