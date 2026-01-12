@@ -952,7 +952,7 @@ with tab4:
                 
                 # --- FIX: RIMOSSO IL DOPPIO '1X2' E AGGIUNTO IL RESET INDEX ---
                 # Selezioniamo solo colonne univoche
-                colonne_vista = [('Data', 'Partita', '1X2', 'U/O 2.5', 'G/NG', 'SGF', 'SGC', 'SGO', 'Top 6 RE Finali', 'Top 3 RE 1°T', 'Top 3 HT/FT', 'Risultato_Reale').style.apply(highlight_winners, axis=1]
+                colonne_vista = [('Data', 'Partita', '1X2', 'U/O 2.5', 'G/NG', 'SGF', 'SGC', 'SGO', 'Top 6 RE Finali', 'Top 3 RE 1°T', 'Top 3 HT/FT', 'Risultato_Reale').style.apply(highlight_winners, axis=1)]
                 # Verifichiamo che le colonne esistano nel DF prima di mostrarle
                 esistenti = [c for c in colonne_vista if c in df_sq.columns]
                 
