@@ -873,23 +873,28 @@ with tab3:
                     st.rerun()
 
             st.dataframe(df_da_mostrare.style.apply(highlight_winners, axis=1), use_container_width=True, hide_index=True)
-            
+                         
             st.divider()
             st.subheader("🛠️ Gestione Dati ed Emergenze")
             
             col_back, col_del = st.columns(2)
             
             with col_back:
-                with st.popover("⏪ Ripristino Backup", use_container_width=True):
-                    st.info("Questa azione sovrascriverà la cronologia attuale con l'ultimo backup giornaliero salvato.")
-                    if st.button("Conferma Ripristino", type="secondary", use_container_width=True):
-                        successo, messaggio = ripristina_ultimo_backup()
-                        if successo:
-                            st.success(messaggio)
-                            time.sleep(2)
-                            st.rerun()
-                        else:
-                            st.error(messaggio)
+    
+            with st.expander("🛠️ Strumenti di Emergenza"):
+                if st.button("⏪ Ripristina Ultimo Backup"):
+                    successo, msg = ripristina_ultimo_backup()
+                    if successo:
+                        st.success(msg)
+                        time.sleep(1)
+                st.rerun() # Forza il ricaricamento del file appena sovrascritto
+            else:
+                st.error(msg)
+
+    # 2. Solo DOPO carichi il dataframe per visualizzarlo
+    if os.path.exists(FILE_DB_PRONOSTICI):
+        df_cronologia = pd.read_csv(FILE_DB_PRONOSTICI)
+        # ... resto della visualizzazione ...
 
             with col_del:
                 # --- IL TUO VECCHIO PULSANTE ELIMINA ---
