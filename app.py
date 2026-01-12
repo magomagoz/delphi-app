@@ -850,16 +850,19 @@ with tab2:
 with tab3:
     st.header("📜 Cronologia")
     
+    # 1. CONTROLLO ESISTENZA FILE E CARICAMENTO
     if os.path.exists(FILE_DB_PRONOSTICI):
         df_cronologia = pd.read_csv(FILE_DB_PRONOSTICI)
 
         if not df_cronologia.empty:
+            # Pulizia duplicati
             df_cronologia = df_cronologia.drop_duplicates(subset=['Data', 'Partita'], keep='last')
             
+            # Pulsanti di Download e Filtro
             col_ex1, col_ex2 = st.columns([1, 4])
             with col_ex1:
                 csv_data = df_cronologia.to_csv(index=False).encode('utf-8')
-                st.download_button("📥 Scarica file CSV", csv_data, f"pronostici_{date.today()}.csv", 'text/csv')
+                st.download_button("📥 Scarica CSV", csv_data, f"pronostici_{date.today()}.csv", 'text/csv')
             
             date_disponibili = sorted(df_cronologia['Data'].unique(), reverse=True)
             date_disponibili.insert(0, "Tutte")
@@ -867,40 +870,37 @@ with tab3:
             
             df_da_mostrare = df_cronologia if data_scelta == "Tutte" else df_cronologia[df_cronologia['Data'] == data_scelta]
 
+            # Pulsante Aggiornamento Risultati
             if st.button("🔄 Aggiorna Risultati Reali"):
                 with st.spinner("Controllo risultati in corso..."):
                     aggiorna_risultati_pronostici()
                     st.rerun()
 
+            # Visualizzazione Tabella Principale
             st.dataframe(df_da_mostrare.style.apply(highlight_winners, axis=1), use_container_width=True, hide_index=True)
                          
             st.divider()
-            st.subheader("🛠️ Gestione Dati ed Emergenze")
             
+            # 2. SEZIONE GESTIONE DATI (CORRETTA)
+            st.subheader("🛠️ Gestione Dati ed Emergenze")
             col_back, col_del = st.columns(2)
             
             with col_back:
-    
-            with st.expander("🛠️ Strumenti di Emergenza"):
-                if st.button("⏪ Ripristina Ultimo Backup"):
-                    successo, msg = ripristina_ultimo_backup()
-                    if successo:
-                        st.success(msg)
-                        time.sleep(1)
-                st.rerun() # Forza il ricaricamento del file appena sovrascritto
-            else:
-                st.error(msg)
-
-    # 2. Solo DOPO carichi il dataframe per visualizzarlo
-    if os.path.exists(FILE_DB_PRONOSTICI):
-        df_cronologia = pd.read_csv(FILE_DB_PRONOSTICI)
-        # ... resto della visualizzazione ...
+                with st.popover("⏪ Ripristino Backup", use_container_width=True):
+                    st.info("Ripristina l'ultimo backup disponibile.")
+                    if st.button("Conferma Ripristino"):
+                        successo, msg = ripristina_ultimo_backup()
+                        if successo:
+                            st.success(msg)
+                            time.sleep(1)
+                            st.rerun() # Ricarica dopo il ripristino
+                        else:
+                            st.error(msg)
 
             with col_del:
-                # --- IL TUO VECCHIO PULSANTE ELIMINA ---
                 with st.popover("🗑️ Elimina Cronologia", use_container_width=True):
-                    st.warning("⚠️ Sei sicuro? Cancellerai tutti i pronostici salvati.")
-                    if st.button("Sì, cancella tutto", type="primary", use_container_width=True):
+                    st.warning("⚠️ Azione irreversibile!")
+                    if st.button("Sì, cancella tutto", type="primary"):
                         try:
                             os.remove(FILE_DB_PRONOSTICI)
                             st.success("Cronologia eliminata!")
@@ -908,6 +908,8 @@ with tab3:
                             st.rerun()
                         except Exception as e:
                             st.error(f"Errore: {e}")
+    else:
+        st.info("Nessun pronostico salvato in cronologia.")
 
 with tab4:
     st.header("📊 Performance Delphi")
