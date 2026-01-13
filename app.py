@@ -448,6 +448,36 @@ def analizza_performance_campionato(camp_filtro):
                 
             except Exception as e:
                 continue
+        
+        # --- INTERFACCIA GRAFICA ---
+        st.subheader(f"📊 Report Gold: {camp_filtro}")
+        
+        # Visualizzazione a griglia (2 righe da 4 colonne)
+        keys = list(stats.keys())
+        for i in range(0, len(keys), 4):
+            cols = st.columns(4)
+            for j in range(4):
+                if i + j < len(keys):
+                    market = keys[i+j]
+                    v = stats[market]
+                    if v[1] > 0:
+                        wr = v[0] / v[1]
+                        is_gold = wr >= 0.75
+                        with cols[j]:
+                            st.metric(market, f"{wr:.1%}", f"{v[0]}/{v[1]}", delta_color="normal" if not is_gold else "inverse")
+                            if is_gold: st.markdown("🏆 **SOGLIA GOLD**")
+
+        # Grafico comparativo
+        st.divider()
+        st.write("### 📈 Precisione per tipo di Pronostico")
+        chart_data = pd.DataFrame({
+            'Mercato': stats.keys(),
+            'Win Rate': [v[0]/v[1] if v[1]>0 else 0 for v in stats.values()]
+        })
+        st.bar_chart(chart_data.set_index('Mercato'))
+
+    except Exception as e:
+        st.error(f"Errore analisi: {e}")
 
 def analizza_performance_squadra_gold(squadra_target):
     if not os.path.exists(FILE_DB_PRONOSTICI):
@@ -550,36 +580,6 @@ def analizza_performance_squadra_gold(squadra_target):
 
     except Exception as e:
         st.error(f"Errore analisi squadra: {e}")
-        
-        # --- INTERFACCIA GRAFICA ---
-        st.subheader(f"📊 Report Gold: {camp_filtro}")
-        
-        # Visualizzazione a griglia (2 righe da 4 colonne)
-        keys = list(stats.keys())
-        for i in range(0, len(keys), 4):
-            cols = st.columns(4)
-            for j in range(4):
-                if i + j < len(keys):
-                    market = keys[i+j]
-                    v = stats[market]
-                    if v[1] > 0:
-                        wr = v[0] / v[1]
-                        is_gold = wr >= 0.75
-                        with cols[j]:
-                            st.metric(market, f"{wr:.1%}", f"{v[0]}/{v[1]}", delta_color="normal" if not is_gold else "inverse")
-                            if is_gold: st.markdown("🏆 **SOGLIA GOLD**")
-
-        # Grafico comparativo
-        st.divider()
-        st.write("### 📈 Precisione per tipo di Pronostico")
-        chart_data = pd.DataFrame({
-            'Mercato': stats.keys(),
-            'Win Rate': [v[0]/v[1] if v[1]>0 else 0 for v in stats.values()]
-        })
-        st.bar_chart(chart_data.set_index('Mercato'))
-
-    except Exception as e:
-        st.error(f"Errore analisi: {e}")
 
 def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
     if not os.path.exists(FILE_DB_CALCIO):
