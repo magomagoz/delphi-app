@@ -448,6 +448,108 @@ def analizza_performance_campionato(camp_filtro):
                 
             except Exception as e:
                 continue
+
+def analizza_performance_squadra_gold(squadra_target):
+    if not os.path.exists(FILE_DB_PRONOSTICI):
+        st.warning("Cronologia pronostici non trovata.")
+        return
+
+    try:
+        df_cron = pd.read_csv(FILE_DB_PRONOSTICI)
+        
+        # Filtro: Cerchiamo la squadra sia come Casa che come Ospite nella colonna 'Partita'
+        # Assumiamo che la colonna Partita sia "SquadraA vs SquadraB"
+        df_v = df_cron[
+            (df_cron['Risultato_Reale'] != "N/D") & 
+            (df_cron['PT_Reale'] != "N/D") & 
+            (df_cron['Partita'].str.contains(squadra_target, case=False, na=False))
+        ].copy()
+
+        if df_v.empty:
+            st.info(f"Nessun match terminato trovato per **{squadra_target}**.")
+            return
+
+        match_contati = len(df_v)
+        st.markdown(f"### 📊 Report Gold: **{squadra_target}** ({match_contati} match)")
+        
+        # Dizionario statistiche (Identico a quello delle Leghe)
+        stats = {k: [0, 0] for k in ['1X2', 'U/O 2.5', 'G/NG', 'SGF', 'SGC (Casa)', 'SGO (Ospite)', 'RE Finali', 'RE 1°T', 'HT/FT']}
+
+        for _, row in df_v.iterrows():
+            try:
+                # Parsing risultati
+                h, a = map(int, str(row['Risultato_Reale']).split('-'))
+                ph, pa = map(int, str(row['PT_Reale']).split('-'))
+                
+                real_1t = "1" if ph > pa else ("2" if pa > ph else "X")
+                real_ft = "1" if h > a else ("2" if a > h else "X")
+                real_htft = f"{real_1t}-{real_ft}"
+
+                # --- CALCOLO WIN RATE (STESSA LOGICA LEGHE) ---
+                stats['1X2'][1] += 1
+                if check_1x2(row['1X2'], h, a): stats['1X2'][0] += 1
+                
+                stats['U/O 2.5'][1] += 1
+                if check_uo(row['U/O 2.5'], h, a): stats['U/O 2.5'][0] += 1
+                
+                stats['G/NG'][1] += 1
+                if check_gng(row['G/NG'], h, a): stats['G/NG'][0] += 1
+
+                stats['SGF'][1] += 1
+                if check_in_list(row['SGF'], h+a): stats['SGF'][0] += 1
+
+                stats['SGC (Casa)'][1] += 1
+                if check_in_list(row['SGC'], h): stats['SGC (Casa)'][0] += 1
+
+                stats['SGO (Ospite)'][1] += 1
+                if check_in_list(row['SGO'], a): stats['SGO (Ospite)'][0] += 1
+
+                stats['RE Finali'][1] += 1
+                if check_in_list(row['Top 6 RE Finali'], row['Risultato_Reale']): stats['RE Finali'][0] += 1
+
+                stats['RE 1°T'][1] += 1
+                if check_in_list(row['Top 3 RE 1°T'], f"{ph}-{pa}"): stats['RE 1°T'][0] += 1
+
+                stats['HT/FT'][1] += 1
+                if check_in_list(row['Top 3 HT/FT'], real_htft): stats['HT/FT'][0] += 1
+                
+            except Exception as e:
+                continue
+        
+        # --- VISUALIZZAZIONE GRIGLIA ---
+        keys = list(stats.keys())
+        for i in range(0, len(keys), 3): # 3 colonne per riga per le squadre
+            cols = st.columns(3)
+            for j in range(3):
+                if i + j < len(keys):
+                    market = keys[i+j]
+                    v = stats[market]
+                    if v[1] > 0:
+                        wr = v[0] / v[1]
+                        # Soglia Gold: 75% o più
+                        is_gold = wr >= 0.75
+                        with cols[j]:
+                            st.metric(
+                                label=market, 
+                                value=f"{wr:.1%}", 
+                                delta=f"{v[0]}/{v[1]} presi",
+                                delta_color="normal" if not is_gold else "off" # Trucco per evidenziare
+                            )
+                            if is_gold: 
+                                st.markdown("🏆 **GOLD**")
+                            else:
+                                st.markdown("➖") # Spaziatura
+        
+        # Grafico
+        st.write("#### 📈 Precisione per Mercato")
+        chart_data = pd.DataFrame({
+            'Mercato': stats.keys(),
+            'Win Rate': [v[0]/v[1] if v[1]>0 else 0 for v in stats.values()]
+        })
+        st.bar_chart(chart_data.set_index('Mercato'), color="#FFD700") # Colore Oro
+
+    except Exception as e:
+        st.error(f"Errore analisi squadra: {e}")
         
         # --- INTERFACCIA GRAFICA ---
         st.subheader(f"📊 Report Gold: {camp_filtro}")
@@ -950,47 +1052,41 @@ with tab3:
 with tab4:
     st.header("📊 Performance Delphi")
     
+    # --- SEZIONE 1: ANALISI CAMPIONATO ---
+    st.subheader("🌍 Analisi per Campionato")
     opzioni_camp = ['TUTTI', 'Serie A', 'Premier League', 'Championship', 'La Liga', 'Bundesliga', 'Ligue 1', 'Primeira Liga', 'Eredivisie', 'Champions League', 'Europa League', 'Brasileirao Betano']
-    scelta_camp = st.selectbox("Seleziona Campionato da analizzare:", opzioni_camp)
+    scelta_camp = st.selectbox("Seleziona Campionato:", opzioni_camp, index=0)
     
-    if st.button("Avvia Analisi Campionato"):
+    if st.button("Analizza Campionato", type="primary"):
         analizza_performance_campionato(scelta_camp)
     
-    st.divider()
+    st.markdown("---")
+    
+    # --- SEZIONE 2: ANALISI SQUADRA (GOLD STYLE) ---
+    st.subheader("🛡️ Analisi per Squadra")
     
     if os.path.exists(FILE_DB_PRONOSTICI):
-        df_cron = pd.read_csv(FILE_DB_PRONOSTICI)
-        
-        # Estrazione nomi squadre puliti
-        tutte_squadre = set()
-        for partita in df_cron['Partita'].dropna():
-            if ' vs ' in str(partita):
-                teams = str(partita).split(' vs ')
-                tutte_squadre.update([t.strip() for t in teams])
-        
-        lista_pulita = sorted(list(tutte_squadre))
-        scelta_sq = st.selectbox("Performance per singola squadra:", lista_pulita)
-        
-        if st.button("Vedi storico squadra"):
-            df_sq = df_cron[df_cron['Partita'].str.contains(scelta_sq, case=False, na=False)].copy()
+        try:
+            df_cron = pd.read_csv(FILE_DB_PRONOSTICI)
             
-            if not df_sq.empty:
-                st.write(f"Storico per **{scelta_sq}**: {len(df_sq)} partite")
+            # Estraiamo la lista pulita di tutte le squadre presenti nel DB
+            tutte_squadre = set()
+            for partita in df_cron['Partita'].dropna():
+                if ' vs ' in str(partita):
+                    teams = str(partita).split(' vs ')
+                    tutte_squadre.update([t.strip() for t in teams])
+            
+            lista_squadre = sorted(list(tutte_squadre))
+            
+            if lista_squadre:
+                scelta_sq = st.selectbox("Seleziona la Squadra:", lista_squadre)
                 
-                # Definiamo le colonne che vogliamo vedere
-                cols_to_show = [
-                    'Data', 'Partita', '1X2', 'U/O 2.5', 'G/NG', 'SGF', 
-                    'Top 6 RE Finali', 'Top 3 RE 1°T', 'Top 3 HT/FT', 'Risultato_Reale'
-                ]
-                
-                # Filtriamo solo quelle esistenti nel DB per sicurezza
-                cols_presenti = [c for c in cols_to_show if c in df_sq.columns]
-                
-                # Applichiamo lo stile al dataframe filtrato
-                st.dataframe(
-                    df_sq[cols_presenti].style.apply(highlight_winners, axis=1), 
-                    use_container_width=True,
-                    hide_index=True
-                )
+                if st.button(f"Analizza Report {scelta_sq}"):
+                    analizza_performance_squadra_gold(scelta_sq)
             else:
-                st.warning("Nessuna partita trovata.")
+                st.info("Nessuna squadra trovata nel database.")
+                
+        except Exception as e:
+            st.error("Errore lettura database per elenco squadre.")
+    else:
+        st.warning("Database non ancora creato.")
