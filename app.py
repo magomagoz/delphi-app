@@ -174,7 +174,7 @@ def calcola_trend_forma(df_giocate, squadra):
 # --- 4. FUNZIONI AGGIORNAMENTO API ---
 def aggiorna_database_calcio():
     headers = {'X-Auth-Token': API_TOKEN}
-    competitions = ['SA', 'PL', 'ELC', 'PD', 'BL1', 'FL1', 'CL', 'PPL', 'DED', 'EC', 'WC', 'BSA'] 
+    competitions = ['SA', 'PL', 'ELC', 'PD', 'BL1', 'FL1', 'CL', 'PPL', 'DED', 'BSA', 'EC', 'WC'] 
     
     rows = []
     progress_bar = st.progress(0)
@@ -838,30 +838,30 @@ with tab1:
             df_calcio = pd.read_csv(FILE_DB_CALCIO)
             casa_nome, fuori_nome = d['casa_nome'], d['fuori_nome']
 
-
-            # Supponiamo che 'd_partita' sia il dizionario che contiene le info del match dalle API
             st.divider()
-
-            # Creiamo tre colonne: stemma casa, testo partita, stemma ospite
-            col_logo1, col_match, col_logo2 = st.columns([1, 4, 1])
-
-            with col_logo1:
-                # URL stemma casa (solitamente 'crest' nel JSON delle API)
-                url_home = partita.get('homeTeam', {}).get('crest')
-                if url_home:
-                    st.image(url_home, width=60)
-
-            with col_match:
-                st.header(f"⚽ {squadra_casa} vs {squadra_ospite}")
-                st.caption(f"📅 {data_match} | 🏆 {campionato_selezionato}")
-
-            with col_logo2:
-                # URL stemma ospite
-                url_away = partita.get('awayTeam', {}).get('crest')
-                if url_away:
-                    st.image(url_away, width=60)
-
-
+            
+            # Creiamo una riga con 5 colonne: logo, nome, "vs", nome, logo
+            # Le proporzioni [0.5, 2, 0.5, 2, 0.5] tengono i loghi piccoli e i nomi larghi
+            c1, c2, c3, c4, c5 = st.columns([0.5, 2, 0.5, 2, 0.5])
+            
+            # Recuperiamo i link (assumendo che 'match_selezionato' sia l'oggetto della partita scelto)
+            logo_casa = match_selezionato.get('homeTeam', {}).get('crest')
+            logo_ospite = match_selezionato.get('awayTeam', {}).get('crest')
+            
+            with c1:
+                if logo_casa: st.image(logo_casa, width=40)
+            with c2:
+                st.subheader(squadra_casa)
+            with c3:
+                st.subheader("vs")
+            with c4:
+                st.subheader(squadra_ospite)
+            with c5:
+                if logo_ospite: st.image(logo_ospite, width=40)
+            
+            st.caption(f"📅 {data_match} | 🏆 {campionato_selezionato}")
+            
+            
 
             
             #st.header(f"🏟️ **{d['Partita']}**")
@@ -969,7 +969,7 @@ with tab1:
                     st.rerun()
             
 with tab2:
-    st.info(f"⏰  Aggiorna Serie A, Premier League, Championship, Liga, Bundesliga, Ligue 1,Primeira Liga, Eredivisie, Brasileirao Betano, UEFA e FIFA")
+    st.info(f"⏰  Aggiorna Serie A, Premier League, Championship, Liga, Bundesliga, Ligue 1, Primeira Liga, Eredivisie, Brasileirao Betano, UEFA e FIFA")
 
     if st.button("🌐 Aggiorna Database"):
         with st.spinner("Aggiornamento database in corso..."):
@@ -999,7 +999,7 @@ with tab3:
         col_down, col_msg = st.columns([1, 2])
         with col_down:
             st.download_button(
-                label="📥 Scarica Backup",
+                label="📥 Scarica Pronostici",
                 data=csv_data,
                 file_name=f"pronostici_backup_{date.today()}.csv",
                 mime='text/csv',
@@ -1069,7 +1069,7 @@ with tab4:
     
     # --- SEZIONE 1: ANALISI CAMPIONATO ---
     st.subheader("🌍 Analisi per Campionato")
-    opzioni_camp = ['TUTTI', 'Serie A', 'Premier League', 'Championship', 'La Liga', 'Bundesliga', 'Ligue 1', 'Primeira Liga', 'Eredivisie', 'Champions League', 'Europa League', 'Brasileirao Betano']
+    opzioni_camp = ['TUTTI', 'Serie A', 'Premier League', 'Championship', 'La Liga', 'Bundesliga', 'Ligue 1', 'Primeira Liga', 'Eredivisie', 'Champions League', 'Nations League', 'Brasileirao Betano']
     scelta_camp = st.selectbox("Seleziona Campionato:", opzioni_camp, index=0)
     
     if st.button("Analizza Campionato", type="primary"):
