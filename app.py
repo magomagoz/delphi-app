@@ -838,36 +838,10 @@ with tab1:
             df_calcio = pd.read_csv(FILE_DB_CALCIO)
             casa_nome, fuori_nome = d['casa_nome'], d['fuori_nome']
 
+            st.header(f"🏟️ **{d['Partita']}**")
+            st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}") 
+            st.markdown(f"📅 Data: {d['Data']} ore {d['Ora']}")
             st.divider()
-            
-            # Creiamo una riga con 5 colonne: logo, nome, "vs", nome, logo
-            # Le proporzioni [0.5, 2, 0.5, 2, 0.5] tengono i loghi piccoli e i nomi larghi
-            c1, c2, c3, c4, c5 = st.columns([0.5, 2, 0.5, 2, 0.5])
-            
-            # Recuperiamo i link (assumendo che 'match_selezionato' sia l'oggetto della partita scelto)
-            logo_casa = match_selezionato.get('homeTeam', {}).get('crest')
-            logo_ospite = match_selezionato.get('awayTeam', {}).get('crest')
-            
-            with c1:
-                if logo_casa: st.image(logo_casa, width=40)
-            with c2:
-                st.subheader(squadra_casa)
-            with c3:
-                st.subheader("vs")
-            with c4:
-                st.subheader(squadra_ospite)
-            with c5:
-                if logo_ospite: st.image(logo_ospite, width=40)
-            
-            st.caption(f"📅 {data_match} | 🏆 {campionato_selezionato}")
-            
-            
-
-            
-            #st.header(f"🏟️ **{d['Partita']}**")
-            #st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}") 
-            #st.markdown(f"📅 Data: {d['Data']} ore {d['Ora']}")
-            #st.divider()
         
             if d.get('is_big_match'): st.warning("🛡️ **Filtro Big Match Attivo**: probabile partita molto tattica")
 
