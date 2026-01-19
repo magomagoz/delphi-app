@@ -15,7 +15,7 @@ LEAGUE_MAP = {
     'SA': 'Serie A', 'PL': 'Premier League', 'ELC': 'Championship',
     'PD': 'La Liga', 'BL1': 'Bundesliga', 'FL1': 'Ligue 1',
     'CL': 'UEFA Champions League', 'PPL': 'Primeira Liga', 'DED': 'Eredivisie',
-    'BSA': 'Serie A Brasile', 'EC': 'UEFA Europa League', 'WC': 'FIFA World Cup'
+    'BSA': 'Serie A Brasile', 'EC': 'UEFA Nations League', 'WC': 'FIFA World Cup'
 }
 
 # --- 1.1. BANNER ---
@@ -839,7 +839,7 @@ with tab1:
             casa_nome, fuori_nome = d['casa_nome'], d['fuori_nome']
 
 
-            # Supponiamo che 'dati_partita' sia il dizionario che contiene le info del match dalle API
+            # Supponiamo che 'd_partita' sia il dizionario che contiene le info del match dalle API
             st.divider()
 
             # Creiamo tre colonne: stemma casa, testo partita, stemma ospite
@@ -847,7 +847,7 @@ with tab1:
 
             with col_logo1:
                 # URL stemma casa (solitamente 'crest' nel JSON delle API)
-                url_home = dati_partita.get('homeTeam', {}).get('crest')
+                url_home = partita.get('homeTeam', {}).get('crest')
                 if url_home:
                     st.image(url_home, width=60)
 
@@ -857,7 +857,7 @@ with tab1:
 
             with col_logo2:
                 # URL stemma ospite
-                url_away = dati_partita.get('awayTeam', {}).get('crest')
+                url_away = partita.get('awayTeam', {}).get('crest')
                 if url_away:
                     st.image(url_away, width=60)
 
