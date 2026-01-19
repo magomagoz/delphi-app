@@ -450,7 +450,7 @@ def analizza_performance_campionato(camp_filtro):
                 continue
         
         # --- INTERFACCIA GRAFICA ---
-        st.subheader(f"📊 Report Gold: {camp_filtro}")
+        st.subheader(f"📊 Precisione modello: {camp_filtro}")
         
         # Visualizzazione a griglia (2 righe da 4 colonne)
         keys = list(stats.keys())
@@ -571,7 +571,7 @@ def analizza_performance_squadra_gold(squadra_target):
                                 st.markdown("➖") # Spaziatura
         
         # Grafico
-        st.write("#### 📈 Precisione per Mercato")
+        st.write("#### 📈 Precisione per Lega")
         chart_data = pd.DataFrame({
             'Mercato': stats.keys(),
             'Win Rate': [v[0]/v[1] if v[1]>0 else 0 for v in stats.values()]
@@ -838,10 +838,36 @@ with tab1:
             df_calcio = pd.read_csv(FILE_DB_CALCIO)
             casa_nome, fuori_nome = d['casa_nome'], d['fuori_nome']
 
-            st.header(f"🏟️ **{d['Partita']}**")
-            st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}") 
-            st.markdown(f"📅 Data: {d['Data']} ore {d['Ora']}")
+
+            # Supponiamo che 'dati_partita' sia il dizionario che contiene le info del match dalle API
             st.divider()
+
+            # Creiamo tre colonne: stemma casa, testo partita, stemma ospite
+            col_logo1, col_match, col_logo2 = st.columns([1, 4, 1])
+
+            with col_logo1:
+                # URL stemma casa (solitamente 'crest' nel JSON delle API)
+                url_home = dati_partita.get('homeTeam', {}).get('crest')
+                if url_home:
+                    st.image(url_home, width=60)
+
+            with col_match:
+                st.header(f"⚽ {squadra_casa} vs {squadra_ospite}")
+                st.caption(f"📅 {data_match} | 🏆 {campionato_selezionato}")
+
+            with col_logo2:
+                # URL stemma ospite
+                url_away = dati_partita.get('awayTeam', {}).get('crest')
+                if url_away:
+                    st.image(url_away, width=60)
+
+
+
+            
+            #st.header(f"🏟️ **{d['Partita']}**")
+            #st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}") 
+            #st.markdown(f"📅 Data: {d['Data']} ore {d['Ora']}")
+            #st.divider()
         
             if d.get('is_big_match'): st.warning("🛡️ **Filtro Big Match Attivo**: probabile partita molto tattica")
 
