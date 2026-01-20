@@ -500,7 +500,7 @@ def analizza_performance_squadra_gold(squadra_target):
             return
 
         match_contati = len(df_v)
-        st.markdown(f"### 📊 Report Gold: **{squadra_target}** ({match_contati} match)")
+        st.markdown(f"### 📊 Report: **{squadra_target}** ({match_contati} match)")
         
         # Dizionario statistiche (Identico a quello delle Leghe)
         stats = {k: [0, 0] for k in ['1X2', 'U/O 2.5', 'G/NG', 'SGF', 'SGC (Casa)', 'SGO (Ospite)', 'RE Finali', 'RE 1°T', 'HT/FT']}
@@ -945,7 +945,7 @@ with tab1:
 with tab2:
     st.info(f"⏰  Aggiorna Serie A, Premier League, Championship, Liga, Bundesliga, Ligue 1, Primeira Liga, Eredivisie, Brasileirao Betano, UEFA e FIFA")
 
-    if st.button("🌐 Aggiorna Database"):
+    if st.button("🌐 Aggiorna tutti i Dati"):
         with st.spinner("Aggiornamento database in corso..."):
             aggiorna_database_calcio()
 
@@ -973,7 +973,7 @@ with tab3:
         col_down, col_msg = st.columns([1, 2])
         with col_down:
             st.download_button(
-                label="📥 Scarica Pronostici",
+                label="📥 Salva Pronostici",
                 data=csv_data,
                 file_name=f"pronostici_backup_{date.today()}.csv",
                 mime='text/csv',
@@ -994,7 +994,7 @@ with tab3:
         with col_agg:
             st.write("")
             st.write("")
-            if st.button("🔄 Aggiorna", use_container_width=True):
+            if st.button("🔄 Verifica i pronostici", use_container_width=True):
                 with st.spinner("Aggiornamento..."):
                     aggiorna_risultati_pronostici()
                     st.rerun()
@@ -1007,7 +1007,7 @@ with tab3:
 
     # 3. AREA DI RIPRISTINO (FUNZIONA CON ICLOUD)
     st.divider()
-    st.subheader("☁️ Ripristina / Carica Backup")
+    st.subheader("☁️ Ripristina Backup")
     
     with st.expander("Carica un file CSV precedente (da iCloud o Locale)"):
         uploaded_file = st.file_uploader("Trascina qui il file o clicca per cercare", type=["csv"])
@@ -1020,9 +1020,9 @@ with tab3:
                 # Controllo base validità
                 if 'Partita' in df_uploaded.columns and '1X2' in df_uploaded.columns:
                     # Pulsante conferma
-                    if st.button("✅ Conferma e Sovrascrivi Cronologia attuale"):
+                    if st.button("🔥 Conferma e Sovrascrivi Cronologia attuale"):
                         df_uploaded.to_csv(FILE_DB_PRONOSTICI, index=False)
-                        st.success("Database ripristinato con successo!")
+                        st.success("✅ Database ripristinato con successo!")
                         time.sleep(1.5)
                         st.rerun()
                 else:
@@ -1070,7 +1070,7 @@ with tab4:
             if lista_squadre:
                 scelta_sq = st.selectbox("Seleziona la Squadra:", lista_squadre)
                 
-                if st.button(f"Analizza Report {scelta_sq}"):
+                if st.button(f"Analizza precisione {scelta_sq}"):
                     analizza_performance_squadra_gold(scelta_sq)
             else:
                 st.info("Nessuna squadra trovata nel database.")
