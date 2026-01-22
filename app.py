@@ -199,6 +199,7 @@ def calcola_trend_forma(df_giocate, squadra):
     return "".join(stringa_trend), moltiplicatore
 
 # --- 4. FUNZIONI AGGIORNAMENTO API ---
+# --- SOSTITUISCI INTERA FUNZIONE aggiorna_database_calcio ---
 def aggiorna_database_calcio():
     headers = {'X-Auth-Token': API_TOKEN}
     competitions = ['SA', 'PL', 'ELC', 'PD', 'BL1', 'FL1', 'CL', 'PPL', 'DED', 'BSA', 'EC', 'WC'] 
@@ -217,23 +218,28 @@ def aggiorna_database_calcio():
                 for m in matches:
                     home = m['homeTeam']['shortName'] or m['homeTeam']['name']
                     away = m['awayTeam']['shortName'] or m['awayTeam']['name']
+                    # --- MODIFICA: RECUPERO CREST (LOGHI) ---
+                    home_crest = m['homeTeam'].get('crest', '')
+                    away_crest = m['awayTeam'].get('crest', '')
+                    
                     ref = m['referees'][0]['name'] if m.get('referees') else 'N.D.'
                     rows.append([
                         comp, m['utcDate'], home, away, m['status'], 
                         m['score']['fullTime']['home'], m['score']['fullTime']['away'], 
                         m['score']['halfTime']['home'], m['score']['halfTime']['away'], 
-                        ref, m['id']
+                        ref, m['id'], home_crest, away_crest # Aggiunti qui
                     ])
             time.sleep(1) 
             progress_bar.progress((i + 1) / len(competitions))
 
+        # --- MODIFICA: AGGIUNTE COLONNE 'HomeCrest' E 'AwayCrest' ---
         df_new = pd.DataFrame(rows, columns=[
             'League', 'Date', 'HomeTeam', 'AwayTeam', 'Status', 
-            'FTHG', 'FTAG', 'HTHG', 'HTAG', 'Referee', 'ID'
+            'FTHG', 'FTAG', 'HTHG', 'HTAG', 'Referee', 'ID', 'HomeCrest', 'AwayCrest'
         ])
         df_new.to_csv(FILE_DB_CALCIO, index=False)
         status_text.empty()
-        st.success("✅ Database Calcio aggiornato con successo!")
+        st.success("✅ Database Calcio aggiornato con successo! Loghi acquisiti.")
     except Exception as e:
         st.error(f"Errore aggiornamento dati: {e}")
 
@@ -739,6 +745,11 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
         items = sorted(lista, key=lambda x: x['p'], reverse=True)[:top_n]
         return ", ".join([f"{v['s']} (Q: {stima_quota(v['p']):.2f})" for v in items])
 
+    # --- RECUPERO LOGHI DAL DATAFRAME ---
+    # m è la riga del match trovata nel database
+    logo_casa = m.get('HomeCrest') if 'HomeCrest' in m else None
+    logo_fuori = m.get('AwayCrest') if 'AwayCrest' in m else None
+    
     # --- RETURN FINALE COMPLETO ---
     return {
         "Data": dt_event_ita.strftime("%d/%m/%Y"), 
@@ -763,8 +774,10 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
         "Trend_Casa": trend_h, "Trend_Fuori": trend_a,
         "Forma_H": molt_forma_h, "Forma_A": molt_forma_a,
         "is_big_match": is_big_match # Aggiunto per evitare errori nel frontend
+        "logo_casa": logo_casa,  # <--- NUOVO
+        "logo_fuori": logo_fuori # <--- NUOVO
     }
-
+    
 def highlight_winners(row):
     # Creiamo una lista di stili vuoti lunga quanto la riga
     colors = [''] * len(row)
@@ -860,11 +873,30 @@ with tab1:
             risultati = esegui_analisi(sq, pen_h, pen_a, is_big_match)
             st.session_state['pronostico_corrente'] = risultati
             st.rerun()
-        
+
+
         if st.session_state.get('pronostico_corrente'):
             d = st.session_state['pronostico_corrente']
             df_calcio = pd.read_csv(FILE_DB_CALCIO)
             casa_nome, fuori_nome = d['casa_nome'], d['fuori_nome']
+            
+            # --- HEADER PROFESSIONALE CON LOGHI ---
+            st.divider()
+            col_l1, col_txt, col_l2 = st.columns([1, 4, 1])
+            
+            with col_l1:
+                # Mostra logo casa se disponibile
+                if d.get('logo_casa') and str(d['logo_casa']) != 'nan':
+                    st.image(d['logo_casa'], width=80)
+            
+            with col_txt:
+                st.markdown(f"<h1 style='text-align: center;'>{d['Partita']}</h1>", unsafe_allow_html=True)
+                st.markdown(f"<p style='text-align: center; font-size: 20px;'>🏆 {d.get('League', 'N.D.')} | 📅 {d['Data']} ore {d['Ora']}</p>", unsafe_allow_html=True)
+            
+            with col_l2:
+                # Mostra logo fuori se disponibile
+                if d.get('logo_fuori') and str(d['logo_fuori']) != 'nan':
+                    st.image(d['logo_fuori'], width=80)
 
             st.header(f"🏟️ **{d['Partita']}**")
             st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}")
