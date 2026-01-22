@@ -996,7 +996,7 @@ with tab1:
         # Visualizzazione Metriche principali
         col1, col2, col3 = st.columns(3)
         col1.metric("Segno 1X2", d['1X2'], f"{d['p1']:.0%}" if d['1X2']=='1' else "")
-        col2.metric("Under/Over", d['U/O 2.5'], f"{p['pu']:.0%}" if "UNDER" in d['U/O 2.5'] else "")
+        col2.metric("Under/Over", d['U/O 2.5'], f"{d['pu']:.0%}" if "UNDER" in d['U/O 2.5'] else "")
         col3.metric("Goal/NoGoal", d['G/NG'], f"{d['pg']:.0%}" if d['G/NG']=='GOL' else "")
 
         # Dettaglio Esatti
