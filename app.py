@@ -881,7 +881,7 @@ with tab1:
 
             # Creiamo tre colonne. 
             # Regoliamo i pesi [1, 2, 1] per dare più spazio al titolo centrale
-            col1, col2, col3 = st.columns([1, 3, 1])
+            col1, col2, col3 = st.columns([1, 0.5, 1])
             
             with col1:
                 # Stemma Casa
