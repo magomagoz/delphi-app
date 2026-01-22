@@ -878,21 +878,28 @@ with tab1:
             d = st.session_state['pronostico_corrente']
             df_calcio = pd.read_csv(FILE_DB_CALCIO)
             casa_nome, fuori_nome = d['casa_nome'], d['fuori_nome']
+            
+            # Creiamo due colonne: la prima occupa l'80% dello spazio, la seconda il 20%
+            col_logo_casa, col_logo_fuori, col_vuota = st.columns([1, 1, 5])
+            with col_logo_casa:
+                st.image(d['logo_casa'])
+            with col_logo_fuori:
+                st.image(d['logo_casa'])
 
             # Creiamo tre colonne. 
             # Regoliamo i pesi [1, 2, 1] per dare più spazio al titolo centrale
-            col1, col2, col3 = st.columns([1, 2, 1])
+            #col1, col2, col3 = st.columns([1, 2, 1])
             
-            with col1:
+            #with col1:
                 # Stemma Casa
-                st.image(d['logo_casa'], width=100)
+                #st.image(d['logo_casa'], width=100)
             
-            with col2:
-                st.header(f"**{d['Partita']}**")
+            #with col2:
+                #st.header(f"**{d['Partita']}**")
                 
-            with col3:
+            #with col3:
                 # Stemma Trasferta
-                st.image(d['logo_fuori'], width=100)
+                #st.image(d['logo_fuori'], width=100)
             
             #st.image(d['logo_casa']
             #st.header(f"🏟️ **{d['Partita']}**")
