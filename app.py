@@ -885,14 +885,14 @@ with tab1:
             
             with col1:
                 # Stemma Casa
-                st.image(d['logo_casa'], use_container_width=True)
+                st.image(d['logo_casa'], width=80)
             
             with col2:
-                st.header(f"**{d['Partita']}**")
+                st.header(f"**{d['Partita']}**, use_container_width=True")
                 
             with col3:
                 # Stemma Trasferta
-                st.image(d['logo_fuori'], use_container_width=True)
+                st.image(d['logo_fuori'], width=80)
             
             #st.image(d['logo_casa']
             #st.header(f"🏟️ **{d['Partita']}**")
