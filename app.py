@@ -878,11 +878,24 @@ with tab1:
             d = st.session_state['pronostico_corrente']
             df_calcio = pd.read_csv(FILE_DB_CALCIO)
             casa_nome, fuori_nome = d['casa_nome'], d['fuori_nome']
-            
 
-            st.image(d['logo_casa'], width=80)
-            st.header(f"🏟️ **{d['Partita']}**")
-            st.image(d['logo_fuori'], width=80)
+            # HTML e CSS per allineamento compatto
+            st.markdown(
+                f"""
+                <div style="display: flex; align-items: center; justify-content: center; gap: 15px;">
+                    <img src="{logo_casa}" style="width: 60px; height: auto;">
+                    <h1 style="margin: 0; font-size: 2.5rem; font-weight: bold; white-space: nowrap;">
+                        {Partita}
+                    </h1>
+                    <img src="{logo_fuori}" style="width: 60px; height: auto;">
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+            #st.image(d['logo_casa'], width=80)
+            #st.header(f"🏟️ **{d['Partita']}**")
+            #st.image(d['logo_fuori'], width=80)
 
             st.divider()
             st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}")
