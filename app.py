@@ -884,7 +884,7 @@ with tab1:
             st.header(f"🏟️ **{d['Partita']}**")
             st.image(d['logo_fuori'], width=80)
 
-            st.divider(" ")
+            st.divider()
             st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}")
             st.subheader(f"📅 Data: {d['Data']} ore {d['Ora']}")
         
