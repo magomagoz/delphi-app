@@ -882,7 +882,7 @@ with tab1:
             # Creiamo due colonne: la prima occupa l'80% dello spazio, la seconda il 20%
             col_logo_casa, col_logo_fuori, col_vuota = st.columns([1, 1, 4])
             with col_logo_casa:
-                st.image(d['logo_casa'] -)
+                st.image(d['logo_casa'])
             with col_logo_fuori:
                 st.image(d['logo_fuori'])
 
