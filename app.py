@@ -881,7 +881,7 @@ with tab1:
 
             # Creazione di 3 colonne con proporzioni diverse per centrare bene il testo
             # [1, 3, 1] significa che la colonna centrale è 3 volte più grande delle laterali
-            col1, col2, col3 = st.columns([1, 3, 1])
+            col1, col2, col3 = st.columns([1, 1, 1])
             
             with col1:
                 # Logo Squadra Casa
