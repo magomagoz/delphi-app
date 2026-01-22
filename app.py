@@ -831,7 +831,7 @@ with tab1:
                 st.session_state['dati_acquisiti'] = True
                 st.rerun()
             else:
-                st.error("Squadra non trovata.")
+                st.error("Squadra non trovata nei prossimi match.")
 
     # Il controllo 'if' previene il KeyError
     if st.session_state.get('dati_acquisiti'):
@@ -859,61 +859,54 @@ with tab1:
             risultati = esegui_analisi(sq, pen_h, pen_a, is_big_match)
             st.session_state['pronostico_corrente'] = risultati
             st.rerun()
-        
-        if st.session_state.get('pronostico_corrente'):
-            d = st.session_state['pronostico_corrente']
-            df_calcio = pd.read_csv(FILE_DB_CALCIO)
-            casa_nome, fuori_nome = d['casa_nome'], d['fuori_nome']
-
-            st.header(f"🏟️ **{d['Partita']}**")
-            st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}") 
-            st.markdown(f"📅 Data: {d['Data']} ore {d['Ora']}")
-
-            if st.button("🎯 Genera Pronostico", type="primary", use_container_width=True):
-                risultati = esegui_analisi(sq, pen_h, pen_a, is_big_match)
-                st.session_state['pronostico_corrente'] = risultati
-                st.rerun()
-        
-            if st.session_state.get('pronostico_corrente'):
-                d = st.session_state['pronostico_corrente']
-            
-            # --- VISUALIZZAZIONE HEADER (Come hai già fatto) ---
-            st.header(f"🏟️ **{d['Partita']}**")
-            st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}") 
-            st.markdown(f"📅 Data: {d['Data']} ore {d['Ora']}")
-            st.divider()
-
-            # --- GENERAZIONE PDF PER STAMPA ---
-            try:
-                # Prepariamo i dati per il PDF pescando i valori dal dizionario 'd'
-                pdf_output = genera_pdf_pronostico(
-                    partita=d['Partita'],
-                    lega=d.get('League', 'N.D.'),
-                    data=f"{d['Data']} {d['Ora']}",
-                    consiglio=d.get('1X2', 'N.D.'),  # O il valore che preferisci come "consiglio"
-                    quote=f"1: {d.get('Quota_1', '-')} | X: {d.get('Quota_X', '-')} | 2: {d.get('Quota_2', '-')}"
-                )
-
-                # Pulsante di download posizionato sotto l'header o a fine analisi
-                st.download_button(
-                    label="🖨️ Stampa Pronostico (PDF)",
-                    data=pdf_output,
-                    file_name=f"Delphi_{d['Partita'].replace(' ', '_')}.pdf",
-                    mime="application/pdf",
-                    use_container_width=True
-                )
-            except Exception as e:
-                st.error(f"Errore nella creazione del PDF: {e}")
-            
-            st.divider()
-
-        if st.button("🎯 Genera Pronostico", type="primary", use_container_width=True):
-            risultati = esegui_analisi(sq, pen_h, pen_a, is_big_match)
-            st.session_state['pronostico_corrente'] = risultati
-            st.rerun()
                 
         if st.session_state.get('pronostico_corrente'):
             d = st.session_state['pronostico_corrente']
+
+        # --- BOX DOWNLOAD PDF ---
+        try:
+            # Creazione stringa riassuntiva per le quote nel PDF
+            quote_str = f"1: {stima_quota(p['p1'])} | X: {stima_quota(p['px'])} | 2: {stima_quota(p['p2'])}"
+            
+            pdf_bytes = genera_pdf_pronostico(
+                partita=p['Partita'],
+                lega=p['League'],
+                data=f"{p['Data']} {p['Ora']}",
+                consiglio=f"{p['1X2']} + {p['U/O 2.5']}",
+                quote=quote_str
+            )
+            
+            st.download_button(
+                label="📥 Scarica Report PDF per Stampa",
+                data=pdf_bytes,
+                file_name=f"Delphi_{p['Partita'].replace(' ', '_')}.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+        except Exception as e:
+            st.error(f"Errore generazione PDF: {e}")
+
+        st.divider()
+
+        # Visualizzazione Metriche principali
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Segno 1X2", p['1X2'], f"{p['p1']:.0%}" if p['1X2']=='1' else "")
+        col2.metric("Under/Over", p['U/O 2.5'], f"{p['pu']:.0%}" if "UNDER" in p['U/O 2.5'] else "")
+        col3.metric("Goal/NoGoal", p['G/NG'], f"{p['pg']:.0%}" if p['G/NG']=='GOL' else "")
+
+        # Dettaglio Esatti
+        st.write("### 🎯 Risultati Esatti Consigliati")
+        st.info(p['Top 6 RE Finali'])
+        
+        if st.button("💾 Salva in Cronologia locale"):
+            if salva_completo_in_locale(p):
+                st.toast("Salvato!", icon="✅")
+            
+
+
+
+
+
             
             # --- VISUALIZZAZIONE HEADER (Come hai già fatto) ---
             st.header(f"🏟️ **{d['Partita']}**")
