@@ -880,20 +880,8 @@ with tab1:
             casa_nome, fuori_nome = d['casa_nome'], d['fuori_nome']
             
 
-            # --- HEADER PROFESSIONALE CON LOGHI ---
-            st.divider()
-            col_l1, col_l2 = st.columns([1, 1])
-            
-            with col_l1:
-                # Mostra logo casa se disponibile
-                if d.get('logo_casa') and str(d['logo_casa']) != 'nan':
-                    st.image(d['logo_casa'], width=80)
-            
-            with col_l2:
-                # Mostra logo fuori se disponibile
-                if d.get('logo_fuori') and str(d['logo_fuori']) != 'nan':
-                    st.image(d['logo_fuori'], width=80)
-
+            st.image(d['logo_casa'], width=80), st.image(d['logo_fuori'], width=80)
+    
             st.header(f"🏟️ **{d['Partita']}**")
             st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}")
             st.subheader(f"📅 Data: {d['Data']} ore {d['Ora']}")
