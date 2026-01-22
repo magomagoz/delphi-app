@@ -887,18 +887,18 @@ with tab1:
             with col_l1:
                 # Mostra logo casa se disponibile
                 if d.get('logo_casa') and str(d['logo_casa']) != 'nan':
-                    st.image(d['logo_casa'], width=80)
+                    st.image(d['logo_casa'], width=40)
             
             with col_txt:
-                st.markdown(f"<h1 style='text-align: center;'>{d['Partita']}</h1>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center; font-size: 20px;'>🏆 {d.get('League', 'N.D.')} | 📅 {d['Data']} ore {d['Ora']}</p>", unsafe_allow_html=True)
+                st.subheader(f"<h1 style='text-align: center;'>{d['Partita']}</h1>", unsafe_allow_html=True)
+                #st.(f"<p style='text-align: center; font-size: 20px;'>🏆 {d.get('League', 'N.D.')} | 📅 {d['Data']} ore {d['Ora']}</p>", unsafe_allow_html=True)
             
             with col_l2:
                 # Mostra logo fuori se disponibile
                 if d.get('logo_fuori') and str(d['logo_fuori']) != 'nan':
-                    st.image(d['logo_fuori'], width=80)
+                    st.image(d['logo_fuori'], width=40)
 
-            st.header(f"🏟️ **{d['Partita']}**")
+            #st.header(f"🏟️ **{d['Partita']}**")
             st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}")
             st.subheader(f"📅 Data: {d['Data']} ore {d['Ora']}")
         
