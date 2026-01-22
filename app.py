@@ -890,9 +890,9 @@ with tab1:
                     st.image(d['logo_casa'], width=40)
             
             with col_txt:
+                st.header(f"**{d['Partita']}**")
                 #st.markdown(f"<h1 style='text-align: center;'>{d['Partita']}</h1>", unsafe_allow_html=True)
                 #st.(f"<p style='text-align: center; font-size: 20px;'>🏆 {d.get('League', 'N.D.')} | 📅 {d['Data']} ore {d['Ora']}</p>", unsafe_allow_html=True)
-                st.(f"<p style='text-align: center; font-size: 20px;'>{d['Partita']}</p>", unsafe_allow_html=True)
             
             with col_l2:
                 # Mostra logo fuori se disponibile
