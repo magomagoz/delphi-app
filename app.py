@@ -882,27 +882,21 @@ with tab1:
 
             # --- HEADER PROFESSIONALE CON LOGHI ---
             st.divider()
-            col_l1, col_txt, col_l2 = st.columns([1, 4, 1])
+            col_l1, col_l2 = st.columns([1, 1])
             
             with col_l1:
                 # Mostra logo casa se disponibile
                 if d.get('logo_casa') and str(d['logo_casa']) != 'nan':
                     st.image(d['logo_casa'], width=80)
             
-            with col_txt:
-                st.markdown(f"<h1 style='text-align: center;'>{d['Partita']}</h1>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: center; font-size: 20px;'>🏆 {d.get('League', 'N.D.')} | 📅 {d['Data']} ore {d['Ora']}</p>", unsafe_allow_html=True)
-            
             with col_l2:
                 # Mostra logo fuori se disponibile
                 if d.get('logo_fuori') and str(d['logo_fuori']) != 'nan':
                     st.image(d['logo_fuori'], width=80)
 
-            # ... (prosegue con il tasto Genera PDF e il resto dell'analisi)
-          
-            #st.header(f"🏟️ **{d['Partita']}**")
-            #st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}")
-            #st.subheader(f"📅 Data: {d['Data']} ore {d['Ora']}")
+            st.header(f"🏟️ **{d['Partita']}**")
+            st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}")
+            st.subheader(f"📅 Data: {d['Data']} ore {d['Ora']}")
         
             if d.get('is_big_match'): st.warning("🛡️ **Filtro Big Match Attivo**: probabile partita molto tattica")
 
