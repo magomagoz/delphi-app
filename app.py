@@ -880,9 +880,11 @@ with tab1:
             casa_nome, fuori_nome = d['casa_nome'], d['fuori_nome']
             
 
-            st.image(d['logo_casa'], width=80), st.image(d['logo_fuori'], width=80)
-    
+            st.image(d['logo_casa'], width=80)
             st.header(f"🏟️ **{d['Partita']}**")
+            st.image(d['logo_fuori'], width=80)
+
+            st.divider(" ")
             st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}")
             st.subheader(f"📅 Data: {d['Data']} ore {d['Ora']}")
         
