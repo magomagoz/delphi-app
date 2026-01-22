@@ -880,13 +880,12 @@ with tab1:
             casa_nome, fuori_nome = d['casa_nome'], d['fuori_nome']
             
             # Creiamo due colonne: la prima occupa l'80% dello spazio, la seconda il 20%
-            col_logo_casa, col_vuota = st.columns([2, 4])
+            col_logo_casa, col_fuori, col_vuota = st.columns([1, 1, 4])
             with col_logo_casa:
                 st.image(d['logo_casa'], width = 120)
-                st.image(d['logo_fuori'], width = 120)
 
-            #with col_logo_fuori:
-                #st.image(d['logo_fuori'], width = 120)
+            with col_logo_fuori:
+                st.image(d['logo_fuori'], width = 120)
 
             # Creiamo tre colonne. 
             # Regoliamo i pesi [1, 2, 1] per dare più spazio al titolo centrale
