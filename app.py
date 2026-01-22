@@ -842,7 +842,43 @@ with tab1:
             st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}") 
             st.markdown(f"📅 Data: {d['Data']} ore {d['Ora']}")
             st.divider()
+
+        if st.button("🎯 Genera Pronostico", type="primary", use_container_width=True):
+            risultati = esegui_analisi(sq, pen_h, pen_a, is_big_match)
+            st.session_state['pronostico_corrente'] = risultati
+            st.rerun()
         
+        if st.session_state.get('pronostico_corrente'):
+            d = st.session_state['pronostico_corrente']
+            
+            # --- VISUALIZZAZIONE HEADER (Come hai già fatto) ---
+            st.header(f"🏟️ **{d['Partita']}**")
+            st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}") 
+            st.markdown(f"📅 Data: {d['Data']} ore {d['Ora']}")
+            st.divider()
+
+            # --- GENERAZIONE PDF PER STAMPA ---
+            try:
+                # Prepariamo i dati per il PDF pescando i valori dal dizionario 'd'
+                pdf_output = genera_pdf_pronostico(
+                    partita=d['Partita'],
+                    lega=d.get('League', 'N.D.'),
+                    data=f"{d['Data']} {d['Ora']}",
+                    consiglio=d.get('1X2', 'N.D.'),  # O il valore che preferisci come "consiglio"
+                    quote=f"1: {d.get('Quota_1', '-')} | X: {d.get('Quota_X', '-')} | 2: {d.get('Quota_2', '-')}"
+                )
+
+                # Pulsante di download posizionato sotto l'header o a fine analisi
+                st.download_button(
+                    label="🖨️ Stampa Pronostico (PDF)",
+                    data=pdf_output,
+                    file_name=f"Delphi_{d['Partita'].replace(' ', '_')}.pdf",
+                    mime="application/pdf",
+                    use_container_width=True
+                )
+            except Exception as e:
+                st.error(f"Errore nella creazione del PDF: {e}")
+            
             if d.get('is_big_match'): st.warning("🛡️ **Filtro Big Match Attivo**: probabile partita molto tattica")
 
             c_trend1, c_trend2 = st.columns(2)
