@@ -863,51 +863,6 @@ with tab1:
         if st.session_state.get('pronostico_corrente'):
             d = st.session_state['pronostico_corrente']
 
-        # --- BOX DOWNLOAD PDF ---
-        try:
-            # Creazione stringa riassuntiva per le quote nel PDF
-            quote_str = f"1: {stima_quota(p['p1'])} | X: {stima_quota(p['px'])} | 2: {stima_quota(p['p2'])}"
-            
-            pdf_bytes = genera_pdf_pronostico(
-                partita=p['Partita'],
-                lega=p['League'],
-                data=f"{p['Data']} {p['Ora']}",
-                consiglio=f"{p['1X2']} + {p['U/O 2.5']}",
-                quote=quote_str
-            )
-            
-            st.download_button(
-                label="📥 Scarica Report PDF per Stampa",
-                data=pdf_bytes,
-                file_name=f"Delphi_{p['Partita'].replace(' ', '_')}.pdf",
-                mime="application/pdf",
-                use_container_width=True
-            )
-        except Exception as e:
-            st.error(f"Errore generazione PDF: {e}")
-
-        st.divider()
-
-        # Visualizzazione Metriche principali
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Segno 1X2", p['1X2'], f"{p['p1']:.0%}" if p['1X2']=='1' else "")
-        col2.metric("Under/Over", p['U/O 2.5'], f"{p['pu']:.0%}" if "UNDER" in p['U/O 2.5'] else "")
-        col3.metric("Goal/NoGoal", p['G/NG'], f"{p['pg']:.0%}" if p['G/NG']=='GOL' else "")
-
-        # Dettaglio Esatti
-        st.write("### 🎯 Risultati Esatti Consigliati")
-        st.info(p['Top 6 RE Finali'])
-        
-        if st.button("💾 Salva in Cronologia locale"):
-            if salva_completo_in_locale(p):
-                st.toast("Salvato!", icon="✅")
-            
-
-
-
-
-
-            
             # --- VISUALIZZAZIONE HEADER (Come hai già fatto) ---
             st.header(f"🏟️ **{d['Partita']}**")
             st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}") 
@@ -1012,6 +967,46 @@ with tab1:
                     st.toast("Salvato con successo!", icon="✅")
                     time.sleep(2)
                     st.rerun()
+
+
+        # --- BOX DOWNLOAD PDF ---
+        try:
+            # Creazione stringa riassuntiva per le quote nel PDF
+            quote_str = f"1: {stima_quota(p['p1'])} | X: {stima_quota(p['px'])} | 2: {stima_quota(p['p2'])}"
+            
+            pdf_bytes = genera_pdf_pronostico(
+                partita=p['Partita'],
+                lega=p['League'],
+                data=f"{p['Data']} {p['Ora']}",
+                consiglio=f"{p['1X2']} + {p['U/O 2.5']}",
+                quote=quote_str
+            )
+            
+            st.download_button(
+                label="📥 Scarica Report PDF per Stampa",
+                data=pdf_bytes,
+                file_name=f"Delphi_{p['Partita'].replace(' ', '_')}.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+        except Exception as e:
+            st.error(f"Errore generazione PDF: {e}")
+
+        st.divider()
+
+        # Visualizzazione Metriche principali
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Segno 1X2", p['1X2'], f"{p['p1']:.0%}" if p['1X2']=='1' else "")
+        col2.metric("Under/Over", p['U/O 2.5'], f"{p['pu']:.0%}" if "UNDER" in p['U/O 2.5'] else "")
+        col3.metric("Goal/NoGoal", p['G/NG'], f"{p['pg']:.0%}" if p['G/NG']=='GOL' else "")
+
+        # Dettaglio Esatti
+        st.write("### 🎯 Risultati Esatti Consigliati")
+        st.info(p['Top 6 RE Finali'])
+        
+        if st.button("💾 Salva in Cronologia locale"):
+            if salva_completo_in_locale(p):
+                st.toast("Salvato!", icon="✅")
             
 with tab2:
     st.info(f"⏰  Aggiorna Serie A, Premier League, Championship, Liga, Bundesliga, Ligue 1, Primeira Liga, Eredivisie, Brasileirao Betano, UEFA e FIFA")
