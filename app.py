@@ -874,28 +874,26 @@ with tab1:
             st.session_state['pronostico_corrente'] = risultati
             st.rerun()
 
-
         if st.session_state.get('pronostico_corrente'):
             d = st.session_state['pronostico_corrente']
             df_calcio = pd.read_csv(FILE_DB_CALCIO)
             casa_nome, fuori_nome = d['casa_nome'], d['fuori_nome']
+
+            # Creazione di 3 colonne con proporzioni diverse per centrare bene il testo
+            # [1, 3, 1] significa che la colonna centrale è 3 volte più grande delle laterali
+            col1, col2, col3 = st.columns([1, 3, 1])
             
-            # --- HEADER PROFESSIONALE CON LOGHI ---
-            st.divider()
-            col_l1, col_txt, col_l2 = st.columns([1, 2, 1])
-            
-            with col_l1:
-                # Mostra logo casa se disponibile
+            with col1:
+                # Logo Squadra Casa
                 if d.get('logo_casa') and str(d['logo_casa']) != 'nan':
-                    st.image(d['logo_casa'], width=60)
+                    st.image(d['logo_casa'], width=80)
             
-            with col_txt:
+            with col2:
+                # Nome Partita centrato
                 st.header(f"**{d['Partita']}**")
-                #st.markdown(f"<h1 style='text-align: center;'>{d['Partita']}</h1>", unsafe_allow_html=True)
-                #st.(f"<p style='text-align: center; font-size: 20px;'>🏆 {d.get('League', 'N.D.')} | 📅 {d['Data']} ore {d['Ora']}</p>", unsafe_allow_html=True)
-            
-            with col_l2:
-                # Mostra logo fuori se disponibile
+                
+            with col3:
+                # Logo Squadra Fuori
                 if d.get('logo_fuori') and str(d['logo_fuori']) != 'nan':
                     st.image(d['logo_fuori'], width=60)
 
