@@ -815,198 +815,96 @@ tab1, tab2, tab3, tab4 = st.tabs(["🎯 **Analisi**", "⚙️ **Database**", "�
 with tab1:
     sq = st.text_input("🔍 Inserisci Squadra")
 
+    # Gestione dello stato per evitare reset indesiderati
     if 'dati_acquisiti' not in st.session_state: st.session_state['dati_acquisiti'] = False
-    if 'squadra_precedente' not in st.session_state: st.session_state['squadra_precedente'] = ""
+    if 'pronostico_corrente' not in st.session_state: st.session_state['pronostico_corrente'] = None
 
-    if sq != st.session_state['squadra_precedente']:
+    # Reset se la squadra cambia
+    if sq != st.session_state.get('squadra_precedente', ""):
         st.session_state['dati_acquisiti'] = False
         st.session_state['pronostico_corrente'] = None
         st.session_state['squadra_precedente'] = sq
 
-    if sq and not st.session_state.get('dati_acquisiti', False):
-        if st.button("📊 Acquisisci dati della partita", use_container_width=True):
-            d_temp = esegui_analisi(sq)
-            if d_temp:
-                st.session_state['dati_temp'] = d_temp
-                st.session_state['dati_acquisiti'] = True
-                st.rerun()
-            else:
-                st.error("Squadra non trovata nei prossimi match.")
+    # 1. ACQUISIZIONE DATI
+    if sq and not st.session_state['dati_acquisiti']:
+        if st.button("📊 Carica Dati Match", use_container_width=True):
+            with st.spinner("Analizzando il palinsesto..."):
+                d_temp = esegui_analisi(sq)
+                if d_temp:
+                    st.session_state['dati_temp'] = d_temp
+                    st.session_state['dati_acquisiti'] = True
+                    st.rerun()
+                else:
+                    st.error("Squadra non trovata nei prossimi match.")
 
-    # Il controllo 'if' previene il KeyError
+    # 2. CONFIGURAZIONE E CALCOLO
     if st.session_state.get('dati_acquisiti'):
-        d = st.session_state['dati_temp']
-        d_temp = d # Definiamo d_temp per compatibilità con le righe successive
-        st.success(f"✅ Dati acquisiti per {d['Partita']}")
+        d_base = st.session_state['dati_temp']
         
-        search_query = f"**Formazione {sq} nella partita del {d_temp['Data']}**"
-        google_news_url = f"https://www.google.com/search?q={search_query.replace(' ', '+')}&tbm=nws"
+        st.success(f"✅ Dati pronti per: **{d_base['Partita']}**")
+        st.markdown(f"📅 {d_base['Data']} ore {d_base['Ora']} | 🏆 {d_base['League']}")
         
-        st.markdown(f"👉 [**Controlla Formazione e Assenti per il {d_temp['Data']}**]({google_news_url})")
+        # Link rapido formazioni
+        search_q = f"probabili formazioni {d_base['Partita']} {d_base['Data']}"
+        url_news = f"https://www.google.com/search?q={search_q.replace(' ', '+')}&tbm=nws"
+        st.markdown(f"🔗 [Verifica indisponibili su Google News]({url_news})")
+
+        with st.expander("Parametri di Analisi", expanded=True):
+            c_p1, c_p2 = st.columns(2)
+            with c_p1:
+                pen_h = st.select_slider("Efficienza Attacco Casa", options=[0.7, 0.8, 0.9, 1.0], value=1.0)
+            with c_p2:
+                pen_a = st.select_slider("Efficienza Attacco Ospite", options=[0.7, 0.8, 0.9, 1.0], value=1.0)
+            is_big_match = st.toggle("🔥 Filtro Big Match (Partita Tattica)")
+
+        if st.button("🎯 Genera Pronostico Finale", type="primary", use_container_width=True):
+            with st.spinner("Calcolo probabilità Poisson..."):
+                st.session_state['pronostico_corrente'] = esegui_analisi(sq, pen_h, pen_a, is_big_match)
+
+    # 3. VISUALIZZAZIONE RISULTATI E PDF
+    if st.session_state.get('pronostico_corrente'):
+        p = st.session_state['pronostico_corrente']
+        
+        st.divider()
+        
+        # --- BOX DOWNLOAD PDF ---
+        try:
+            # Creazione stringa riassuntiva per le quote nel PDF
+            quote_str = f"1: {stima_quota(p['p1'])} | X: {stima_quota(p['px'])} | 2: {stima_quota(p['p2'])}"
+            
+            pdf_bytes = genera_pdf_pronostico(
+                partita=p['Partita'],
+                lega=p['League'],
+                data=f"{p['Data']} {p['Ora']}",
+                consiglio=f"{p['1X2']} + {p['U/O 2.5']}",
+                quote=quote_str
+            )
+            
+            st.download_button(
+                label="📥 Scarica Report PDF per Stampa",
+                data=pdf_bytes,
+                file_name=f"Delphi_{p['Partita'].replace(' ', '_')}.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+        except Exception as e:
+            st.error(f"Errore generazione PDF: {e}")
 
         st.divider()
-        st.info("Regola la potenza offensiva se mancano giocatori chiave")
+
+        # Visualizzazione Metriche principali
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Segno 1X2", p['1X2'], f"{p['p1']:.0%}" if p['1X2']=='1' else "")
+        col2.metric("Under/Over", p['U/O 2.5'], f"{p['pu']:.0%}" if "UNDER" in p['U/O 2.5'] else "")
+        col3.metric("Goal/NoGoal", p['G/NG'], f"{p['pg']:.0%}" if p['G/NG']=='GOL' else "")
+
+        # Dettaglio Esatti
+        st.write("### 🎯 Risultati Esatti Consigliati")
+        st.info(p['Top 6 RE Finali'])
         
-        col_p1, col_p2 = st.columns(2)
-        with col_p1:
-            pen_h = st.select_slider(f"**Potenza Attacco Casa**", options=[0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0], value=1.0)
-        with col_p2:
-            pen_a = st.select_slider(f"**Potenza Attacco Fuori**", options=[0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0], value=1.0)        
-            
-            is_big_match = st.toggle("🔥 Filtro Big Match / Derby")
-
-        if st.button("🎯 Genera Pronostico", type="primary", use_container_width=True):
-            risultati = esegui_analisi(sq, pen_h, pen_a, is_big_match)
-            st.session_state['pronostico_corrente'] = risultati
-            st.rerun()
-                
-        if st.session_state.get('pronostico_corrente'):
-            d = st.session_state['pronostico_corrente']
-
-            # --- VISUALIZZAZIONE HEADER (Come hai già fatto) ---
-            st.header(f"🏟️ **{d['Partita']}**")
-            st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}") 
-            st.markdown(f"📅 Data: {d['Data']} ore {d['Ora']}")
-            st.divider()
-            
-            if d.get('is_big_match'): st.warning("🛡️ **Filtro Big Match Attivo**: probabile partita molto tattica")
-
-            c_trend1, c_trend2 = st.columns(2)
-            with c_trend1:
-                st.markdown(f"**Forma {casa_nome}:** {d['Trend_Casa']}")
-                st.caption(f"Incidenza: {d['Forma_H']}x")
-            with c_trend2:
-                st.markdown(f"**Forma {fuori_nome}:** {d['Trend_Fuori']}")
-                st.caption(f"Incidenza: {d['Forma_A']}x")
-            
-            fatica_casa = controlla_fatica(df_calcio, casa_nome, d['Data'])
-            fatica_fuori = controlla_fatica(df_calcio, fuori_nome, d['Data'])
-            
-            if fatica_casa or fatica_fuori:
-                st.markdown("---")
-                st.markdown("🏃‍♂️ **Allerta Stanchezza**")
-                c_fat1, c_fat2 = st.columns(2)
-                with c_fat1:
-                    if fatica_casa: st.error(f"⚠️ **{casa_nome} ha giocato meno di 72h fa!**")
-                with c_fat2:
-                    if fatica_fuori: st.error(f"⚠️ **{fuori_nome} ha giocato meno di 72h fa!**")
-
-            st.divider()
-            c_inf1, c_inf2 = st.columns(2)
-            with c_inf1: st.info(f"👮 **Arbitro**: {d.get('arbitro', 'N.D.')}  |  **Impatto**: {d.get('molt_arbitro', 1.0)}x")
-            casa_nome = d['Partita'].split(" vs ")[0]
-            fuori_nome = d['Partita'].split(" vs ")[1]
-
-            with c_inf2: st.info(f"⏳ **Gol nel finale: {d['lg']:.2f}**")
-            if d['lg'] > 1.2: 
-                st.error("🔥🔥🔥 **POSSIBILE GOL NEL FINALE (80+ MINUTO)**")
-            
-            st.divider()
-            st.subheader("⏱️ Analisi Tempi (Distribuzione Gol)")
-            ct1, ct2 = st.columns(2)
-            with ct1:
-                st.write(f"**{casa_nome}**")
-                st.progress(d['dist_1t_h'] / 100, text=f"1° Tempo: {d['dist_1t_h']}%")
-                st.progress(d['dist_2t_h'] / 100, text=f"2° Tempo: {d['dist_2t_h']}%")
-            with ct2:
-                st.write(f"**{fuori_nome}**")
-                st.progress(d['dist_1t_a'] / 100, text=f"1° Tempo: {d['dist_1t_a']}%")
-                st.progress(d['dist_2t_a'] / 100, text=f"2° Tempo: {d['dist_2t_a']}%")
-
-            st.info(f"💡 **Tendenza**: Il tempo con più gol è il **{d['tempo_top']}**")
-
-            st.divider()
-            st.subheader("🏁 Esito Finale 1X2")
-            c1, cx, c2 = st.columns(3)
-            with c1: st.success(f"**Esito 1:** \n 📈 Prob: {d['p1']:.1%}\n 💰 Quota: {stima_quota(d['p1'])}")
-            with cx: st.success(f"**Esito X:** \n 📈 Prob: {d['px']:.1%}\n 💰 Quota: {stima_quota(d['px'])}")
-            with c2: st.success(f"**Esito 2:** \n 📈 Prob: {d['p2']:.1%}\n 💰 Quota: {stima_quota(d['p2'])}")
-
-            st.divider()
-            st.subheader("⚔️ Under/Over 2,5 & Gol/NoGol")
-            col_uo, col_gng = st.columns(2)
-            p_over = 1 - d['pu']
-            p_nogol = 1 - d['pg']
-            with col_uo: st.warning(f"**UNDER 2.5:** {d['pu']:.1%} (Q:{stima_quota(d['pu'])})\n\n**OVER 2.5:** {p_over:.1%} (Q:{stima_quota(p_over)})")
-            with col_gng: st.warning(f"**GOL:** {d['pg']:.1%} (Q:{stima_quota(d['pg'])})\n\n**NOGOL:** {p_nogol:.1%} (Q:{stima_quota(p_nogol)})")
-
-            # --- RISULTATI E SOMME GOL CON QUOTE ---
-            st.divider()
-            st.subheader("⚽ Analisi Somma Gol")
-            cr1, cr2 = st.columns(2)
-            with cr1:
-                # Mostra i Top 3 esiti del match con le relative quote
-                st.error(f"🎯 **Somma Gol Finale (Top 3)**\n\n{d['SGF']}")           
-            with cr2:
-                # Mostra i Top 2 esiti per squadra con le relative quote
-                st.error(f"🏠 **Somma Gol Casa:** {d['SGC']}\n\n🚀 **Somma Gol Ospite:** {d['SGO']}")
-
-            # --- RISULTATI ESATTI ---
-            st.divider()
-            st.subheader("🎯 Risultati Esatti")
-            cfe1, cfe2 = st.columns(2)
-            with cfe1:
-                st.success(f"🏁 **Top 6 Risultati Esatti Finali**\n\n{d['Top 6 RE Finali']}")
-            with cfe2:
-                st.info(f"⏱️ **Top 3 Risultati Esatti 1° Tempo**\n\n{d['Top 3 RE 1°T']}")
-
-            st.divider()
-            st.subheader("🌓 **Esito Parziale/finale**")
-            st.warning(f"🏆 **Top 3 Parziale/Finale (HT/FT)**\n\n{d.get('Top 3 HT/FT', 'Dato non disponibile')}")
-            
-            
-            # --- LOGICA SALVATAGGIO ROBUSTA ---
-            if st.button("💾 Salva in Cronologia", use_container_width=True):
-                # Calcola la fatica prima di salvare
-                df_c = pd.read_csv(FILE_DB_CALCIO)
-                f_h = controlla_fatica(df_c, d['casa_nome'], d['Data'])
-                f_a = controlla_fatica(df_c, d['fuori_nome'], d['Data'])
-                d['Fatica'] = "SÌ" if (f_h or f_a) else "NO"
-                
-                if salva_completo_in_locale(d):
-                    st.toast("Salvato con successo!", icon="✅")
-                    time.sleep(2)
-                    st.rerun()
-
-                # --- BOX DOWNLOAD PDF ---
-                try:
-                    # Creazione stringa riassuntiva per le quote nel PDF
-                    quote_str = f"1: {stima_quota(p['p1'])} | X: {stima_quota(p['px'])} | 2: {stima_quota(p['p2'])}"
-                    
-                    pdf_bytes = genera_pdf_pronostico(
-                        partita=d['Partita'],
-                        lega=d['League'],
-                        data=f"{d['Data']} {d['Ora']}",
-                        consiglio=f"{d['1X2']} + {d['U/O 2.5']}",
-                        quote=quote_str
-                    )
-                    
-                    st.download_button(
-                        label="📥 Scarica Report PDF per Stampa",
-                        data=pdf_bytes,
-                        file_name=f"Delphi_{d['Partita'].replace(' ', '_')}.pdf",
-                        mime="application/pdf",
-                        use_container_width=True
-                    )
-                except Exception as e:
-                    st.error(f"Errore generazione PDF: {e}")
-        
-                st.divider()
-        
-                # Visualizzazione Metriche principali
-                col1, col2, col3 = st.columns(3)
-                col1.metric("Segno 1X2", d['1X2'], f"{d['p1']:.0%}" if d['1X2']=='1' else "")
-                col2.metric("Under/Over", d['U/O 2.5'], f"{d['pu']:.0%}" if "UNDER" in d['U/O 2.5'] else "")
-                col3.metric("Goal/NoGoal", d['G/NG'], f"{d['pg']:.0%}" if d['G/NG']=='GOL' else "")
-        
-                # Dettaglio Esatti
-                st.write("### 🎯 Risultati Esatti Consigliati")
-                st.info(d['Top 6 RE Finali'])
-                
-                if st.button("💾 Salva in Cronologia locale"):
-                    if salva_completo_in_locale(d):
-                        st.toast("Salvato!", icon="✅")
-            
+        if st.button("💾 Salva in Cronologia locale"):
+            if salva_completo_in_locale(p):
+                st.toast("Salvato!", icon="✅")            
 with tab2:
     st.info(f"⏰  Aggiorna Serie A, Premier League, Championship, Liga, Bundesliga, Ligue 1, Primeira Liga, Eredivisie, Brasileirao Betano, UEFA e FIFA")
 
