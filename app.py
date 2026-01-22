@@ -869,13 +869,13 @@ with tab1:
             st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}") 
             st.markdown(f"📅 Data: {d['Data']} ore {d['Ora']}")
 
-        if st.button("🎯 Genera Pronostico", type="primary", use_container_width=True):
-            risultati = esegui_analisi(sq, pen_h, pen_a, is_big_match)
-            st.session_state['pronostico_corrente'] = risultati
-            st.rerun()
+            if st.button("🎯 Genera Pronostico", type="primary", use_container_width=True):
+                risultati = esegui_analisi(sq, pen_h, pen_a, is_big_match)
+                st.session_state['pronostico_corrente'] = risultati
+                st.rerun()
         
-        if st.session_state.get('pronostico_corrente'):
-            d = st.session_state['pronostico_corrente']
+            if st.session_state.get('pronostico_corrente'):
+                d = st.session_state['pronostico_corrente']
             
             # --- VISUALIZZAZIONE HEADER (Come hai già fatto) ---
             st.header(f"🏟️ **{d['Partita']}**")
