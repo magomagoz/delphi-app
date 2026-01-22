@@ -847,7 +847,46 @@ with tab1:
             risultati = esegui_analisi(sq, pen_h, pen_a, is_big_match)
             st.session_state['pronostico_corrente'] = risultati
             st.rerun()
-        
+
+from fpdf import FPDF
+
+def genera_pdf_pronostico(partita, lega, data, consiglio, quote):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", 'B', 16)
+    
+    # Intestazione
+    pdf.cell(190, 10, "DELPHI PREDICTOR - REPORT", ln=True, align='C')
+    pdf.ln(10)
+    
+    # Dettagli Match
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(190, 10, f"Match: {partita}", ln=True)
+    pdf.set_font("Arial", '', 11)
+    pdf.cell(190, 10, f"Campionato: {lega} | Data: {data}", ln=True)
+    pdf.ln(5)
+    
+    # Pronostico
+    pdf.set_fill_color(240, 240, 240)
+    pdf.cell(190, 10, f"CONSIGLIO PRINCIPALE: {consiglio}", ln=True, fill=True)
+    pdf.ln(5)
+    
+    # Quote
+    pdf.cell(190, 10, f"Dettaglio Quote: {quote}", ln=True)
+    
+    return pdf.output(dest='S').encode('latin-1')
+
+# Nel codice della pagina principale, dopo la generazione:
+pdf_output = genera_pdf_pronostico(f"{squadra_casa} vs {squadra_ospite}", campionato_selezionato, data_match, pronostico_finale, f"1:{quota1} X:{quotaX} 2:{quota2}")
+
+st.download_button(
+    label="🖨️ Prepara per Stampa (PDF)",
+    data=pdf_output,
+    file_name=f"pronostico_{squadra_casa}.pdf",
+    mime="application/pdf",
+    use_container_width=True
+)
+                
         if st.session_state.get('pronostico_corrente'):
             d = st.session_state['pronostico_corrente']
             
@@ -856,28 +895,6 @@ with tab1:
             st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}") 
             st.markdown(f"📅 Data: {d['Data']} ore {d['Ora']}")
             st.divider()
-
-            # --- GENERAZIONE PDF PER STAMPA ---
-            try:
-                # Prepariamo i dati per il PDF pescando i valori dal dizionario 'd'
-                pdf_output = genera_pdf_pronostico(
-                    partita=d['Partita'],
-                    lega=d.get('League', 'N.D.'),
-                    data=f"{d['Data']} {d['Ora']}",
-                    consiglio=d.get('1X2', 'N.D.'),  # O il valore che preferisci come "consiglio"
-                    quote=f"1: {d.get('Quota_1', '-')} | X: {d.get('Quota_X', '-')} | 2: {d.get('Quota_2', '-')}"
-                )
-
-                # Pulsante di download posizionato sotto l'header o a fine analisi
-                st.download_button(
-                    label="🖨️ Stampa Pronostico (PDF)",
-                    data=pdf_output,
-                    file_name=f"Delphi_{d['Partita'].replace(' ', '_')}.pdf",
-                    mime="application/pdf",
-                    use_container_width=True
-                )
-            except Exception as e:
-                st.error(f"Errore nella creazione del PDF: {e}")
             
             if d.get('is_big_match'): st.warning("🛡️ **Filtro Big Match Attivo**: probabile partita molto tattica")
 
