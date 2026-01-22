@@ -879,11 +879,26 @@ with tab1:
             df_calcio = pd.read_csv(FILE_DB_CALCIO)
             casa_nome, fuori_nome = d['casa_nome'], d['fuori_nome']
 
-            st.image(d['logo_casa'], d['logo_fuori'], width=80)
+            # Creiamo tre colonne. 
+            # Regoliamo i pesi [1, 2, 1] per dare più spazio al titolo centrale
+            col1, col2, col3 = st.columns([1, 2, 1])
+            
+            with col1:
+                # Stemma Casa
+                st.image(d['logo_casa'], use_container_width=True)
+            
+            with col2:
+                st.header(f"**{d['Partita']}**")
+                
+            with col3:
+                # Stemma Trasferta
+                st.image(d['logo_fuori'], use_container_width=True)
+            
+            #st.image(d['logo_casa']
             #st.header(f"🏟️ **{d['Partita']}**")
             #st.image(d['logo_fuori'], width=80)
 
-            st.divider()
+            #st.divider()
             st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}")
             st.subheader(f"📅 Data: {d['Data']} ore {d['Ora']}")
         
