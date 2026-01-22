@@ -968,7 +968,6 @@ with tab1:
                     time.sleep(2)
                     st.rerun()
 
-
         # --- BOX DOWNLOAD PDF ---
         try:
             # Creazione stringa riassuntiva per le quote nel PDF
