@@ -879,16 +879,26 @@ with tab1:
             df_calcio = pd.read_csv(FILE_DB_CALCIO)
             casa_nome, fuori_nome = d['casa_nome'], d['fuori_nome']
             
-            st.markdown(
-                f"""
-                <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
-                    <img src="{logo_casa}" width="60">
-                    <h2 style="margin: 0; white-space: nowrap;">{Partita}</h2>
-                    <img src="{logo_fuori}" width="60">
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+
+            # --- HEADER PROFESSIONALE CON LOGHI ---
+            st.divider()
+            col_l1, col_txt, col_l2 = st.columns([1, 4, 1])
+            
+            with col_l1:
+                # Mostra logo casa se disponibile
+                if d.get('logo_casa') and str(d['logo_casa']) != 'nan':
+                    st.image(d['logo_casa'], width=80)
+            
+            with col_txt:
+                st.markdown(f"<h1 style='text-align: center;'>{d['Partita']}</h1>", unsafe_allow_html=True)
+                st.markdown(f"<p style='text-align: center; font-size: 20px;'>🏆 {d.get('League', 'N.D.')} | 📅 {d['Data']} ore {d['Ora']}</p>", unsafe_allow_html=True)
+            
+            with col_l2:
+                # Mostra logo fuori se disponibile
+                if d.get('logo_fuori') and str(d['logo_fuori']) != 'nan':
+                    st.image(d['logo_fuori'], width=80)
+
+            # ... (prosegue con il tasto Genera PDF e il resto dell'analisi)
           
             #st.header(f"🏟️ **{d['Partita']}**")
             #st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}")
