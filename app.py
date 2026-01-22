@@ -29,6 +29,7 @@ API_TOKEN = 'c7a609a0580f4200add2751d787b3c68'
 FILE_DB_CALCIO = 'database_pro_2025.csv'
 FILE_DB_PRONOSTICI = 'database_pronostici.csv'
 
+# --- 2. FUNZIONI LOGICHE DI VERIFICA ---
 def genera_pdf_pronostico(partita, lega, data, consiglio, quote):
     pdf = FPDF()
     pdf.add_page()
@@ -55,18 +56,6 @@ def genera_pdf_pronostico(partita, lega, data, consiglio, quote):
     
     return pdf.output(dest='S').encode('latin-1')
 
-# Nel codice della pagina principale, dopo la generazione:
-pdf_output = genera_pdf_pronostico(f"{squadra_casa} vs {squadra_ospite}", campionato_selezionato, data_match, pronostico_finale, f"1:{quota1} X:{quotaX} 2:{quota2}")
-
-st.download_button(
-    label="🖨️ Prepara per Stampa (PDF)",
-    data=pdf_output,
-    file_name=f"pronostico_{squadra_casa}.pdf",
-    mime="application/pdf",
-    use_container_width=True
-)
-
-# --- 2. FUNZIONI LOGICHE DI VERIFICA ---
 def check_1x2(pred, home, away):
     if home > away: d = "1"
     elif away > home: d = "2"
@@ -879,6 +868,43 @@ with tab1:
             st.header(f"🏟️ **{d['Partita']}**")
             st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}") 
             st.markdown(f"📅 Data: {d['Data']} ore {d['Ora']}")
+
+        if st.button("🎯 Genera Pronostico", type="primary", use_container_width=True):
+            risultati = esegui_analisi(sq, pen_h, pen_a, is_big_match)
+            st.session_state['pronostico_corrente'] = risultati
+            st.rerun()
+        
+        if st.session_state.get('pronostico_corrente'):
+            d = st.session_state['pronostico_corrente']
+            
+            # --- VISUALIZZAZIONE HEADER (Come hai già fatto) ---
+            st.header(f"🏟️ **{d['Partita']}**")
+            st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}") 
+            st.markdown(f"📅 Data: {d['Data']} ore {d['Ora']}")
+            st.divider()
+
+            # --- GENERAZIONE PDF PER STAMPA ---
+            try:
+                # Prepariamo i dati per il PDF pescando i valori dal dizionario 'd'
+                pdf_output = genera_pdf_pronostico(
+                    partita=d['Partita'],
+                    lega=d.get('League', 'N.D.'),
+                    data=f"{d['Data']} {d['Ora']}",
+                    consiglio=d.get('1X2', 'N.D.'),  # O il valore che preferisci come "consiglio"
+                    quote=f"1: {d.get('Quota_1', '-')} | X: {d.get('Quota_X', '-')} | 2: {d.get('Quota_2', '-')}"
+                )
+
+                # Pulsante di download posizionato sotto l'header o a fine analisi
+                st.download_button(
+                    label="🖨️ Stampa Pronostico (PDF)",
+                    data=pdf_output,
+                    file_name=f"Delphi_{d['Partita'].replace(' ', '_')}.pdf",
+                    mime="application/pdf",
+                    use_container_width=True
+                )
+            except Exception as e:
+                st.error(f"Errore nella creazione del PDF: {e}")
+            
             st.divider()
 
         if st.button("🎯 Genera Pronostico", type="primary", use_container_width=True):
