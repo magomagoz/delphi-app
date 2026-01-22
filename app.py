@@ -773,7 +773,7 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
         "arbitro": arbitro, "molt_arbitro": molt_arbitro,
         "Trend_Casa": trend_h, "Trend_Fuori": trend_a,
         "Forma_H": molt_forma_h, "Forma_A": molt_forma_a,
-        "is_big_match": is_big_match # Aggiunto per evitare errori nel frontend
+        "is_big_match": is_big_match, # Aggiunto per evitare errori nel frontend
         "logo_casa": logo_casa,  # <--- NUOVO
         "logo_fuori": logo_fuori # <--- NUOVO
     }
