@@ -882,12 +882,12 @@ with tab1:
             
             # --- HEADER PROFESSIONALE CON LOGHI ---
             st.divider()
-            col_l1, col_txt, col_l2 = st.columns([1, 4, 1])
+            col_l1, col_txt, col_l2 = st.columns([1, 2, 1])
             
             with col_l1:
                 # Mostra logo casa se disponibile
                 if d.get('logo_casa') and str(d['logo_casa']) != 'nan':
-                    st.image(d['logo_casa'], width=40)
+                    st.image(d['logo_casa'], width=60)
             
             with col_txt:
                 st.header(f"**{d['Partita']}**")
@@ -897,7 +897,7 @@ with tab1:
             with col_l2:
                 # Mostra logo fuori se disponibile
                 if d.get('logo_fuori') and str(d['logo_fuori']) != 'nan':
-                    st.image(d['logo_fuori'], width=40)
+                    st.image(d['logo_fuori'], width=60)
 
             #st.header(f"🏟️ **{d['Partita']}**")
             #st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}")
