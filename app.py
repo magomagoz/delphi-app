@@ -878,27 +878,18 @@ with tab1:
             d = st.session_state['pronostico_corrente']
             df_calcio = pd.read_csv(FILE_DB_CALCIO)
             casa_nome, fuori_nome = d['casa_nome'], d['fuori_nome']
-
-            st.markdown(f"<h1 style='text-align: center;'>{d['logo_casa']} {d['Partita']} {d['logo_fuori']}</h1>", unsafe_allow_html=True)
-                            
-            # Creazione di 3 colonne con proporzioni diverse per centrare bene il testo
-            # [1, 3, 1] significa che la colonna centrale è 3 volte più grande delle laterali
-            #col1, col2, col3 = st.columns([1, 1, 1])
             
-            #with col1:
-                # Logo Squadra Casa
-                #if d.get('logo_casa') and str(d['logo_casa']) != 'nan':
-                    #st.image(d['logo_casa'], width=80)
-            
-            #with col2:
-                # Nome Partita centrato
-                #st.header(f"**{d['Partita']}**")
-                
-            #with col3:
-                # Logo Squadra Fuori
-                #if d.get('logo_fuori') and str(d['logo_fuori']) != 'nan':
-                    #st.image(d['logo_fuori'], width=60)
-
+            st.markdown(
+                f"""
+                <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                    <img src="{logo_casa}" width="60">
+                    <h2 style="margin: 0; white-space: nowrap;">{Partita}</h2>
+                    <img src="{logo_fuori}" width="60">
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+          
             #st.header(f"🏟️ **{d['Partita']}**")
             #st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}")
             #st.subheader(f"📅 Data: {d['Data']} ore {d['Ora']}")
