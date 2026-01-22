@@ -881,18 +881,18 @@ with tab1:
 
             # Creiamo tre colonne. 
             # Regoliamo i pesi [1, 2, 1] per dare più spazio al titolo centrale
-            col1, col2, col3 = st.columns([1, 1, 1])
+            col1, col2, col3 = st.columns([1, 2, 1])
             
             with col1:
                 # Stemma Casa
-                st.image(d['logo_casa'], width=80)
+                st.image(d['logo_casa'], width=100)
             
             with col2:
-                st.header(f"**{d['Partita']}**, use_container_width=True")
+                st.header(f"**{d['Partita']}**")
                 
             with col3:
                 # Stemma Trasferta
-                st.image(d['logo_fuori'], width=80)
+                st.image(d['logo_fuori'], width=100)
             
             #st.image(d['logo_casa']
             #st.header(f"🏟️ **{d['Partita']}**")
