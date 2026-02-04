@@ -502,7 +502,7 @@ def analizza_performance_campionato(camp_filtro):
 
         # Grafico comparativo
         st.divider()
-        st.write("### 📈 Precisione per tipo di Pronostico")
+        st.write("### 📈 Precisione per Pronostico")
         chart_data = pd.DataFrame({
             'Mercato': stats.keys(),
             'Win Rate': [v[0]/v[1] if v[1]>0 else 0 for v in stats.values()]
@@ -604,7 +604,7 @@ def analizza_performance_squadra_gold(squadra_target):
                                 st.markdown("➖") # Spaziatura
         
         # Grafico
-        st.write("#### 📈 Precisione per Lega")
+        st.write("#### 📈 Precisione per pronostico")
         chart_data = pd.DataFrame({
             'Mercato': stats.keys(),
             'Win Rate': [v[0]/v[1] if v[1]>0 else 0 for v in stats.values()]
