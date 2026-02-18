@@ -977,19 +977,19 @@ with tab1:
             cr1, cr2 = st.columns(2)
             with cr1:
                 # Mostra i Top 3 esiti del match con le relative quote
-                st.error(f"🎯 **Somma Gol Finale (Top 3)**\n 📈 Prob: {d['SGF']:.1%}\n 💰 Quota: {stima_quota(d['SGF'])}")           
+                st.error(f"🎯 **Somma Gol Finale (Top 3)**\n 📈 Prob: {d['SGF']:.1%}\n 💰 Quota: {stima_quota(SGF)}")           
             with cr2:
                 # Mostra i Top 2 esiti per squadra con le relative quote
-                st.error(f"🏠 **Somma Gol Casa:** 📈 Prob: {d['SGC']} 💰 Quota: {stima_quota(d['SGC'])}\n\n🚀 **Somma Gol Ospite:** 📈 Prob: {d['SGO']} 💰 Quota: {stima_quota(d['SGO'])}")
+                st.error(f"🏠 **Somma Gol Casa:** 📈 Prob: {d['SGC']} 💰 Quota: {stima_quota(SGC)}\n\n🚀 **Somma Gol Ospite:** 📈 Prob: {d['SGO']} 💰 Quota: {stima_quota(SGO)}")
 
             # --- RISULTATI ESATTI ---
             st.divider()
             st.subheader("🎯 Risultati Esatti")
             cfe1, cfe2 = st.columns(2)
             with cfe1:
-                st.success(f"🏁 **Top 6 Risultati Esatti Finali**\n\n 📈 Prob: {d['Top 6 RE Finali']} 💰 Quota: {stima_quota(d['Top 6 RE Finali'])}")
+                st.success(f"🏁 **Top 6 Risultati Esatti Finali**\n\n 📈 Prob: {d['Top 6 RE Finali']} 💰 Quota: {stima_quota(Top 6 RE Finali)}")
             with cfe2:
-                st.info(f"⏱️ **Top 3 Risultati Esatti 1° Tempo**\n\n 📈 Prob: {d['Top 3 RE 1°T']} 💰 Quota: {stima_quota(d['Top 3 RE 1°T'])}")
+                st.info(f"⏱️ **Top 3 Risultati Esatti 1° Tempo**\n\n 📈 Prob: {d['Top 3 RE 1°T']} 💰 Quota: {stima_quota(Top 3 RE 1°T)}")
 
             # --- LOGICA SALVATAGGIO ROBUSTA ---
             if st.button("💾 Salva in Cronologia", use_container_width=True):
@@ -1104,15 +1104,6 @@ with tab3:
     if st.button("Analizza Campionato", type="primary"):
         analizza_performance_campionato(scelta_camp)
 
-with tab4:
-    st.info(f"⏰  Aggiorna Serie A, Premier League, Championship, Liga, Bundesliga, Ligue 1, Primeira Liga, Eredivisie, Brasileirao Betano, UEFA e FIFA")
-
-    if st.button("🌐 Aggiorna tutti i Dati"):
-        with st.spinner("Aggiornamento database in corso..."):
-            aggiorna_database_calcio()
-    
-    st.markdown("---")
-    
     # --- SEZIONE 2: ANALISI SQUADRA (GOLD STYLE) ---
     st.subheader("🛡️ Analisi per Squadra")
     
@@ -1141,3 +1132,13 @@ with tab4:
             st.error("Errore lettura database per elenco squadre.")
     else:
         st.warning("Database non ancora creato.")
+
+with tab4:
+    st.info(f"⏰  Aggiorna Serie A, Premier League, Championship, Liga, Bundesliga, Ligue 1, Primeira Liga, Eredivisie, Brasileirao Betano, UEFA e FIFA")
+
+    if st.button("🌐 Aggiorna tutti i Dati"):
+        with st.spinner("Aggiornamento database in corso..."):
+            aggiorna_database_calcio()
+    
+    st.markdown("---")
+    
