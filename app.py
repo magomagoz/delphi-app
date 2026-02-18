@@ -823,7 +823,7 @@ def highlight_winners(row):
     return colors
 
 # --- 7. MAIN ---
-tab1, tab2, tab3, tab4 = st.tabs(["🎯 **Analisi**", "⚙️ **Database**", "📜 **Cronologia**", "📊 **Statistiche**"])
+tab1, tab2, tab3, tab4 = st.tabs(["🎯 **Analisi**", "📜 **Cronologia**", "📊 **Statistiche**", "⚙️ **Database**"])
 
 
 with tab1:
@@ -1005,13 +1005,6 @@ with tab1:
                     st.rerun()
 
 with tab2:
-    st.info(f"⏰  Aggiorna Serie A, Premier League, Championship, Liga, Bundesliga, Ligue 1, Primeira Liga, Eredivisie, Brasileirao Betano, UEFA e FIFA")
-
-    if st.button("🌐 Aggiorna tutti i Dati"):
-        with st.spinner("Aggiornamento database in corso..."):
-            aggiorna_database_calcio()
-
-with tab3:
     st.header("📜 Cronologia")
     
     mostra_tabella = False
@@ -1100,7 +1093,7 @@ with tab3:
                 os.remove(FILE_DB_PRONOSTICI)
                 st.rerun()
 
-with tab4:
+with tab3:
     st.header("📊 Performance Delphi")
     
     # --- SEZIONE 1: ANALISI CAMPIONATO ---
@@ -1110,6 +1103,13 @@ with tab4:
     
     if st.button("Analizza Campionato", type="primary"):
         analizza_performance_campionato(scelta_camp)
+
+with tab4:
+    st.info(f"⏰  Aggiorna Serie A, Premier League, Championship, Liga, Bundesliga, Ligue 1, Primeira Liga, Eredivisie, Brasileirao Betano, UEFA e FIFA")
+
+    if st.button("🌐 Aggiorna tutti i Dati"):
+        with st.spinner("Aggiornamento database in corso..."):
+            aggiorna_database_calcio()
     
     st.markdown("---")
     
