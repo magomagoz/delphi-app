@@ -968,8 +968,8 @@ with tab1:
             col_uo, col_gng = st.columns(2)
             p_over = 1 - d['pu']
             p_nogol = 1 - d['pg']
-            with col_uo: st.warning(f"**UNDER 2.5:** {d['pu']:.1%} (Q:{stima_quota(d['pu'])})\n\n**OVER 2.5:** {p_over:.1%} (Q:{stima_quota(p_over)})")
-            with col_gng: st.warning(f"**GOL:** {d['pg']:.1%} (Q:{stima_quota(d['pg'])})\n\n**NOGOL:** {p_nogol:.1%} (Q:{stima_quota(p_nogol)})")
+            with col_uo: st.warning(f"**UNDER 2.5:** 📈 Prob: {d['pu']:.1%}\n 💰 Quota: {stima_quota(d['pu'])})\n\n**OVER 2.5:** 📈 Prob: {d['p_over']:.1%}\n 💰 Quota: (Q:{stima_quota(p_over)})")
+            with col_gng: st.warning(f"**GOL:** 📈 Prob: {d['pg']:.1%} 💰 Quota: (Q:{stima_quota(d['pg'])})\n\n**NOGOL:** 📈 Prob: {p_nogol:.1%} 💰 Quota: (Q:{stima_quota(p_nogol)})")
 
             # --- RISULTATI E SOMME GOL CON QUOTE ---
             st.divider()
@@ -977,19 +977,19 @@ with tab1:
             cr1, cr2 = st.columns(2)
             with cr1:
                 # Mostra i Top 3 esiti del match con le relative quote
-                st.error(f"🎯 **Somma Gol Finale (Top 3)**\n\n{d['SGF']}")           
+                st.error(f"🎯 **Somma Gol Finale (Top 3)**\n 📈 Prob: {d['SGF']:.1%}\n 💰 Quota: {stima_quota(d['SGF'])}")           
             with cr2:
                 # Mostra i Top 2 esiti per squadra con le relative quote
-                st.error(f"🏠 **Somma Gol Casa:** {d['SGC']}\n\n🚀 **Somma Gol Ospite:** {d['SGO']}")
+                st.error(f"🏠 **Somma Gol Casa:** 📈 Prob: {d['SGC']} 💰 Quota: {stima_quota(d['SGC'])}\n\n🚀 **Somma Gol Ospite:** 📈 Prob: {d['SGO']} 💰 Quota: {stima_quota(d['SGO'])}")
 
             # --- RISULTATI ESATTI ---
             st.divider()
             st.subheader("🎯 Risultati Esatti")
             cfe1, cfe2 = st.columns(2)
             with cfe1:
-                st.success(f"🏁 **Top 6 Risultati Esatti Finali**\n\n{d['Top 6 RE Finali']}")
+                st.success(f"🏁 **Top 6 Risultati Esatti Finali**\n\n 📈 Prob: {d['Top 6 RE Finali']} 💰 Quota: {stima_quota(d['Top 6 RE Finali']}")
             with cfe2:
-                st.info(f"⏱️ **Top 3 Risultati Esatti 1° Tempo**\n\n{d['Top 3 RE 1°T']}")
+                st.info(f"⏱️ **Top 3 Risultati Esatti 1° Tempo**\n\n 📈 Prob: {d['Top 3 RE 1°T']} 💰 Quota: {stima_quota(d['Top 3 RE 1°T']}")
 
             # --- LOGICA SALVATAGGIO ROBUSTA ---
             if st.button("💾 Salva in Cronologia", use_container_width=True):
