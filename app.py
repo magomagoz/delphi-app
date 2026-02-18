@@ -887,26 +887,8 @@ with tab1:
             with col_logo_fuori:
                 st.image(d['logo_fuori'], width = 120)
 
-            # Creiamo tre colonne. 
-            # Regoliamo i pesi [1, 2, 1] per dare più spazio al titolo centrale
-            #col1, col2, col3 = st.columns([1, 2, 1])
-            
-            #with col1:
-                # Stemma Casa
-                #st.image(d['logo_casa'], width=100)
-            
-            #with col2:
-                #st.header(f"**{d['Partita']}**")
-                
-            #with col3:
-                # Stemma Trasferta
-                #st.image(d['logo_fuori'], width=100)
-            
-            #st.image(d['logo_casa']
             st.header(f"🏟️ **{d['Partita']}**")
-            #st.image(d['logo_fuori'], width=80)
-
-            #st.divider()
+            
             st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}")
             st.subheader(f"📅 Data: {d['Data']} ore {d['Ora']}")
         
