@@ -968,8 +968,8 @@ with tab1:
             col_uo, col_gng = st.columns(2)
             p_over = 1 - d['pu']
             p_nogol = 1 - d['pg']
-            with col_uo: st.warning(f"**UNDER 2.5:** 📈 Prob: {d['pu']:.1%}\n 💰 Quota: {stima_quota(d['pu'])})\n\n**OVER 2.5:** 📈 Prob: (p_over:.1%)\n 💰 Quota: {stima_quota(p_over)}")
-            with col_gng: st.warning(f"**GOL:** 📈 Prob: {d['pg']:.1%} 💰 Quota: (Q:{stima_quota(d['pg'])})\n\n**NOGOL:** 📈 Prob: (p_nogol:.1%) 💰 Quota: {stima_quota(p_nogol)}")
+            with col_uo: st.warning(f"**UNDER 2.5:** 📈 Prob: {d['pu']:.1%}\n 💰 Quota: {stima_quota(d['pu'])}\n\n**OVER 2.5:** 📈 Prob: {p_over:.1%}\n 💰 Quota: {stima_quota(p_over)}")
+            with col_gng: st.warning(f"**GOL:** 📈 Prob: {d['pg']:.1%} 💰 Quota: {stima_quota(d['pg'])}\n\n**NOGOL:** 📈 Prob: {p_nogol:.1%} 💰 Quota: {stima_quota(p_nogol)}")
 
             # --- RISULTATI E SOMME GOL CON QUOTE ---
             st.divider()
