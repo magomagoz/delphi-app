@@ -975,14 +975,10 @@ with tab1:
             st.divider()
             st.subheader("⚽ Analisi Somma Gol")
             cr1, cr2 = st.columns(2)
-            with cr1:
-                # Mostra i Top 3 esiti del match con le relative quote
-                st.error(f"🎯 **Somma Gol Finale (Top 3)**\n 📈 Prob: {d['sgf']:.1%}\n 💰 Quota: {stima_quota(d['SGF'])}")
+            with cr1: st.error(f"🎯 **Somma Gol Finale (Top 3)**\n 📈 Prob: {d['sgf']:.1%}\n 💰 Quota: {stima_quota(d['SGF'])}")
 
                 #st.error(f"🎯 **Somma Gol Finale (Top 3)**\n 📈 Prob: {d['SGF']:.1%}\n 💰 Quota: {stima_quota(SGF)}")           
-            with cr2:
-                # Mostra i Top 2 esiti per squadra con le relative quote
-                st.error(f"🏠 **Somma Gol Casa:** 📈 Prob: {d['SGC']} 💰 Quota: {stima_quota(SGC)}\n\n🚀 **Somma Gol Ospite:** 📈 Prob: {d['SGO']} 💰 Quota: {stima_quota(SGO)}")
+            with cr2: st.error(f"🏠 **Somma Gol Casa:** 📈 Prob: {d['SGC']} 💰 Quota: {stima_quota(SGC)}\n\n🚀 **Somma Gol Ospite:** 📈 Prob: {d['SGO']} 💰 Quota: {stima_quota(SGO)}")
 
             # --- RISULTATI ESATTI ---
             st.divider()
