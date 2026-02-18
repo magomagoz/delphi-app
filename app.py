@@ -977,7 +977,7 @@ with tab1:
             cr1, cr2 = st.columns(2)
             with cr1:
                 # Mostra i Top 3 esiti del match con le relative quote
-                st.error(f"🎯 **Somma Gol Finale (Top 3)**\n 📈 Prob: {d['SGF']:.1%}\n 💰 Quota: {stima_quota(d['SGF'])}")
+                st.error(f"🎯 **Somma Gol Finale (Top 3)**\n 📈 Prob: {d['sgf']:.1%}\n 💰 Quota: {stima_quota(d['SGF'])}")
 
                 #st.error(f"🎯 **Somma Gol Finale (Top 3)**\n 📈 Prob: {d['SGF']:.1%}\n 💰 Quota: {stima_quota(SGF)}")           
             with cr2:
