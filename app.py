@@ -987,9 +987,11 @@ with tab1:
             st.subheader("🎯 Risultati Esatti")
             cfe1, cfe2 = st.columns(2)
             with cfe1:
-                st.success(f"🏁 **Top 6 Risultati Esatti Finali**\n\n 📈 Prob: {d['Top 6 RE Finali']} 💰 Quota: {stima_quota(Top 6 RE Finali)}")
+                st.success(f"🏁 **Top 6 Risultati Esatti Finali**\n\n 📈 Prob: {d['Top 6 RE Finali']} 💰 Quota: {stima_quota(d['Top 6 RE Finali'])}")
+
+                #st.success(f"🏁 **Top 6 Risultati Esatti Finali**\n\n 📈 Prob: {d['Top 6 RE Finali']} 💰 Quota: {stima_quota(Top 6 RE Finali)}")
             with cfe2:
-                st.info(f"⏱️ **Top 3 Risultati Esatti 1° Tempo**\n\n 📈 Prob: {d['Top 3 RE 1°T']} 💰 Quota: {stima_quota(Top 3 RE 1°T)}")
+                st.info(f"⏱️ **Top 3 Risultati Esatti 1° Tempo**\n\n 📈 Prob: {d['Top 3 RE 1°T']} 💰 Quota: {stima_quota(d['Top 3 RE 1°T'])}")
 
             # --- LOGICA SALVATAGGIO ROBUSTA ---
             if st.button("💾 Salva in Cronologia", use_container_width=True):
