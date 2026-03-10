@@ -487,9 +487,9 @@ def analizza_performance_campionato(camp_filtro):
         
         # Visualizzazione a griglia (2 righe da 4 colonne)
         keys = list(stats.keys())
-        for i in range(0, len(keys), 4):
-            cols = st.columns(4)
-            for j in range(4):
+        for i in range(0, len(keys), 3):
+            cols = st.columns(3)
+            for j in range(3):
                 if i + j < len(keys):
                     market = keys[i+j]
                     v = stats[market]
@@ -1087,6 +1087,7 @@ with tab3:
     if st.button("Analizza Campionato", type="primary"):
         analizza_performance_campionato(scelta_camp)
 
+    st.divider()
     # --- SEZIONE 2: ANALISI SQUADRA (GOLD STYLE) ---
     st.subheader("🛡️ Analisi per Squadra")
     
@@ -1106,7 +1107,7 @@ with tab3:
             if lista_squadre:
                 scelta_sq = st.selectbox("Seleziona la Squadra:", lista_squadre)
                 
-                if st.button(f"Analizza precisione {scelta_sq}"):
+                if st.button(f"Analizza precisione {scelta_sq}", type="primary"):
                     analizza_performance_squadra_gold(scelta_sq)
             else:
                 st.info("Nessuna squadra trovata nel database.")
