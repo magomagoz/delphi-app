@@ -1076,6 +1076,7 @@ with tab2:
                 os.remove(FILE_DB_PRONOSTICI)
                 st.rerun()
 
+
 with tab3:
     st.header("📊 Performance Delphi")
     
