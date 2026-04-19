@@ -41,7 +41,7 @@ def genera_pdf_pronostico(d):
     pdf.add_page()
     
     # --- 1. INTESTAZIONE E LOGHI ---
-    pdf.set_fill_color(50, 50, 200) 
+    pdf.set_fill_color(126, 192, 238) 
     pdf.rect(0, 0, 210, 40, 'F')
     
     try:
