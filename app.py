@@ -29,8 +29,6 @@ API_TOKEN = 'c7a609a0580f4200add2751d787b3c68'
 FILE_DB_CALCIO = 'database_pro_2025.csv'
 FILE_DB_PRONOSTICI = 'database_pronostici.csv'
 
-import re
-
 def pulisci_per_pdf(testo):
     """Rimuove emoji e caratteri speciali che mandano in crash FPDF"""
     if not isinstance(testo, str):
