@@ -94,7 +94,7 @@ def genera_pdf_pronostico(d):
     tempi_tec = f"Tempo con + gol: {pulisci_per_pdf(d['tempo_top'])}\nDistribuzione tempi Casa: {d['dist_1t_h']}% / {d['dist_2t_h']}%\nDistribuzione tempi Ospite: {d['dist_1t_a']}% / {d['dist_2t_a']}%"
     pdf.multi_cell(95, 7, tempi_tec, border=1)
     
-    pdf.ln(10)
+    pdf.ln(5)
 
     # --- SEZIONE FORMA SQUADRE (Trend ultime 4) ---
     pdf.set_fill_color(240, 240, 240)
@@ -116,8 +116,8 @@ def genera_pdf_pronostico(d):
     trend_a = converti_forma(d.get('Trend_Fuori', ''))
 
     # Stampiamo i due box della forma
-    pdf.cell(95, 10, f"Ultime 4: {trend_h}", border=1, align='C')
-    pdf.cell(95, 10, f"Ultime 4: {trend_a}", border=1, ln=True, align='C')
+    pdf.cell(95, 10, f"Ultime 4 partite giocate: {trend_h}", border=1, align='C')
+    pdf.cell(95, 10, f"Ultime 4 partite giocate: {trend_a}", border=1, ln=True, align='C')
     
     pdf.ln(5)
 
@@ -131,7 +131,7 @@ def genera_pdf_pronostico(d):
     pdf.set_text_color(0, 0, 0) 
     pdf.cell(190, 12, pulisci_per_pdf(d.get('1X2', 'N.D.')), border=1, ln=True, align='C')
 
-    pdf.ln(10)
+    pdf.ln(5)
         
 # Tabella U/O e GNG
     pdf.set_font("Arial", 'B', 12)
@@ -154,7 +154,7 @@ def genera_pdf_pronostico(d):
     pdf.cell(95, 12, esito_uo, border=1, align='C')
     pdf.cell(95, 12, esito_gng, border=1, ln=True, align='C')
 
-    pdf.ln(10)
+    pdf.ln(5)
 
     # --- SOMMA GOL ---
     pdf.set_font("Arial", 'B', 12)
