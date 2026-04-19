@@ -41,7 +41,7 @@ def genera_pdf_pronostico(d):
     pdf.add_page()
     
     # --- 1. INTESTAZIONE E LOGHI ---
-    pdf.set_fill_color(26, 28, 35) 
+    pdf.set_fill_color(100, 100, 150) 
     pdf.rect(0, 0, 210, 40, 'F')
     
     try:
@@ -54,6 +54,7 @@ def genera_pdf_pronostico(d):
     pdf.set_text_color(255, 255, 255)
     pdf.set_font("Arial", 'B', 20)
     pdf.cell(0, 10, "DELPHI PREDICTOR PRO", ln=True, align='C')
+    PDF.cell(0, 10, "PRONOSTICI PARTITA", ln=True, align='C')
     pdf.set_font("Arial", '', 10)
 
     pdf.set_text_color(0, 0, 0)
@@ -66,7 +67,7 @@ def genera_pdf_pronostico(d):
     
     pdf.set_font("Arial", 'I', 11)
     pdf.cell(0, 8, f"Campionato: {pulisci_per_pdf(d.get('League', 'N.D.'))}", ln=True, align='C')
-    pdf.cell(0, 8, f"Evento del {d['Data']} - ore {d['Ora']}", ln=True, align='C')
+    pdf.cell(0, 8, f"Evento del {d['Data']} - Ore {d['Ora']}", ln=True, align='C')
     
     pdf.ln(5)
     if d.get('is_big_match'):
@@ -81,7 +82,7 @@ def genera_pdf_pronostico(d):
     pdf.set_fill_color(240, 240, 240)
     pdf.set_font("Arial", 'B', 11)
     pdf.cell(95, 8, " Dettagli Tecnici", border=1, fill=True)
-    pdf.cell(95, 8, " Analisi Tempi", border=1, ln=True, fill=True)
+    pdf.cell(95, 8, " Analisi Distribuzione Gol", border=1, ln=True, fill=True)
     
     pdf.set_font("Arial", '', 10)
     y_start = pdf.get_y()
@@ -89,7 +90,7 @@ def genera_pdf_pronostico(d):
     pdf.multi_cell(95, 7, info_tec, border=1)
     
     pdf.set_xy(105, y_start)
-    tempi_tec = f"Top Tempo: {pulisci_per_pdf(d['tempo_top'])}\nDist. H: {d['dist_1t_h']}% / {d['dist_2t_h']}%\nDist. A: {d['dist_1t_a']}% / {d['dist_2t_a']}%"
+    tempi_tec = f"Tempo con + gol: {pulisci_per_pdf(d['tempo_top'])}\nDistribuzione tempi Casa: {d['dist_1t_h']}% / {d['dist_2t_h']}%\nDistribuzione tempi Ospite: {d['dist_1t_a']}% / {d['dist_2t_a']}%"
     pdf.multi_cell(95, 7, tempi_tec, border=1)
     
     pdf.ln(10)
@@ -99,13 +100,17 @@ def genera_pdf_pronostico(d):
     pdf.set_fill_color(30, 58, 138)
     pdf.set_text_color(255, 255, 255)
     pdf.cell(190, 10, " PRONOSTICO 1X2", ln=True, fill=True)
+
+    pdf.set_font("Arial", 'B', 14) # Font più grande per l'esito
+    pdf.cell(190, 12, dati_partita['1X2'], border=1, ln=2, align='C')
+
     
-    pdf.set_text_color(0, 0, 0)
-    col_w = 190/3
-    pdf.set_font("Arial", 'B', 10)
-    pdf.cell(col_w, 8, "SEGNO 1", border=1, align='C')
-    pdf.cell(col_w, 8, "SEGNO X", border=1, align='C')
-    pdf.cell(col_w, 8, "SEGNO 2", border=1, ln=True, align='C')
+    #pdf.set_text_color(0, 0, 0)
+    #col_w = 190/3
+    #pdf.set_font("Arial", 'B', 10)
+    #pdf.cell(col_w, 8, "SEGNO 1", border=1, align='C')
+    #pdf.cell(col_w, 8, "SEGNO X", border=1, align='C')
+    #pdf.cell(col_w, 8, "SEGNO 2", border=1, ln=True, align='C')
     
     pdf.set_font("Arial", '', 10)
     pdf.cell(col_w, 8, f"{d['p1']:.1%} (Q: {stima_quota(d['p1'])})", border=1, align='C')
