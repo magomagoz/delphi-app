@@ -103,7 +103,6 @@ def genera_pdf_pronostico(d):
 
     pdf.set_text_color(0, 0, 0)
     
-    pdf.set_font("Arial", 'B', 14) # Font più grande per l'esito
     pdf.cell(190, 12, dati_partita['1X2'], border=1, ln=True, align='C')
 
     
