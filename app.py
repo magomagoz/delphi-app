@@ -29,72 +29,124 @@ API_TOKEN = 'c7a609a0580f4200add2751d787b3c68'
 FILE_DB_CALCIO = 'database_pro_2025.csv'
 FILE_DB_PRONOSTICI = 'database_pronostici.csv'
 
-def genera_pdf_pronostico(dati_partita):
+def genera_pdf_pronostico(d):
     pdf = FPDF()
     pdf.add_page()
     
-    # --- 1. INTESTAZIONE CON SFONDO COLORATO ---
-    pdf.set_fill_color(30, 58, 138) # Colore Blu Scuro istituzionale
-    pdf.set_text_color(255, 255, 255) # Testo Bianco
-    pdf.set_font("Arial", 'B', 16)
-    # Cella larga 190 (tutta la pagina), alta 15, con sfondo riempito
-    pdf.cell(190, 15, "DELPHI PREDICTOR PRO - MATCH REPORT", ln=True, align='C', fill=True)
-    pdf.ln(5) # Spazio vuoto
+    # --- 1. INTESTAZIONE E LOGHI ---
+    # Sfondo Blu Intestazione
+    pdf.set_fill_color(26, 28, 35) # Grigio scuro/Blu Streamlit
+    pdf.rect(0, 0, 210, 40, 'F')
     
-    # Ripristiniamo il testo nero per il resto del documento
-    pdf.set_text_color(0, 0, 0)
-    
-    # --- 2. DETTAGLI PARTITA ---
-    pdf.set_font("Arial", 'B', 14)
-    pdf.cell(190, 10, f"{dati_partita['Partita']}", ln=True, align='C')
-    
-    pdf.set_font("Arial", '', 11)
-    pdf.cell(190, 6, f"Competizione: {dati_partita.get('League', 'N.D.')}", ln=True, align='C')
-    pdf.cell(190, 6, f"Data: {dati_partita['Data']} - Ore: {dati_partita['Ora']}", ln=True, align='C')
-    pdf.ln(10)
-    
-    # --- 3. LAYOUT A COLONNE (Affiancare due riquadri) ---
-    y_corrente = pdf.get_y() # Salviamo la posizione Y attuale
-    
-    # Colonna Sinistra (1X2)
-    pdf.set_font("Arial", 'B', 12)
-    pdf.set_fill_color(240, 240, 240) # Grigio chiaro
-    pdf.cell(90, 8, "Esito Finale 1X2", border=1, ln=2, align='C', fill=True)
-    pdf.set_font("Arial", 'B', 14) # Font più grande per l'esito
-    pdf.cell(90, 12, dati_partita['1X2'], border=1, ln=2, align='C')
-    
-    # Colonna Destra (Under/Over) - Usiamo set_xy per tornare su e spostarci a destra
-    pdf.set_xy(110, y_corrente) # 110 = 10 margine sx + 90 larghezza cella 1 + 10 spazio
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(90, 8, "Under / Over 2.5", border=1, ln=2, align='C', fill=True)
-    pdf.set_font("Arial", 'B', 14)
-    pdf.cell(90, 12, dati_partita['U/O 2.5'], border=1, ln=1, align='C')
-    
-    pdf.ln(8)
-    
-    # --- 4. ALTRI DETTAGLI A LARGHEZZA INTERA ---
-    pdf.set_font("Arial", 'B', 11)
-    pdf.cell(190, 8, "Probabilità Calcolate:", ln=True)
-    
+    # Inserimento Loghi (Posizionati ai lati del titolo)
+    try:
+        # Logo Casa (Sinistra)
+        pdf.image(d['logo_casa'], 15, 10, 20)
+        # Logo Fuori (Destra)
+        pdf.image(d['logo_fuori'], 175, 10, 20)
+    except:
+        pass # Se il logo non è caricabile, il PDF viene generato comunque
+
+    pdf.set_y(15)
+    pdf.set_text_color(255, 255, 255)
+    pdf.set_font("Arial", 'B', 20)
+    pdf.cell(0, 10, "DELPHI PREDICTOR PRO", ln=True, align='C')
     pdf.set_font("Arial", '', 10)
-    quote_str = f"Segno 1: {dati_partita['p1']:.1%} | Segno X: {dati_partita['px']:.1%} | Segno 2: {dati_partita['p2']:.1%}"
-    pdf.cell(190, 6, quote_str, ln=True)
+    pdf.cell(0, 10, f"Report Generato il {d['Data']} - {d['Ora']}", ln=True, align='C')
+
+    # Ripristino Colori Standard
+    pdf.set_text_color(0, 0, 0)
+    pdf.set_y(45)
+
+    # --- 2. DETTAGLI MATCH E FILTRI ---
+    pdf.set_font("Arial", 'B', 16)
+    pdf.cell(0, 10, d['Partita'], ln=True, align='C')
+    pdf.set_font("Arial", 'I', 11)
+    pdf.cell(0, 7, f"Competizione: {d.get('League', 'N.D.')}", ln=True, align='C')
+    
+    # Sezione Alert (Big Match / Stanchezza)
+    pdf.ln(5)
+    pdf.set_font("Arial", 'B', 10)
+    if d.get('is_big_match'):
+        pdf.set_text_color(200, 0, 0)
+        pdf.cell(0, 7, "ATTENZIONE: Filtro Big Match Attivo (Partita Tattica)", ln=True, align='C')
+    
+    if d.get('Fatica') == "SÌ":
+        pdf.set_text_color(200, 0, 0)
+        pdf.cell(0, 7, "ALLERTA STANCHEZZA: Una delle squadre ha giocato < 72h fa", ln=True, align='C')
+    
+    pdf.set_text_color(0, 0, 0)
     pdf.ln(5)
 
-    # Risultati Esatti (usiamo multi_cell perché la stringa potrebbe essere lunga e andare a capo)
+    # --- 3. INFO TECNICHE (Arbitro & Analisi) ---
+    pdf.set_fill_color(240, 240, 240)
     pdf.set_font("Arial", 'B', 11)
-    pdf.set_fill_color(220, 235, 255) # Azzurrino
-    pdf.cell(190, 8, " Risultati Esatti Consigliati", ln=True, fill=True)
+    pdf.cell(95, 8, " Dettagli Tecnici", border=1, fill=True)
+    pdf.cell(95, 8, " Analisi Tempi", border=1, ln=True, fill=True)
+    
     pdf.set_font("Arial", '', 10)
-    pdf.multi_cell(190, 8, dati_partita['Top 6 RE Finali'], border=1)
+    # Riquadro info
+    y_start = pdf.get_y()
+    pdf.multi_cell(95, 7, f"Arbitro: {d.get('arbitro', 'N.D.')}\nImpatto Arbitro: {d.get('molt_arbitro', 1.0)}x\nGol Finale (LG): {d['lg']:.2f}", border=1)
     
-    # Nota a piè di pagina
-    pdf.set_y(-25) # Vai a 25mm dal fondo della pagina
+    # Riquadro tempi (posizionamento a destra)
+    pdf.set_xy(105, y_start)
+    pdf.multi_cell(95, 7, f"Tempo con più gol: {d['tempo_top']}\nDistribuzione H: {d['dist_1t_h']}% / {d['dist_2t_h']}%\nDistribuzione A: {d['dist_1t_a']}% / {d['dist_2t_a']}%", border=1)
+    
+    pdf.ln(10)
+
+    # --- 4. PRONOSTICI PRINCIPALI (1X2 e U/O) ---
+    pdf.set_font("Arial", 'B', 12)
+    pdf.set_fill_color(30, 58, 138)
+    pdf.set_text_color(255, 255, 255)
+    pdf.cell(190, 10, " PRONOSTICI PRINCIPALI", ln=True, fill=True)
+    
+    pdf.set_text_color(0, 0, 0)
+    pdf.set_font("Arial", 'B', 10)
+    
+    # Tabella 1X2
+    col_w = 190/3
+    pdf.cell(col_w, 8, "SEGNO 1", border=1, align='C')
+    pdf.cell(col_w, 8, "SEGNO X", border=1, align='C')
+    pdf.cell(col_w, 8, "SEGNO 2", border=1, ln=True, align='C')
+    
+    pdf.set_font("Arial", '', 10)
+    pdf.cell(col_w, 8, f"{d['p1']:.1%} (Q: {stima_quota(d['p1'])})", border=1, align='C')
+    pdf.cell(col_w, 8, f"{d['px']:.1%} (Q: {stima_quota(d['px'])})", border=1, align='C')
+    pdf.cell(col_w, 8, f"{d['p2']:.1%} (Q: {stima_quota(d['p2'])})", border=1, ln=True, align='C')
+    
+    pdf.ln(5)
+    
+    # Tabella U/O e GNG
+    pdf.set_font("Arial", 'B', 10)
+    pdf.cell(95, 8, "UNDER/OVER 2.5", border=1, align='C')
+    pdf.cell(95, 8, "GOL / NO GOL", border=1, ln=True, align='C')
+    
+    pdf.set_font("Arial", '', 10)
+    p_over = 1 - d['pu']
+    p_nogol = 1 - d['pg']
+    pdf.cell(95, 8, f"U: {d['pu']:.1%} | O: {p_over:.1%}", border=1, align='C')
+    pdf.cell(95, 8, f"G: {d['pg']:.1%} | NG: {p_nogol:.1%}", border=1, ln=True, align='C')
+
+    pdf.ln(10)
+
+    # --- 5. DETTAGLIO RISULTATI ESATTI E SOMME ---
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(0, 10, "🎯 Analisi Risultati Esatti", ln=True)
+    
+    pdf.set_font("Arial", '', 9)
+    # Usiamo multi_cell per gestire le stringhe lunghe dei RE
+    pdf.multi_cell(0, 6, f"TOP 6 FINALI:\n{d['Top 6 RE Finali']}", border=1)
+    pdf.ln(3)
+    pdf.multi_cell(0, 6, f"SOMMA GOL FINALE: {d['SGF']}", border=1)
+    
+    # Footer
+    pdf.set_y(-20)
     pdf.set_font("Arial", 'I', 8)
-    pdf.cell(0, 10, "Generato da Delphi Predictor Pro - Il gioco è riservato ai maggiorenni e può creare dipendenza.", align='C')
-    
-    return pdf.output(dest='S').encode('latin-1')
-    
+    pdf.set_text_color(150, 150, 150)
+    pdf.cell(0, 10, "Generato da Delphi Predictor Pro - Utilizzare i dati responsabilmente.", align='C')
+
+    return pdf.output(dest='S').encode('latin-1')    
 def check_1x2(pred, home, away):
     if home > away: d = "1"
     elif away > home: d = "2"
