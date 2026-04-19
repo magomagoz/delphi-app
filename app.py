@@ -1027,15 +1027,14 @@ with tab1:
 
             # --- 3. PULSANTE DI STAMPA PDF ---
             # Apparirà in fondo all'analisi e non scomparirà se l'utente ci clicca
-            # Sostituisci il vecchio blocco "try/except" del download con questo:
             try:
-                # Passiamo direttamente tutto il dizionario 'p'
-                pdf_bytes = genera_pdf_pronostico(p)
+                # Sostituito 'p' con 'd', che è la variabile corretta usata in questo blocco
+                pdf_bytes = genera_pdf_pronostico(d)
                 
                 st.download_button(
                     label="🖨️ Scarica PDF per Stampa",
                     data=pdf_bytes,
-                    file_name=f"Delphi_Report_{p['Partita'].replace(' ', '_')}.pdf",
+                    file_name=f"Delphi_Report_{d['Partita'].replace(' ', '_')}.pdf",
                     mime="application/pdf",
                     use_container_width=True
                 )
@@ -1130,8 +1129,7 @@ with tab2:
             if os.path.exists(FILE_DB_PRONOSTICI):
                 os.remove(FILE_DB_PRONOSTICI)
                 st.rerun()
-
-
+                
 with tab3:
     st.header("📊 Performance Delphi")
     
