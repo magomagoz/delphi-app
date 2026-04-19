@@ -101,6 +101,8 @@ def genera_pdf_pronostico(d):
     pdf.set_text_color(255, 255, 255)
     pdf.cell(190, 10, " PRONOSTICO 1X2", ln=True, fill=True)
 
+    pdf.set_text_color(0, 0, 0)
+    
     pdf.set_font("Arial", 'B', 14) # Font più grande per l'esito
     pdf.cell(190, 12, dati_partita['1X2'], border=1, ln=2, align='C')
 
@@ -112,10 +114,10 @@ def genera_pdf_pronostico(d):
     #pdf.cell(col_w, 8, "SEGNO X", border=1, align='C')
     #pdf.cell(col_w, 8, "SEGNO 2", border=1, ln=True, align='C')
     
-    pdf.set_font("Arial", '', 10)
-    pdf.cell(col_w, 8, f"{d['p1']:.1%} (Q: {stima_quota(d['p1'])})", border=1, align='C')
-    pdf.cell(col_w, 8, f"{d['px']:.1%} (Q: {stima_quota(d['px'])})", border=1, align='C')
-    pdf.cell(col_w, 8, f"{d['p2']:.1%} (Q: {stima_quota(d['p2'])})", border=1, ln=True, align='C')
+    #pdf.set_font("Arial", '', 10)
+    #pdf.cell(col_w, 8, f"{d['p1']:.1%} (Q: {stima_quota(d['p1'])})", border=1, align='C')
+    #pdf.cell(col_w, 8, f"{d['px']:.1%} (Q: {stima_quota(d['px'])})", border=1, align='C')
+    #pdf.cell(col_w, 8, f"{d['p2']:.1%} (Q: {stima_quota(d['p2'])})", border=1, ln=True, align='C')
 
     pdf.ln(10)
         
