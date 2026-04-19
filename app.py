@@ -132,7 +132,7 @@ def genera_pdf_pronostico(d):
 
     # --- 5. DETTAGLIO RISULTATI ESATTI E SOMME ---
     pdf.set_font("Arial", 'B', 12)
-    pdf.cell(0, 10, "🎯 Analisi Risultati Esatti", ln=True)
+    pdf.cell(0, 10, "Analisi Risultati Esatti", ln=True)
     
     pdf.set_font("Arial", '', 9)
     # Usiamo multi_cell per gestire le stringhe lunghe dei RE
