@@ -146,7 +146,8 @@ def genera_pdf_pronostico(d):
     pdf.set_text_color(150, 150, 150)
     pdf.cell(0, 10, "Generato da Delphi Predictor Pro - Utilizzare i dati responsabilmente.", align='C')
 
-    return pdf.output(dest='S').encode('latin-1')    
+    return pdf.output(dest='S').encode('ascii', 'ignore')    
+    
 def check_1x2(pred, home, away):
     if home > away: d = "1"
     elif away > home: d = "2"
