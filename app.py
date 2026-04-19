@@ -113,6 +113,19 @@ def genera_pdf_pronostico(d):
     pdf.cell(col_w, 8, f"{d['p2']:.1%} (Q: {stima_quota(d['p2'])})", border=1, ln=True, align='C')
 
     pdf.ln(10)
+        
+    # Tabella U/O e GNG
+    pdf.set_font("Arial", 'B', 10)
+    pdf.cell(95, 8, "UNDER/OVER 2.5", border=1, align='C')
+    pdf.cell(95, 8, "GOL / NO GOL", border=1, ln=True, align='C')
+    
+    pdf.set_font("Arial", '', 10)
+    p_over = 1 - d['pu']
+    p_nogol = 1 - d['pg']
+    pdf.cell(95, 8, f"U: {d['pu']:.1%} | O: {p_over:.1%}", border=1, align='C')
+    pdf.cell(95, 8, f"G: {d['pg']:.1%} | NG: {p_nogol:.1%}", border=1, ln=True, align='C')
+
+    pdf.ln(10)
 
     # --- 5. RISULTATI ESATTI ---
     pdf.set_font("Arial", 'B', 12)
@@ -127,7 +140,7 @@ def genera_pdf_pronostico(d):
     pdf.set_y(-20)
     pdf.set_font("Arial", 'I', 8)
     pdf.cell(0, 10, "Generato da Delphi Predictor Pro", align='C')
-
+    
     # --- CRITICO: IL RETURN DEVE ESSERE COSI' ---
     # output(dest='S') restituisce già una stringa di byte (latin-1) se siamo in Python 3
     # o un oggetto byte. Non codificare ulteriormente in ascii!
