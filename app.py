@@ -79,6 +79,31 @@ def genera_pdf_pronostico(d):
     pdf.set_text_color(0, 0, 0)
     pdf.ln(5)
 
+    # --- SEZIONE FORMA SQUADRE (Trend ultime 4) ---
+    pdf.set_fill_color(240, 240, 240)
+    pdf.set_font("Arial", 'B', 11)
+    pdf.cell(95, 8, f" Forma {pulisci_per_pdf(d['casa_nome'])}", border=1, fill=True)
+    pdf.cell(95, 8, f" Forma {pulisci_per_pdf(d['fuori_nome'])}", border=1, ln=True, fill=True)
+
+    pdf.set_font("Arial", '', 10)
+    
+    # Funzione interna veloce per convertire emoji in testo per il PDF
+    def converti_forma(trend_emoji):
+        if not trend_emoji: return "N.D."
+        # Sostituiamo le emoji con lettere leggibili
+        t = trend_emoji.replace('🟢', ' V ').replace('🟡', ' N ').replace('🔴', ' P ')
+        # Rimuoviamo eventuali altre emoji residue
+        return pulisci_per_pdf(t)
+
+    trend_h = converti_forma(d.get('Trend_Casa', ''))
+    trend_a = converti_forma(d.get('Trend_Fuori', ''))
+
+    # Stampiamo i due box della forma
+    pdf.cell(95, 10, f"Ultime 4: {trend_h}", border=1, align='C')
+    pdf.cell(95, 10, f"Ultime 4: {trend_a}", border=1, ln=True, align='C')
+    
+    pdf.ln(5)
+    
     # --- 3. INFO TECNICHE ---
     pdf.set_fill_color(240, 240, 240)
     pdf.set_font("Arial", 'B', 11)
