@@ -29,33 +29,72 @@ API_TOKEN = 'c7a609a0580f4200add2751d787b3c68'
 FILE_DB_CALCIO = 'database_pro_2025.csv'
 FILE_DB_PRONOSTICI = 'database_pronostici.csv'
 
-# --- 2. FUNZIONI LOGICHE DI VERIFICA ---
-def genera_pdf_pronostico(partita, lega, data, consiglio, quote):
+def genera_pdf_pronostico(dati_partita):
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial", 'B', 16)
     
-    # Intestazione
-    pdf.cell(190, 10, "DELPHI PREDICTOR - REPORT", ln=True, align='C')
+    # --- 1. INTESTAZIONE CON SFONDO COLORATO ---
+    pdf.set_fill_color(30, 58, 138) # Colore Blu Scuro istituzionale
+    pdf.set_text_color(255, 255, 255) # Testo Bianco
+    pdf.set_font("Arial", 'B', 16)
+    # Cella larga 190 (tutta la pagina), alta 15, con sfondo riempito
+    pdf.cell(190, 15, "DELPHI PREDICTOR PRO - MATCH REPORT", ln=True, align='C', fill=True)
+    pdf.ln(5) # Spazio vuoto
+    
+    # Ripristiniamo il testo nero per il resto del documento
+    pdf.set_text_color(0, 0, 0)
+    
+    # --- 2. DETTAGLI PARTITA ---
+    pdf.set_font("Arial", 'B', 14)
+    pdf.cell(190, 10, f"{dati_partita['Partita']}", ln=True, align='C')
+    
+    pdf.set_font("Arial", '', 11)
+    pdf.cell(190, 6, f"Competizione: {dati_partita.get('League', 'N.D.')}", ln=True, align='C')
+    pdf.cell(190, 6, f"Data: {dati_partita['Data']} - Ore: {dati_partita['Ora']}", ln=True, align='C')
     pdf.ln(10)
     
-    # Dettagli Match
+    # --- 3. LAYOUT A COLONNE (Affiancare due riquadri) ---
+    y_corrente = pdf.get_y() # Salviamo la posizione Y attuale
+    
+    # Colonna Sinistra (1X2)
     pdf.set_font("Arial", 'B', 12)
-    pdf.cell(190, 10, f"Match: {partita}", ln=True)
-    pdf.set_font("Arial", '', 11)
-    pdf.cell(190, 10, f"Campionato: {lega} | Data: {data}", ln=True)
-    pdf.ln(5)
+    pdf.set_fill_color(240, 240, 240) # Grigio chiaro
+    pdf.cell(90, 8, "Esito Finale 1X2", border=1, ln=2, align='C', fill=True)
+    pdf.set_font("Arial", 'B', 14) # Font più grande per l'esito
+    pdf.cell(90, 12, dati_partita['1X2'], border=1, ln=2, align='C')
     
-    # Pronostico
-    pdf.set_fill_color(240, 240, 240)
-    pdf.cell(190, 10, f"CONSIGLIO PRINCIPALE: {consiglio}", ln=True, fill=True)
-    pdf.ln(5)
+    # Colonna Destra (Under/Over) - Usiamo set_xy per tornare su e spostarci a destra
+    pdf.set_xy(110, y_corrente) # 110 = 10 margine sx + 90 larghezza cella 1 + 10 spazio
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(90, 8, "Under / Over 2.5", border=1, ln=2, align='C', fill=True)
+    pdf.set_font("Arial", 'B', 14)
+    pdf.cell(90, 12, dati_partita['U/O 2.5'], border=1, ln=1, align='C')
     
-    # Quote
-    pdf.cell(190, 10, f"Dettaglio Quote: {quote}", ln=True)
+    pdf.ln(8)
+    
+    # --- 4. ALTRI DETTAGLI A LARGHEZZA INTERA ---
+    pdf.set_font("Arial", 'B', 11)
+    pdf.cell(190, 8, "Probabilità Calcolate:", ln=True)
+    
+    pdf.set_font("Arial", '', 10)
+    quote_str = f"Segno 1: {dati_partita['p1']:.1%} | Segno X: {dati_partita['px']:.1%} | Segno 2: {dati_partita['p2']:.1%}"
+    pdf.cell(190, 6, quote_str, ln=True)
+    pdf.ln(5)
+
+    # Risultati Esatti (usiamo multi_cell perché la stringa potrebbe essere lunga e andare a capo)
+    pdf.set_font("Arial", 'B', 11)
+    pdf.set_fill_color(220, 235, 255) # Azzurrino
+    pdf.cell(190, 8, " Risultati Esatti Consigliati", ln=True, fill=True)
+    pdf.set_font("Arial", '', 10)
+    pdf.multi_cell(190, 8, dati_partita['Top 6 RE Finali'], border=1)
+    
+    # Nota a piè di pagina
+    pdf.set_y(-25) # Vai a 25mm dal fondo della pagina
+    pdf.set_font("Arial", 'I', 8)
+    pdf.cell(0, 10, "Generato da Delphi Predictor Pro - Il gioco è riservato ai maggiorenni e può creare dipendenza.", align='C')
     
     return pdf.output(dest='S').encode('latin-1')
-
+    
 def check_1x2(pred, home, away):
     if home > away: d = "1"
     elif away > home: d = "2"
@@ -868,7 +907,7 @@ with tab1:
             pen_a = st.select_slider(f"**Potenza Attacco Fuori**", options=[0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0], value=1.0)        
             
             is_big_match = st.toggle("🔥 Filtro Big Match / Derby")
-
+            
         if st.button("🎯 Genera Pronostico", type="primary", use_container_width=True):
             risultati = esegui_analisi(sq, pen_h, pen_a, is_big_match)
             st.session_state['pronostico_corrente'] = risultati
@@ -973,7 +1012,6 @@ with tab1:
             with cfe2:
                 st.info(f"⏱️ **Top 3 Risultati Esatti 1° Tempo**\n\n{d['Top 3 RE 1°T']}")
 
-
             # --- LOGICA SALVATAGGIO ROBUSTA ---
             if st.button("💾 Salva in Cronologia", use_container_width=True):
                 # Calcola la fatica prima di salvare
@@ -987,6 +1025,23 @@ with tab1:
                     time.sleep(1)
                     st.rerun()
 
+            # --- 3. PULSANTE DI STAMPA PDF ---
+            # Apparirà in fondo all'analisi e non scomparirà se l'utente ci clicca
+            # Sostituisci il vecchio blocco "try/except" del download con questo:
+            try:
+                # Passiamo direttamente tutto il dizionario 'p'
+                pdf_bytes = genera_pdf_pronostico(p)
+                
+                st.download_button(
+                    label="🖨️ Scarica PDF per Stampa",
+                    data=pdf_bytes,
+                    file_name=f"Delphi_Report_{p['Partita'].replace(' ', '_')}.pdf",
+                    mime="application/pdf",
+                    use_container_width=True
+                )
+            except Exception as e:
+                st.error(f"Errore nella creazione del PDF: {e}")
+                
 with tab2:
     st.header("📜 Cronologia")
     
