@@ -78,6 +78,23 @@ def genera_pdf_pronostico(d):
     
     pdf.set_text_color(0, 0, 0)
     pdf.ln(5)
+    
+    # --- 3. INFO TECNICHE ---
+    pdf.set_fill_color(240, 240, 240)
+    pdf.set_font("Arial", 'B', 11)
+    pdf.cell(95, 8, " Dettagli Tecnici", border=1, fill=True)
+    pdf.cell(95, 8, " Analisi Distribuzione Gol", border=1, ln=True, fill=True)
+    
+    pdf.set_font("Arial", '', 10)
+    y_start = pdf.get_y()
+    info_tec = f"Arbitro: {pulisci_per_pdf(d.get('arbitro', 'N.D.'))}\nImpatto: {d.get('molt_arbitro', 1.0)}x\nGol Finale (LG): {d['lg']:.2f}"
+    pdf.multi_cell(95, 7, info_tec, border=1)
+    
+    pdf.set_xy(105, y_start)
+    tempi_tec = f"Tempo con + gol: {pulisci_per_pdf(d['tempo_top'])}\nDistribuzione tempi Casa: {d['dist_1t_h']}% / {d['dist_2t_h']}%\nDistribuzione tempi Ospite: {d['dist_1t_a']}% / {d['dist_2t_a']}%"
+    pdf.multi_cell(95, 7, tempi_tec, border=1)
+    
+    pdf.ln(10)
 
     # --- SEZIONE FORMA SQUADRE (Trend ultime 4) ---
     pdf.set_fill_color(240, 240, 240)
@@ -103,23 +120,6 @@ def genera_pdf_pronostico(d):
     pdf.cell(95, 10, f"Ultime 4: {trend_a}", border=1, ln=True, align='C')
     
     pdf.ln(5)
-    
-    # --- 3. INFO TECNICHE ---
-    pdf.set_fill_color(240, 240, 240)
-    pdf.set_font("Arial", 'B', 11)
-    pdf.cell(95, 8, " Dettagli Tecnici", border=1, fill=True)
-    pdf.cell(95, 8, " Analisi Distribuzione Gol", border=1, ln=True, fill=True)
-    
-    pdf.set_font("Arial", '', 10)
-    y_start = pdf.get_y()
-    info_tec = f"Arbitro: {pulisci_per_pdf(d.get('arbitro', 'N.D.'))}\nImpatto: {d.get('molt_arbitro', 1.0)}x\nGol Finale (LG): {d['lg']:.2f}"
-    pdf.multi_cell(95, 7, info_tec, border=1)
-    
-    pdf.set_xy(105, y_start)
-    tempi_tec = f"Tempo con + gol: {pulisci_per_pdf(d['tempo_top'])}\nDistribuzione tempi Casa: {d['dist_1t_h']}% / {d['dist_2t_h']}%\nDistribuzione tempi Ospite: {d['dist_1t_a']}% / {d['dist_2t_a']}%"
-    pdf.multi_cell(95, 7, tempi_tec, border=1)
-    
-    pdf.ln(10)
 
     # --- 4. PRONOSTICI PRINCIPALI ---
     pdf.set_font("Arial", 'B', 14)
