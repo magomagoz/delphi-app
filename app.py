@@ -96,7 +96,7 @@ def genera_pdf_pronostico(d):
     pdf.ln(10)
 
     # --- 4. PRONOSTICI PRINCIPALI ---
-    pdf.set_font("Arial", 'B', 12)
+    pdf.set_font("Arial", 'B', 14)
     pdf.set_fill_color(30, 58, 138)
     pdf.set_text_color(255, 255, 255)
     pdf.cell(190, 10, " PRONOSTICO 1X2", ln=True, fill=True)
@@ -134,7 +134,7 @@ def genera_pdf_pronostico(d):
     pdf.set_font("Arial", 'B', 12)
     pdf.set_fill_color(30, 58, 138)
     pdf.set_text_color(255, 255, 255)
-    pdf.cell(190, 10, " SOMMA GOL FINALE, CASA E OSPITE", ln=True, fill=True)
+    pdf.cell(190, 10, " SOMMA GOL", ln=True, fill=True)
     
     # RIPRISTINO TESTO NERO
     pdf.set_text_color(0, 0, 0)
@@ -142,6 +142,7 @@ def genera_pdf_pronostico(d):
     
     # Inserimento SGF, SGC e SGO (usiamo .get() per sicurezza nel caso i dati manchino)
     pdf.multi_cell(0, 6, f"SOMMA GOL FINALE: {pulisci_per_pdf(d.get('SGF', 'N.D.'))}", border=1)
+    pdf.ln(3)
     pdf.multi_cell(0, 6, f"SOMMA GOL CASA: {pulisci_per_pdf(d.get('SGC', 'N.D.'))}", border=1)
     pdf.multi_cell(0, 6, f"SOMMA GOL OSPITE: {pulisci_per_pdf(d.get('SGO', 'N.D.'))}", border=1)
     
