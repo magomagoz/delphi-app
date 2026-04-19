@@ -41,7 +41,7 @@ def genera_pdf_pronostico(d):
     pdf.add_page()
     
     # --- 1. INTESTAZIONE E LOGHI ---
-    pdf.set_fill_color(126, 192, 238) 
+    pdf.set_fill_color(0, 96, 156) 
     pdf.rect(0, 0, 210, 40, 'F')
     
     try:
@@ -98,7 +98,7 @@ def genera_pdf_pronostico(d):
 
     # --- 4. PRONOSTICI PRINCIPALI ---
     pdf.set_font("Arial", 'B', 14)
-    pdf.set_fill_color(126, 192, 238)
+    pdf.set_fill_color(0, 96, 156)
     pdf.set_text_color(255, 255, 255)
     pdf.cell(190, 10, " PRONOSTICO 1X2", ln=True, fill=True)
 
@@ -110,7 +110,7 @@ def genera_pdf_pronostico(d):
         
 # Tabella U/O e GNG
     pdf.set_font("Arial", 'B', 12)
-    pdf.set_fill_color(126, 192, 238)
+    pdf.set_fill_color(0, 96, 156)
     pdf.set_text_color(255, 255, 255)
     pdf.cell(190, 10, " UNDER/OVER E GOL/NOGOL", ln=True, fill=True)
     
@@ -133,7 +133,7 @@ def genera_pdf_pronostico(d):
 
     # --- SOMMA GOL ---
     pdf.set_font("Arial", 'B', 12)
-    pdf.set_fill_color(126, 192, 238)
+    pdf.set_fill_color(0, 96, 156)
     pdf.set_text_color(255, 255, 255)
     pdf.cell(190, 10, " SOMMA GOL", ln=True, fill=True)
     
@@ -151,7 +151,7 @@ def genera_pdf_pronostico(d):
 
     # --- 5. RISULTATI ESATTI ---
     pdf.set_font("Arial", 'B', 12)
-    pdf.set_fill_color(126, 192, 238)
+    pdf.set_fill_color(0, 96, 156)
     #pdf.set_fill_color(30, 58, 138)
     pdf.set_text_color(255, 255, 255)
     pdf.cell(190, 10, " RISULTATI ESATTI", ln=True, fill=True)
@@ -165,10 +165,10 @@ def genera_pdf_pronostico(d):
     pdf.multi_cell(0, 6, f"TOP 3 RE 1°T:\n{pulisci_per_pdf(d.get('Top 3 RE 1°T', 'N.D.'))}", border=1)
     
     # Footer
-    pdf.set_y(-20)
-    pdf.set_text_color(150, 150, 150)
-    pdf.set_font("Arial", 'I', 8)
-    pdf.cell(0, 10, "Generato da Delphi Predictor Pro", align='C')
+    #pdf.set_y(-20)
+    #pdf.set_text_color(150, 150, 150)
+    #pdf.set_font("Arial", 'I', 8)
+    #pdf.cell(0, 10, "Generato da Delphi Predictor Pro", align='C')
     
     return pdf.output(dest='S').encode('latin-1', errors='replace')
     
