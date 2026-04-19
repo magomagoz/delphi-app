@@ -55,6 +55,7 @@ def genera_pdf_pronostico(d):
     pdf.set_font("Arial", 'B', 20)
     pdf.cell(0, 10, "DELPHI PREDICTOR PRO", ln=True, align='C')
     # CORRETTO: pdf minuscolo
+    pdf.set_font("Arial", 'B', 16)
     pdf.cell(0, 10, "PRONOSTICI PARTITA", ln=True, align='C') 
     pdf.set_font("Arial", '', 10)
 
