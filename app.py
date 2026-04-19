@@ -54,7 +54,8 @@ def genera_pdf_pronostico(d):
     pdf.set_text_color(255, 255, 255)
     pdf.set_font("Arial", 'B', 20)
     pdf.cell(0, 10, "DELPHI PREDICTOR PRO", ln=True, align='C')
-    PDF.cell(0, 10, "PRONOSTICI PARTITA", ln=True, align='C')
+    # CORRETTO: pdf minuscolo
+    pdf.cell(0, 10, "PRONOSTICI PARTITA", ln=True, align='C') 
     pdf.set_font("Arial", '', 10)
 
     pdf.set_text_color(0, 0, 0)
@@ -62,7 +63,6 @@ def genera_pdf_pronostico(d):
 
     # --- 2. DETTAGLI MATCH ---
     pdf.set_font("Arial", 'B', 16)
-    # Puliamo il nome della partita dalle emoji
     pdf.cell(0, 10, pulisci_per_pdf(d['Partita']), ln=True, align='C')
     
     pdf.set_font("Arial", 'I', 11)
@@ -101,22 +101,9 @@ def genera_pdf_pronostico(d):
     pdf.set_text_color(255, 255, 255)
     pdf.cell(190, 10, " PRONOSTICO 1X2", ln=True, fill=True)
 
-    pdf.set_text_color(0, 0, 0)
-    
-    pdf.cell(190, 12, dati_partita['1X2'], border=1, ln=True, align='C')
-
-    
-    #pdf.set_text_color(0, 0, 0)
-    #col_w = 190/3
-    #pdf.set_font("Arial", 'B', 10)
-    #pdf.cell(col_w, 8, "SEGNO 1", border=1, align='C')
-    #pdf.cell(col_w, 8, "SEGNO X", border=1, align='C')
-    #pdf.cell(col_w, 8, "SEGNO 2", border=1, ln=True, align='C')
-    
-    #pdf.set_font("Arial", '', 10)
-    #pdf.cell(col_w, 8, f"{d['p1']:.1%} (Q: {stima_quota(d['p1'])})", border=1, align='C')
-    #pdf.cell(col_w, 8, f"{d['px']:.1%} (Q: {stima_quota(d['px'])})", border=1, align='C')
-    #pdf.cell(col_w, 8, f"{d['p2']:.1%} (Q: {stima_quota(d['p2'])})", border=1, ln=True, align='C')
+    # CORREZIONE TESTO NERO E VARIABILE 'd'
+    pdf.set_text_color(0, 0, 0) 
+    pdf.cell(190, 12, pulisci_per_pdf(d.get('1X2', 'N.D.')), border=1, ln=True, align='C')
 
     pdf.ln(10)
         
@@ -127,8 +114,9 @@ def genera_pdf_pronostico(d):
     pdf.cell(190, 10, " UNDER/OVER E GOL/NOGOL", ln=True, fill=True)
     
     pdf.set_font("Arial", 'B', 10)
-    pdf.set_fill_color(30, 58, 138)
-
+    # CORREZIONE: RIPRISTINO TESTO NERO
+    pdf.set_text_color(0, 0, 0)
+    
     pdf.cell(95, 8, "UNDER/OVER 2.5", border=1, align='C')
     pdf.cell(95, 8, "GOL/NO GOL", border=1, ln=True, align='C')
     
@@ -145,31 +133,34 @@ def genera_pdf_pronostico(d):
     pdf.set_text_color(255, 255, 255)
     pdf.cell(190, 10, " SOMMA GOL FINALE, CASA E OSPITE", ln=True, fill=True)
     
-    #pdf.ln(3)
+    # CORREZIONE: RIPRISTINO TESTO NERO
+    pdf.set_text_color(0, 0, 0)
+    pdf.set_font("Arial", '', 10)
     pdf.multi_cell(0, 6, f"SOMMA GOL FINALE: {pulisci_per_pdf(d['SGF'])}", border=1)
-
-
-
     
+    pdf.ln(10)
+
     # --- 5. RISULTATI ESATTI ---
     pdf.set_font("Arial", 'B', 12)
     pdf.set_fill_color(30, 58, 138)
     pdf.set_text_color(255, 255, 255)
     pdf.cell(190, 10, " RISULTATI ESATTI", ln=True, fill=True)
 
+    # CORREZIONE: RIPRISTINO TESTO NERO
+    pdf.set_text_color(0, 0, 0)
     pdf.set_font("Arial", '', 9)
-    # Pulisci le stringhe dei risultati esatti prima di scriverle
+    
     pdf.multi_cell(0, 6, f"TOP 6 RE FINALI:\n{pulisci_per_pdf(d['Top 6 RE Finali'])}", border=1)
     pdf.ln(3)
-    pdf.multi_cell(0, 3, f"TOP 3 RE 1°T: {pulisci_per_pdf(d['SGF'])}", border=1)
+    
+    # CORREZIONE: VARIABILE SBAGLIATA 'SGF' SOSTITUITA CON 'Top 3 RE 1°T'
+    pdf.multi_cell(0, 6, f"TOP 3 RE 1°T:\n{pulisci_per_pdf(d.get('Top 3 RE 1°T', 'N.D.'))}", border=1)
     
     pdf.set_y(-20)
+    pdf.set_text_color(150, 150, 150)
     pdf.set_font("Arial", 'I', 8)
     pdf.cell(0, 10, "Generato da Delphi Predictor Pro", align='C')
     
-    # --- CRITICO: IL RETURN DEVE ESSERE COSI' ---
-    # output(dest='S') restituisce già una stringa di byte (latin-1) se siamo in Python 3
-    # o un oggetto byte. Non codificare ulteriormente in ascii!
     return pdf.output(dest='S').encode('latin-1', errors='replace')
     
 def check_1x2(pred, home, away):
