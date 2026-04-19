@@ -172,7 +172,7 @@ def genera_pdf_pronostico(d):
     pdf.multi_cell(0, 6, f"SOMMA GOL CASA: {pulisci_per_pdf(d.get('SGC', 'N.D.'))}", border=1)
     pdf.multi_cell(0, 6, f"SOMMA GOL OSPITE: {pulisci_per_pdf(d.get('SGO', 'N.D.'))}", border=1)
     
-    pdf.ln(10)
+    pdf.ln(5)
 
     # --- 5. RISULTATI ESATTI ---
     pdf.set_font("Arial", 'B', 12)
