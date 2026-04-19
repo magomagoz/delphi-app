@@ -107,36 +107,43 @@ def genera_pdf_pronostico(d):
 
     pdf.ln(10)
         
-    # Tabella U/O e GNG
+# Tabella U/O e GNG
     pdf.set_font("Arial", 'B', 12)
     pdf.set_fill_color(30, 58, 138)
     pdf.set_text_color(255, 255, 255)
     pdf.cell(190, 10, " UNDER/OVER E GOL/NOGOL", ln=True, fill=True)
     
-    pdf.set_font("Arial", 'B', 10)
-    # CORREZIONE: RIPRISTINO TESTO NERO
+    # RIPRISTINO TESTO NERO
     pdf.set_text_color(0, 0, 0)
+    pdf.set_font("Arial", 'B', 12) # Font un po' più grande per far risaltare l'esito
     
-    pdf.cell(95, 8, "UNDER/OVER 2.5", border=1, align='C')
-    pdf.cell(95, 8, "GOL/NO GOL", border=1, ln=True, align='C')
-    
-    pdf.set_font("Arial", '', 10)
+    # Calcolo dell'esito più probabile
     p_over = 1 - d['pu']
     p_nogol = 1 - d['pg']
-    pdf.cell(95, 8, f"U: {d['pu']:.1%} | O: {p_over:.1%}", border=1, align='C')
-    pdf.cell(95, 8, f"G: {d['pg']:.1%} | NG: {p_nogol:.1%}", border=1, ln=True, align='C')
+    
+    esito_uo = "UNDER 2.5" if d['pu'] >= p_over else "OVER 2.5"
+    esito_gng = "GOL" if d['pg'] >= p_nogol else "NO GOL"
+    
+    # Stampiamo solo il risultato vincente in due celle affiancate
+    pdf.cell(95, 12, esito_uo, border=1, align='C')
+    pdf.cell(95, 12, esito_gng, border=1, ln=True, align='C')
 
     pdf.ln(10)
 
+    # --- SOMMA GOL ---
     pdf.set_font("Arial", 'B', 12)
     pdf.set_fill_color(30, 58, 138)
     pdf.set_text_color(255, 255, 255)
     pdf.cell(190, 10, " SOMMA GOL FINALE, CASA E OSPITE", ln=True, fill=True)
     
-    # CORREZIONE: RIPRISTINO TESTO NERO
+    # RIPRISTINO TESTO NERO
     pdf.set_text_color(0, 0, 0)
     pdf.set_font("Arial", '', 10)
-    pdf.multi_cell(0, 6, f"SOMMA GOL FINALE: {pulisci_per_pdf(d['SGF'])}", border=1)
+    
+    # Inserimento SGF, SGC e SGO (usiamo .get() per sicurezza nel caso i dati manchino)
+    pdf.multi_cell(0, 6, f"SOMMA GOL FINALE: {pulisci_per_pdf(d.get('SGF', 'N.D.'))}", border=1)
+    pdf.multi_cell(0, 6, f"SOMMA GOL CASA: {pulisci_per_pdf(d.get('SGC', 'N.D.'))}", border=1)
+    pdf.multi_cell(0, 6, f"SOMMA GOL OSPITE: {pulisci_per_pdf(d.get('SGO', 'N.D.'))}", border=1)
     
     pdf.ln(10)
 
@@ -146,16 +153,15 @@ def genera_pdf_pronostico(d):
     pdf.set_text_color(255, 255, 255)
     pdf.cell(190, 10, " RISULTATI ESATTI", ln=True, fill=True)
 
-    # CORREZIONE: RIPRISTINO TESTO NERO
+    # RIPRISTINO TESTO NERO
     pdf.set_text_color(0, 0, 0)
     pdf.set_font("Arial", '', 9)
     
-    pdf.multi_cell(0, 6, f"TOP 6 RE FINALI:\n{pulisci_per_pdf(d['Top 6 RE Finali'])}", border=1)
+    pdf.multi_cell(0, 6, f"TOP 6 RE FINALI:\n{pulisci_per_pdf(d.get('Top 6 RE Finali', 'N.D.'))}", border=1)
     pdf.ln(3)
-    
-    # CORREZIONE: VARIABILE SBAGLIATA 'SGF' SOSTITUITA CON 'Top 3 RE 1°T'
     pdf.multi_cell(0, 6, f"TOP 3 RE 1°T:\n{pulisci_per_pdf(d.get('Top 3 RE 1°T', 'N.D.'))}", border=1)
     
+    # Footer
     pdf.set_y(-20)
     pdf.set_text_color(150, 150, 150)
     pdf.set_font("Arial", 'I', 8)
