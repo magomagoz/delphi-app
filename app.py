@@ -29,23 +29,28 @@ API_TOKEN = 'c7a609a0580f4200add2751d787b3c68'
 FILE_DB_CALCIO = 'database_pro_2025.csv'
 FILE_DB_PRONOSTICI = 'database_pronostici.csv'
 
+import re
+
+def pulisci_per_pdf(testo):
+    """Rimuove emoji e caratteri speciali che mandano in crash FPDF"""
+    if not isinstance(testo, str):
+        return str(testo)
+    # Rimuove emoji e caratteri non-latin1
+    return testo.encode('latin-1', 'ignore').decode('latin-1')
+
 def genera_pdf_pronostico(d):
     pdf = FPDF()
     pdf.add_page()
     
     # --- 1. INTESTAZIONE E LOGHI ---
-    # Sfondo Blu Intestazione
-    pdf.set_fill_color(26, 28, 35) # Grigio scuro/Blu Streamlit
+    pdf.set_fill_color(26, 28, 35) 
     pdf.rect(0, 0, 210, 40, 'F')
     
-    # Inserimento Loghi (Posizionati ai lati del titolo)
     try:
-        # Logo Casa (Sinistra)
         pdf.image(d['logo_casa'], 15, 10, 20)
-        # Logo Fuori (Destra)
         pdf.image(d['logo_fuori'], 175, 10, 20)
     except:
-        pass # Se il logo non è caricabile, il PDF viene generato comunque
+        pass 
 
     pdf.set_y(15)
     pdf.set_text_color(255, 255, 255)
@@ -54,58 +59,52 @@ def genera_pdf_pronostico(d):
     pdf.set_font("Arial", '', 10)
     pdf.cell(0, 10, f"Report Generato il {d['Data']} - {d['Ora']}", ln=True, align='C')
 
-    # Ripristino Colori Standard
     pdf.set_text_color(0, 0, 0)
     pdf.set_y(45)
 
-    # --- 2. DETTAGLI MATCH E FILTRI ---
+    # --- 2. DETTAGLI MATCH ---
     pdf.set_font("Arial", 'B', 16)
-    pdf.cell(0, 10, d['Partita'], ln=True, align='C')
+    # Puliamo il nome della partita dalle emoji
+    pdf.cell(0, 10, pulisci_per_pdf(d['Partita']), ln=True, align='C')
+    
     pdf.set_font("Arial", 'I', 11)
-    pdf.cell(0, 7, f"Competizione: {d.get('League', 'N.D.')}", ln=True, align='C')
+    pdf.cell(0, 7, f"Competizione: {pulisci_per_pdf(d.get('League', 'N.D.'))}", ln=True, align='C')
     
-    # Sezione Alert (Big Match / Stanchezza)
     pdf.ln(5)
-    pdf.set_font("Arial", 'B', 10)
     if d.get('is_big_match'):
+        pdf.set_font("Arial", 'B', 10)
         pdf.set_text_color(200, 0, 0)
-        pdf.cell(0, 7, "ATTENZIONE: Filtro Big Match Attivo (Partita Tattica)", ln=True, align='C')
-    
-    if d.get('Fatica') == "SÌ":
-        pdf.set_text_color(200, 0, 0)
-        pdf.cell(0, 7, "ALLERTA STANCHEZZA: Una delle squadre ha giocato < 72h fa", ln=True, align='C')
+        pdf.cell(0, 7, "ATTENZIONE: Filtro Big Match Attivo", ln=True, align='C')
     
     pdf.set_text_color(0, 0, 0)
     pdf.ln(5)
 
-    # --- 3. INFO TECNICHE (Arbitro & Analisi) ---
+    # --- 3. INFO TECNICHE ---
     pdf.set_fill_color(240, 240, 240)
     pdf.set_font("Arial", 'B', 11)
     pdf.cell(95, 8, " Dettagli Tecnici", border=1, fill=True)
     pdf.cell(95, 8, " Analisi Tempi", border=1, ln=True, fill=True)
     
     pdf.set_font("Arial", '', 10)
-    # Riquadro info
     y_start = pdf.get_y()
-    pdf.multi_cell(95, 7, f"Arbitro: {d.get('arbitro', 'N.D.')}\nImpatto Arbitro: {d.get('molt_arbitro', 1.0)}x\nGol Finale (LG): {d['lg']:.2f}", border=1)
+    info_tec = f"Arbitro: {pulisci_per_pdf(d.get('arbitro', 'N.D.'))}\nImpatto: {d.get('molt_arbitro', 1.0)}x\nGol Finale (LG): {d['lg']:.2f}"
+    pdf.multi_cell(95, 7, info_tec, border=1)
     
-    # Riquadro tempi (posizionamento a destra)
     pdf.set_xy(105, y_start)
-    pdf.multi_cell(95, 7, f"Tempo con più gol: {d['tempo_top']}\nDistribuzione H: {d['dist_1t_h']}% / {d['dist_2t_h']}%\nDistribuzione A: {d['dist_1t_a']}% / {d['dist_2t_a']}%", border=1)
+    tempi_tec = f"Top Tempo: {pulisci_per_pdf(d['tempo_top'])}\nDist. H: {d['dist_1t_h']}% / {d['dist_2t_h']}%\nDist. A: {d['dist_1t_a']}% / {d['dist_2t_a']}%"
+    pdf.multi_cell(95, 7, tempi_tec, border=1)
     
     pdf.ln(10)
 
-    # --- 4. PRONOSTICI PRINCIPALI (1X2 e U/O) ---
+    # --- 4. PRONOSTICI PRINCIPALI ---
     pdf.set_font("Arial", 'B', 12)
     pdf.set_fill_color(30, 58, 138)
     pdf.set_text_color(255, 255, 255)
     pdf.cell(190, 10, " PRONOSTICI PRINCIPALI", ln=True, fill=True)
     
     pdf.set_text_color(0, 0, 0)
-    pdf.set_font("Arial", 'B', 10)
-    
-    # Tabella 1X2
     col_w = 190/3
+    pdf.set_font("Arial", 'B', 10)
     pdf.cell(col_w, 8, "SEGNO 1", border=1, align='C')
     pdf.cell(col_w, 8, "SEGNO X", border=1, align='C')
     pdf.cell(col_w, 8, "SEGNO 2", border=1, ln=True, align='C')
@@ -114,39 +113,27 @@ def genera_pdf_pronostico(d):
     pdf.cell(col_w, 8, f"{d['p1']:.1%} (Q: {stima_quota(d['p1'])})", border=1, align='C')
     pdf.cell(col_w, 8, f"{d['px']:.1%} (Q: {stima_quota(d['px'])})", border=1, align='C')
     pdf.cell(col_w, 8, f"{d['p2']:.1%} (Q: {stima_quota(d['p2'])})", border=1, ln=True, align='C')
-    
-    pdf.ln(5)
-    
-    # Tabella U/O e GNG
-    pdf.set_font("Arial", 'B', 10)
-    pdf.cell(95, 8, "UNDER/OVER 2.5", border=1, align='C')
-    pdf.cell(95, 8, "GOL / NO GOL", border=1, ln=True, align='C')
-    
-    pdf.set_font("Arial", '', 10)
-    p_over = 1 - d['pu']
-    p_nogol = 1 - d['pg']
-    pdf.cell(95, 8, f"U: {d['pu']:.1%} | O: {p_over:.1%}", border=1, align='C')
-    pdf.cell(95, 8, f"G: {d['pg']:.1%} | NG: {p_nogol:.1%}", border=1, ln=True, align='C')
 
     pdf.ln(10)
 
-    # --- 5. DETTAGLIO RISULTATI ESATTI E SOMME ---
+    # --- 5. RISULTATI ESATTI ---
     pdf.set_font("Arial", 'B', 12)
     pdf.cell(0, 10, "Analisi Risultati Esatti", ln=True)
     
     pdf.set_font("Arial", '', 9)
-    # Usiamo multi_cell per gestire le stringhe lunghe dei RE
-    pdf.multi_cell(0, 6, f"TOP 6 FINALI:\n{d['Top 6 RE Finali']}", border=1)
+    # Pulisci le stringhe dei risultati esatti prima di scriverle
+    pdf.multi_cell(0, 6, f"TOP 6 FINALI:\n{pulisci_per_pdf(d['Top 6 RE Finali'])}", border=1)
     pdf.ln(3)
-    pdf.multi_cell(0, 6, f"SOMMA GOL FINALE: {d['SGF']}", border=1)
+    pdf.multi_cell(0, 6, f"SOMMA GOL FINALE: {pulisci_per_pdf(d['SGF'])}", border=1)
     
-    # Footer
     pdf.set_y(-20)
     pdf.set_font("Arial", 'I', 8)
-    pdf.set_text_color(150, 150, 150)
-    pdf.cell(0, 10, "Generato da Delphi Predictor Pro - Utilizzare i dati responsabilmente.", align='C')
+    pdf.cell(0, 10, "Generato da Delphi Predictor Pro", align='C')
 
-    return pdf.output(dest='S').encode('ascii', 'ignore')    
+    # --- CRITICO: IL RETURN DEVE ESSERE COSI' ---
+    # output(dest='S') restituisce già una stringa di byte (latin-1) se siamo in Python 3
+    # o un oggetto byte. Non codificare ulteriormente in ascii!
+    return pdf.output(dest='S').encode('latin-1', errors='replace')
     
 def check_1x2(pred, home, away):
     if home > away: d = "1"
