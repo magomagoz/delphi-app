@@ -55,7 +55,6 @@ def genera_pdf_pronostico(d):
     pdf.set_font("Arial", 'B', 20)
     pdf.cell(0, 10, "DELPHI PREDICTOR PRO", ln=True, align='C')
     pdf.set_font("Arial", '', 10)
-    pdf.cell(0, 10, f"Report Generato il {d['Data']} - {d['Ora']}", ln=True, align='C')
 
     pdf.set_text_color(0, 0, 0)
     pdf.set_y(45)
@@ -66,13 +65,14 @@ def genera_pdf_pronostico(d):
     pdf.cell(0, 10, pulisci_per_pdf(d['Partita']), ln=True, align='C')
     
     pdf.set_font("Arial", 'I', 11)
-    pdf.cell(0, 7, f"Competizione: {pulisci_per_pdf(d.get('League', 'N.D.'))}", ln=True, align='C')
+    pdf.cell(0, 8, f"Campionato: {pulisci_per_pdf(d.get('League', 'N.D.'))}", ln=True, align='C')
+    pdf.cell(0, 8, f"Evento del {d['Data']} - ore {d['Ora']}", ln=True, align='C')
     
     pdf.ln(5)
     if d.get('is_big_match'):
         pdf.set_font("Arial", 'B', 10)
         pdf.set_text_color(200, 0, 0)
-        pdf.cell(0, 7, "ATTENZIONE: Filtro Big Match Attivo", ln=True, align='C')
+        pdf.cell(0, 7, "ATTENZIONE: Big Match/Derby - Probabile partita molto tattica", ln=True, align='C')
     
     pdf.set_text_color(0, 0, 0)
     pdf.ln(5)
@@ -98,7 +98,7 @@ def genera_pdf_pronostico(d):
     pdf.set_font("Arial", 'B', 12)
     pdf.set_fill_color(30, 58, 138)
     pdf.set_text_color(255, 255, 255)
-    pdf.cell(190, 10, " PRONOSTICI PRINCIPALI", ln=True, fill=True)
+    pdf.cell(190, 10, " PRONOSTICO 1X2", ln=True, fill=True)
     
     pdf.set_text_color(0, 0, 0)
     col_w = 190/3
@@ -115,9 +115,16 @@ def genera_pdf_pronostico(d):
     pdf.ln(10)
         
     # Tabella U/O e GNG
+    pdf.set_font("Arial", 'B', 12)
+    pdf.set_fill_color(30, 58, 138)
+    pdf.set_text_color(255, 255, 255)
+    pdf.cell(190, 10, " UNDER/OVER E GOL/NOGOL", ln=True, fill=True)
+    
     pdf.set_font("Arial", 'B', 10)
+    pdf.set_fill_color(30, 58, 138)
+
     pdf.cell(95, 8, "UNDER/OVER 2.5", border=1, align='C')
-    pdf.cell(95, 8, "GOL / NO GOL", border=1, ln=True, align='C')
+    pdf.cell(95, 8, "GOL/NO GOL", border=1, ln=True, align='C')
     
     pdf.set_font("Arial", '', 10)
     p_over = 1 - d['pu']
@@ -127,15 +134,28 @@ def genera_pdf_pronostico(d):
 
     pdf.ln(10)
 
+    pdf.set_font("Arial", 'B', 12)
+    pdf.set_fill_color(30, 58, 138)
+    pdf.set_text_color(255, 255, 255)
+    pdf.cell(190, 10, " SOMMA GOL FINALE, CASA E OSPITE", ln=True, fill=True)
+    
+    #pdf.ln(3)
+    pdf.multi_cell(0, 6, f"SOMMA GOL FINALE: {pulisci_per_pdf(d['SGF'])}", border=1)
+
+
+
+    
     # --- 5. RISULTATI ESATTI ---
     pdf.set_font("Arial", 'B', 12)
-    pdf.cell(0, 10, "Analisi Risultati Esatti", ln=True)
-    
+    pdf.set_fill_color(30, 58, 138)
+    pdf.set_text_color(255, 255, 255)
+    pdf.cell(190, 10, " RISULTATI ESATTI", ln=True, fill=True)
+
     pdf.set_font("Arial", '', 9)
     # Pulisci le stringhe dei risultati esatti prima di scriverle
-    pdf.multi_cell(0, 6, f"TOP 6 FINALI:\n{pulisci_per_pdf(d['Top 6 RE Finali'])}", border=1)
+    pdf.multi_cell(0, 6, f"TOP 6 RE FINALI:\n{pulisci_per_pdf(d['Top 6 RE Finali'])}", border=1)
     pdf.ln(3)
-    pdf.multi_cell(0, 6, f"SOMMA GOL FINALE: {pulisci_per_pdf(d['SGF'])}", border=1)
+    pdf.multi_cell(0, 3, f"TOP 3 RE 1°T: {pulisci_per_pdf(d['SGF'])}", border=1)
     
     pdf.set_y(-20)
     pdf.set_font("Arial", 'I', 8)
