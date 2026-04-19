@@ -97,7 +97,7 @@ def genera_pdf_pronostico(d):
 
     # --- 4. PRONOSTICI PRINCIPALI ---
     pdf.set_font("Arial", 'B', 14)
-    pdf.set_fill_color(30, 58, 138)
+    pdf.set_fill_color(126, 192, 238)
     pdf.set_text_color(255, 255, 255)
     pdf.cell(190, 10, " PRONOSTICO 1X2", ln=True, fill=True)
 
@@ -109,7 +109,7 @@ def genera_pdf_pronostico(d):
         
 # Tabella U/O e GNG
     pdf.set_font("Arial", 'B', 12)
-    pdf.set_fill_color(30, 58, 138)
+    pdf.set_fill_color(126, 192, 238)
     pdf.set_text_color(255, 255, 255)
     pdf.cell(190, 10, " UNDER/OVER E GOL/NOGOL", ln=True, fill=True)
     
@@ -132,7 +132,7 @@ def genera_pdf_pronostico(d):
 
     # --- SOMMA GOL ---
     pdf.set_font("Arial", 'B', 12)
-    pdf.set_fill_color(30, 58, 138)
+    pdf.set_fill_color(126, 192, 238)
     pdf.set_text_color(255, 255, 255)
     pdf.cell(190, 10, " SOMMA GOL", ln=True, fill=True)
     
@@ -150,7 +150,8 @@ def genera_pdf_pronostico(d):
 
     # --- 5. RISULTATI ESATTI ---
     pdf.set_font("Arial", 'B', 12)
-    pdf.set_fill_color(30, 58, 138)
+    pdf.set_fill_color(126, 192, 238)
+    #pdf.set_fill_color(30, 58, 138)
     pdf.set_text_color(255, 255, 255)
     pdf.cell(190, 10, " RISULTATI ESATTI", ln=True, fill=True)
 
