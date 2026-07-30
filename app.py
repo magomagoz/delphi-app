@@ -499,18 +499,25 @@ def analizza_h2h(df_giocate, casa, fuori):
 def get_stats(team, is_home_side, df_giocate):
     t = df_giocate[(df_giocate['HomeTeam'] == team) | (df_giocate['AwayTeam'] == team)].tail(15)
     if t.empty: return 1.2, 1.2
+    
+    # Calcolo medie generali (campionamento largo)
+    gf_all = t.apply(lambda r: r['FTHG'] if r['HomeTeam']==team else r['FTAG'], axis=1).mean()
+    gs_all = t.apply(lambda r: r['FTAG'] if r['HomeTeam']==team else r['FTHG'], axis=1).mean()
+    
     stats_condizione = t[t['HomeTeam'] == team] if is_home_side else t[t['AwayTeam'] == team]
             
-    if not stats_condizione.empty:
-        if is_home_side:
-            gf = stats_condizione['FTHG'].mean()
-            gs = stats_condizione['FTAG'].mean()
-        else:
-            gf = stats_condizione['FTAG'].mean()
-            gs = stats_condizione['FTHG'].mean()
+    if not stats_condizione.empty and len(stats_condizione) >= 3:
+        # Calcolo medie specifiche (casa o trasferta)
+        gf_cond = stats_condizione['FTHG'].mean() if is_home_side else stats_condizione['FTAG'].mean()
+        gs_cond = stats_condizione['FTAG'].mean() if is_home_side else stats_condizione['FTHG'].mean()
+        
+        # Blending Bayesiano: 70% peso alla condizione specifica, 30% alla media generale
+        gf = (gf_cond * 0.7) + (gf_all * 0.3)
+        gs = (gs_cond * 0.7) + (gs_all * 0.3)
     else:
-        gf = t.apply(lambda r: r['FTHG'] if r['HomeTeam']==team else r['FTAG'], axis=1).mean()
-        gs = t.apply(lambda r: r['FTAG'] if r['HomeTeam']==team else r['FTHG'], axis=1).mean()
+        # Se i dati in casa/trasferta sono troppo pochi, usa i dati generali
+        gf, gs = gf_all, gs_all
+        
     return max(0.5, gf), max(0.5, gs)
 
 def analizza_pericolosita_tempi(df_giocate, squadra):
@@ -805,11 +812,21 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
 
     p1, px, p2, pu, pg, tot = 0,0,0,0,0,0
     sgf, sgc, sgo = {i:0 for i in range(12)}, {i:0 for i in range(6)}, {i:0 for i in range(6)}
-    re_fin = []
+    re_fin_grezzi = []
+    
+    # --- 1. MODELLO DIXON-COLES PER IL FINALE (FT) ---
+    rho = -0.15 # Fattore di correlazione 
     
     for i in range(6):
         for j in range(6):
             prob = poisson_probability(i, exp_h) * poisson_probability(j, exp_a)
+            
+            # Applicazione correzione ai risultati più frequenti (0-0, 1-0, 0-1, 1-1)
+            if i == 0 and j == 0: prob *= max(0, 1 - exp_h * exp_a * rho)
+            elif i == 0 and j == 1: prob *= max(0, 1 + exp_h * rho)
+            elif i == 1 and j == 0: prob *= max(0, 1 + exp_a * rho)
+            elif i == 1 and j == 1: prob *= max(0, 1 - rho)
+                
             tot += prob
             if i>j: p1+=prob
             elif i==j: px+=prob
@@ -819,40 +836,66 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
             sgf[i+j] += prob
             sgc[i] += prob
             sgo[j] += prob
-            re_fin.append({'s': f"{i}-{j}", 'p': prob})
+            re_fin_grezzi.append({'s': f"{i}-{j}", 'p': prob})
             
-    # --- CALCOLO HT/FT (LOGICA CORRETTA) ---
+    # Normalizzazione Finale (per riportare la somma a 100% dopo l'alterazione di Dixon-Coles)
+    if tot > 0:
+        p1 /= tot; px /= tot; p2 /= tot; pu /= tot; pg /= tot
+        for k in sgf: sgf[k] /= tot
+        for k in sgc: sgc[k] /= tot
+        for k in sgo: sgo[k] /= tot
+        re_fin = [{'s': item['s'], 'p': item['p'] / tot} for item in re_fin_grezzi]
+    else:
+        re_fin = re_fin_grezzi
+        
+    # --- 2. MODELLO DIXON-COLES PER IL 1° TEMPO (HT) ---
     eh1, ea1 = exp_h * 0.42, exp_a * 0.42
     prob_1t = {'1': 0, 'X': 0, '2': 0}
-    re_1t = []
+    re_1t_grezzi = []
+    tot_ht = 0
     
-    # Calcolo probabilità primo tempo
+    rho_ht = -0.15 # Stesso fattore di correlazione per il primo tempo
+    
     for i in range(4):
         for j in range(4):
             pb = poisson_probability(i, eh1) * poisson_probability(j, ea1)
-            re_1t.append({'s': f"{i}-{j}", 'p': pb})
+            
+            # Applicazione correzione per il 1° Tempo
+            if i == 0 and j == 0: pb *= max(0, 1 - eh1 * ea1 * rho_ht)
+            elif i == 0 and j == 1: pb *= max(0, 1 + eh1 * rho_ht)
+            elif i == 1 and j == 0: pb *= max(0, 1 + ea1 * rho_ht)
+            elif i == 1 and j == 1: pb *= max(0, 1 - rho_ht)
+                
+            tot_ht += pb
+            re_1t_grezzi.append({'s': f"{i}-{j}", 'p': pb})
             sign = "1" if i > j else ("2" if j > i else "X")
             prob_1t[sign] += pb
 
-    # Probabilità Finale (già calcolate prima nel tuo codice)
+    # Normalizzazione 1° Tempo
+    if tot_ht > 0:
+        for k in prob_1t: prob_1t[k] /= tot_ht
+        re_1t = [{'s': item['s'], 'p': item['p'] / tot_ht} for item in re_1t_grezzi]
+    else:
+        re_1t = re_1t_grezzi
+
+    # --- 3. CALCOLO PARZIALE/FINALE (HT/FT) ---
+    # Usiamo le probabilità già corrette e normalizzate di 1T e FT
     prob_ft = {'1': p1, 'X': px, '2': p2}
-    
-    # Inizializziamo pf_final_dict (FONDAMENTALE PER EVITARE L'ERRORE UnboundLocalError)
     pf_final_dict = {}
+    
     for s1 in ['1', 'X', '2']:
         for s2 in ['1', 'X', '2']:
             comb = f"{s1}-{s2}"
-            # Peso statistico per rendere il calcolo realistico
+            # Peso statistico (è più probabile che una squadra mantenga il vantaggio)
             weight = 0.6 if s1 == s2 else (0.3 if s1 == 'X' else 0.1)
             pf_final_dict[comb] = (prob_1t[s1] * prob_ft[s2]) * weight
 
-    # Normalizzazione
+    # Normalizzazione HT/FT
     total_pf = sum(pf_final_dict.values())
     if total_pf > 0:
         for k in pf_final_dict: pf_final_dict[k] /= total_pf
 
     # Generazione stringa TOP 3 HT/FT
-    # Ordiniamo e prendiamo i primi 3. Gestiamo il caso in cui il dizionario sia vuoto.
     items_htft = sorted(pf_final_dict.items(), key=lambda x: x[1], reverse=True)[:3]
     top_pf_string = ", ".join([f"{k} (Q: {stima_quota(v):.2f})" for k, v in items_htft])
     
