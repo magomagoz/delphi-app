@@ -1292,13 +1292,14 @@ with tab1:
             # --- RISULTATI E SOMME GOL CON QUOTE ---
             st.divider()
             st.subheader("⚽ Analisi Somma Gol")
-            cr1, cr2 = st.columns(2)
+            cr1, cr2, cr3 = st.columns(3)
             with cr1:
                 # Mostra i Top 3 esiti del match con le relative quote
-                st.error(f"🎯 **SOMMA GOL FINALE (Top 3)**\n\n{d['SGF']}")           
+                st.error(f"🎯 **SOMMA GOL FINALE (Top 3)**\n{d['SGF']}")           
             with cr2:
                 # Mostra i Top 2 esiti per squadra in box separati e puliti
                 st.error(f"🏠 **SOMMA GOL CASA:**\n{d['SGC']}")
+            with cr3:
                 st.error(f"🚀 **SOMMA GOL OSPITE:**\n{d['SGO']}")
 
             # --- RISULTATI ESATTI ---
