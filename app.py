@@ -534,9 +534,11 @@ def analizza_pericolosita_tempi(df_giocate, squadra):
             gol_fatti_2t += (f_tot - h_1t)
             match_validi += 1
             
-    if match_validi == 0: return 50.0, 50.0
+    # SOSTITUITO 50.0 CON 0.0
+    if match_validi == 0: return 0.0, 0.0
     tot = gol_fatti_1t + gol_fatti_2t
-    if tot == 0: return 50.0, 50.0
+    if tot == 0: return 0.0, 0.0
+    
     perc_1t = round((gol_fatti_1t / tot * 100), 1)
     perc_2t = round((gol_fatti_2t / tot * 100), 1)
     return perc_1t, perc_2t
@@ -913,7 +915,12 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
     
     avg_1t = (dist_1t_h + dist_1t_a) / 2
     avg_2t = (dist_2t_h + dist_2t_a) / 2
-    tempo_top = "1° Tempo" if avg_1t > avg_2t else "2° Tempo"
+    
+    # NUOVA LOGICA: Se i valori sono a zero, mostra che mancano i dati
+    if avg_1t == 0.0 e avg_2t == 0.0:
+        tempo_top = "Dati insufficienti (Campionato non iniziato)"
+    else:
+        tempo_top = "1° Tempo" if avg_1t > avg_2t else "2° Tempo"
 
     # 3. Controllo sicurezza data
     if 'dt_event_ita' not in locals():
