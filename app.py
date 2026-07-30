@@ -940,6 +940,66 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
 
     }
     
+def scansiona_segnali_gold():
+    if not os.path.exists(FILE_DB_CALCIO): return []
+    
+    df = pd.read_csv(FILE_DB_CALCIO)
+    df['Date'] = pd.to_datetime(df['Date'], utc=True)
+    today = pd.Timestamp.now(tz='UTC').normalize()
+    
+    # Filtriamo le partite di oggi nei campionati con le performance migliori
+    camp_gold = ['BL1', 'SA', 'PD', 'ELC'] 
+    
+    matches_oggi = df[
+        (df['League'].isin(camp_gold)) & 
+        (df['Status'].isin(['TIMED', 'SCHEDULED'])) &
+        (df['Date'].dt.normalize() == today)
+    ]
+    
+    if matches_oggi.empty: return []
+    
+    giocate = df[df['Status'] == 'FINISHED'].copy()
+    avg_g = max(1.1, pd.to_numeric(giocate['FTHG'], errors='coerce').mean())
+    
+    segnali = []
+    # Ricalcolo rapido e silenzioso della matematica base di Delphi
+    for _, m in matches_oggi.iterrows():
+        casa, fuori = m['HomeTeam'], m['AwayTeam']
+        
+        att_h, dif_h = get_stats(casa, True, giocate)
+        att_a, dif_a = get_stats(fuori, False, giocate)
+        trend_h, molt_h = calcola_trend_forma(giocate, casa)
+        trend_a, molt_a = calcola_trend_forma(giocate, fuori)
+        m_h2h_h, m_h2h_a, _ = analizza_h2h(giocate, casa, fuori)
+        molt_arb = analizza_severita_arbitro(giocate, str(m.get('Referee', 'N.D.')))
+        
+        exp_h = (att_h * dif_a / avg_g) * molt_h * (2 - molt_arb) * m_h2h_h
+        exp_a = (att_a * dif_h / avg_g) * molt_a * (2 - molt_arb) * m_h2h_a
+        
+        p1, px, p2 = 0, 0, 0
+        for i in range(6):
+            for j in range(6):
+                prob = poisson_probability(i, exp_h) * poisson_probability(j, exp_a)
+                if i > j: p1 += prob
+                elif i == j: px += prob
+                else: p2 += prob
+        
+        fiducia_max = max(p1, px, p2)
+        
+        # Filtro Rigido: Solo match con Fiducia >= 60%
+        if fiducia_max >= 0.60:
+            esito = "1" if fiducia_max == p1 else ("2" if fiducia_max == p2 else "X")
+            segnali.append({
+                'Ora (ITA)': m['Date'].tz_convert('Europe/Rome').strftime("%H:%M"),
+                'Lega': LEAGUE_MAP.get(m['League'], m['League']),
+                'Partita': f"{casa} vs {fuori}",
+                'Esito': esito,
+                'Fiducia': f"{int(fiducia_max*100)}%",
+                'Quota Stima': f"{stima_quota(fiducia_max):.2f}"
+            })
+            
+    return sorted(segnali, key=lambda x: x['Ora (ITA)'])
+    
 def highlight_winners(row):
     # Creiamo una lista di stili vuoti lunga quanto la riga
     colors = [''] * len(row)
@@ -989,6 +1049,34 @@ tab1, tab2, tab3, tab4 = st.tabs(["🎯 **Analisi**", "📜 **Cronologia**", "�
 
 
 with tab1:
+    st.header("🚀 Radar Segnali Gold")
+    
+    radar_attivo = st.toggle("Attiva scansione automatica di giornata (>60% Fiducia)", key="radar_toggle")
+    
+    if radar_attivo:
+        with st.spinner("Scansione matematica dei campionati principali in corso..."):
+            segnali_odierni = scansiona_segnali_gold()
+            
+        if segnali_odierni:
+            st.success(f"🎯 Trovate {len(segnali_odierni)} opportunità ad altissima affidabilità per oggi!")
+            df_segnali = pd.DataFrame(segnali_odierni)
+            st.dataframe(df_segnali, use_container_width=True, hide_index=True)
+            
+            # Generazione rapida del file da scaricare
+            csv_segnali = df_segnali.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="📥 Esporta Segnali di Oggi (CSV)",
+                data=csv_segnali,
+                file_name=f"Delphi_Gold_{date.today()}.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+        else:
+            st.info("🧊 Il palinsesto odierno non presenta match che superano il 60% di fiducia nei campionati Gold. Meglio attendere o valutare solo l'Under/Over.")
+            
+    st.divider()
+    st.header("🎯 Analisi Singolo Match")
+    
     sq = st.text_input("🔍 Inserisci Squadra")
 
     if 'dati_acquisiti' not in st.session_state: st.session_state['dati_acquisiti'] = False
