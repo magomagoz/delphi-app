@@ -1305,7 +1305,7 @@ with tab1:
             # --- RISULTATI ESATTI ---
             st.divider()
             st.subheader("🎯 Risultati Esatti")
-            cfe1, cfe2 = st.columns(2)
+            cfe1, cfe2 = st.columns([7, 5])
             with cfe1:
                 st.success(f"🏁 **TOP 6 RE FINALI**\n\n{d['Top 6 RE Finali']}")
             with cfe2:
