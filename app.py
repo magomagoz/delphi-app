@@ -917,7 +917,7 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
     avg_2t = (dist_2t_h + dist_2t_a) / 2
     
     # NUOVA LOGICA: Se i valori sono a zero, mostra che mancano i dati
-    if avg_1t == 0.0 e avg_2t == 0.0:
+    if avg_1t == 0.0 and avg_2t == 0.0:
         tempo_top = "Dati insufficienti (Campionato non iniziato)"
     else:
         tempo_top = "1° Tempo" if avg_1t > avg_2t else "2° Tempo"
