@@ -969,8 +969,8 @@ def scansiona_segnali_gold(giorni_anticipo=3):
 
     #if matches_oggi.empty: return []
     
-    giocate = df[df['Status'] == 'FINISHED'].copy()
-    avg_g = max(1.1, pd.to_numeric(giocate['FTHG'], errors='coerce').mean())
+        giocate = df[df['Status'] == 'FINISHED'].copy()
+        avg_g = max(1.1, pd.to_numeric(giocate['FTHG'], errors='coerce').mean())
     
     segnali = []
     # Ricalcolo rapido e silenzioso della matematica base di Delphi
