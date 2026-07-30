@@ -1295,10 +1295,10 @@ with tab1:
             cr1, cr2 = st.columns(2)
             with cr1:
                 # Mostra i Top 3 esiti del match con le relative quote
-                st.error(f"🎯 **SOMMA GOL FINALE (TOP 3):**\n\n 📈 Prob: {d['SGF']}")           
+                st.error(f"🎯 **SOMMA GOL FINALE (TOP 3):**\n\n{d['SGF']}")           
             with cr2:
                 # Mostra i Top 2 esiti per squadra con le relative quote
-                st.error(f"🏠 **SOMMA GOL CASA:** 📈 Prob: {d['SGC']}\n\n🚀 **SOMMA GOL OSPITE:** 📈 Prob: {d['SGO']}")
+                st.error(f"🏠 **SOMMA GOL CASA:** {d['SGC']}\n\n🚀 **SOMMA GOL OSPITE:** {d['SGO']}")
 
             # --- RISULTATI ESATTI ---
             st.divider()
