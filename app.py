@@ -1108,7 +1108,8 @@ tab1, tab2, tab3, tab4 = st.tabs(["🎯 **Analisi**", "📜 **Cronologia**", "�
 
 
 with tab1:
-    st.header("🚀 Radar Segnali Gold (Bundesliga, Serie A, La Liga, Championship Inglese, Ligue 1 e Primeira Liga)")
+    st.header("🚀 Radar Segnali Gold")
+    st.info("Solo Bundesliga, Serie A, La Liga, Championship Inglese, Ligue 1 e Primeira Liga")
     
     col_t, col_s = st.columns([1, 2])
     with col_t:
