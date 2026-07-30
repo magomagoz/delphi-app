@@ -1277,9 +1277,9 @@ with tab1:
             st.divider()
             st.subheader("🏁 Esito Finale 1X2")
             c1, cx, c2 = st.columns(3)
-            with c1: st.success(f"**Esito 1:** \n 📈 Prob: {d['p1']:.1%}\n 💰 Quota: {stima_quota(d['p1'])}")
-            with cx: st.success(f"**Esito X:** \n 📈 Prob: {d['px']:.1%}\n 💰 Quota: {stima_quota(d['px'])}")
-            with c2: st.success(f"**Esito 2:** \n 📈 Prob: {d['p2']:.1%}\n 💰 Quota: {stima_quota(d['p2'])}")
+            with c1: st.success(f"**ESITO 1:** \n 📈 Prob: {d['p1']:.1%}\n 💰 Quota: {stima_quota(d['p1'])}")
+            with cx: st.success(f"**ESITO X:** \n 📈 Prob: {d['px']:.1%}\n 💰 Quota: {stima_quota(d['px'])}")
+            with c2: st.success(f"**ESITO 2:** \n 📈 Prob: {d['p2']:.1%}\n 💰 Quota: {stima_quota(d['p2'])}")
 
             st.divider()
             st.subheader("⚔️ Under/Over 2,5 & Gol/NoGol")
@@ -1298,16 +1298,16 @@ with tab1:
                 st.error(f"🎯 **Somma Gol Finale (Top 3)**\n\n{d['SGF']}")           
             with cr2:
                 # Mostra i Top 2 esiti per squadra con le relative quote
-                st.error(f"🏠 **Somma Gol Casa:** {d['SGC']}\n\n🚀 **Somma Gol Ospite:** {d['SGO']}")
+                st.error(f"🏠 **Somma Gol Casa:** {d['SGC']}\n🚀 **Somma Gol Ospite:** {d['SGO']}")
 
             # --- RISULTATI ESATTI ---
             st.divider()
             st.subheader("🎯 Risultati Esatti")
             cfe1, cfe2 = st.columns(2)
             with cfe1:
-                st.success(f"🏁 **Top 6 Risultati Esatti Finali**\n\n{d['Top 6 RE Finali']}")
+                st.success(f"🏁 **TOP 6 RE FINALI**\n\n{d['Top 6 RE Finali']}")
             with cfe2:
-                st.info(f"⏱️ **Top 3 Risultati Esatti 1° Tempo**\n\n{d['Top 3 RE 1°T']}")
+                st.info(f"⏱️ **TOP 3 RE 1° TEMPO**\n\n{d['Top 3 RE 1°T']}")
 
             # --- LOGICA SALVATAGGIO ROBUSTA ---
             if st.button("💾 Salva in Cronologia", use_container_width=True):
