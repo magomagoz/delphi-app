@@ -1139,9 +1139,6 @@ with tab1:
 
             st.header(f"🏟️ **{d['Partita']}**")
             
-            # 1. Suggeritore di Mercato per il Campionato
-            st.info(f"🧠 **Insight Delphi:** {d.get('market_advice', '')}")
-
             st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}")
             st.subheader(f"📅 Data: {d['Data']} ore {d['Ora']}")
         
@@ -1152,6 +1149,9 @@ with tab1:
             if not d.get('rodaggio_completato', True):
                 st.error("⚠️ **ATTENZIONE: Campionato in fase di rodaggio.** Le squadre non hanno ancora disputato 5 partite. Le proiezioni matematiche potrebbero essere instabili.")
 
+            # 1. Suggeritore di Mercato per il Campionato
+            st.info(f"🧠 **Insight Delphi:** {d.get('market_advice', '')}")
+            
             # 3. Semaforo della Fiducia
             fiducia_val = int(d['Fiducia'].replace('%', ''))
             if fiducia_val >= 60:
