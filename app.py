@@ -997,19 +997,19 @@ def scansiona_segnali_gold(giorni_anticipo=3):
         
         fiducia_max = max(p1, px, p2)
         
-            # Filtro Rigido: Solo match con Fiducia >= 60%
-            if fiducia_max >= 0.60:
-                esito = "1" if fiducia_max == p1 else ("2" if fiducia_max == p2 else "X")
-                data_ora_ita = m['Date'].tz_convert('Europe/Rome')
-                segnali.append({
-                    'Data': data_ora_ita.strftime("%d/%m"),
-                    'Ora': data_ora_ita.strftime("%H:%M"),
-                    'Lega': LEAGUE_MAP.get(m['League'], m['League']),
-                    'Partita': f"{casa} vs {fuori}",
-                    'Esito': esito,
-                    'Fiducia': f"{int(fiducia_max*100)}%",
-                    'Quota Stima': f"{stima_quota(fiducia_max):.2f}"
-                })
+        # Filtro Rigido: Solo match con Fiducia >= 60%
+        if fiducia_max >= 0.60:
+            esito = "1" if fiducia_max == p1 else ("2" if fiducia_max == p2 else "X")
+            data_ora_ita = m['Date'].tz_convert('Europe/Rome')
+            segnali.append({
+                'Data': data_ora_ita.strftime("%d/%m"),
+                'Ora': data_ora_ita.strftime("%H:%M"),
+                'Lega': LEAGUE_MAP.get(m['League'], m['League']),
+                'Partita': f"{casa} vs {fuori}",
+                'Esito': esito,
+                'Fiducia': f"{int(fiducia_max*100)}%",
+                'Quota Stima': f"{stima_quota(fiducia_max):.2f}"
+            })
                 
     # Ordiniamo prima per data e poi per ora
     return sorted(segnali, key=lambda x: (x['Data'], x['Ora (ITA)']))
