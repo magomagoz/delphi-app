@@ -1298,8 +1298,8 @@ with tab1:
                 st.error(f"🎯 **SOMMA GOL FINALE (Top 3)**\n\n{d['SGF']}")           
             with cr2:
                 # Mostra i Top 2 esiti per squadra in box separati e puliti
-                st.error(f"🏠 **SOMMA GOL CASA:**\n\n{d['SGC']}")
-                st.error(f"🚀 **SOMMA GOL OSPITE:**\n\n{d['SGO']}")
+                st.error(f"🏠 **SOMMA GOL CASA:**\n{d['SGC']}")
+                st.error(f"🚀 **SOMMA GOL OSPITE:**\n{d['SGO']}")
 
             # --- RISULTATI ESATTI ---
             st.divider()
