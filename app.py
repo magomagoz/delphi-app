@@ -1298,18 +1298,18 @@ with tab1:
                 st.error(f"🎯 **SOMMA GOL FINALE (Top 3)**\n\n{d['SGF']}")           
             with cr2:
                 # Mostra i Top 2 esiti per squadra in box separati e puliti
-                st.error(f"🏠 **SOMMA GOL CASA:**\n\n{d['SGC']}")
+                st.error(f"🏠 **SOMMA GOL CASA (Top 2)**\n\n{d['SGC']}")
             with cr3:
-                st.error(f"🚀 **SOMMA GOL OSPITE:**\n\n{d['SGO']}")
+                st.error(f"🚀 **SOMMA GOL OSPITE (Top 2)**\n\n{d['SGO']}")
 
             # --- RISULTATI ESATTI ---
             st.divider()
             st.subheader("🎯 Risultati Esatti")
             cfe1, cfe2 = st.columns([7, 5])
             with cfe1:
-                st.success(f"🏁 **TOP 6 RE FINALI**\n\n{d['Top 6 RE Finali']}")
+                st.success(f"🏁 **RE FINALI (Top 6)**\n\n{d['Top 6 RE Finali']}")
             with cfe2:
-                st.info(f"⏱️ **TOP 3 RE 1° TEMPO**\n\n{d['Top 3 RE 1°T']}")
+                st.info(f"⏱️ **RE 1° TEMPO (Top 3)**\n\n{d['Top 3 RE 1°T']}")
 
             # --- LOGICA SALVATAGGIO ROBUSTA ---
             if st.button("💾 Salva in Cronologia", use_container_width=True):
