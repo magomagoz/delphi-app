@@ -16,7 +16,7 @@ LEAGUE_MAP = {
     'SA': 'Serie A', 'PL': 'Premier League', 'ELC': 'Championship',
     'PD': 'La Liga', 'BL1': 'Bundesliga', 'FL1': 'Ligue 1',
     'CL': 'UEFA Champions League', 'PPL': 'Primeira Liga', 'DED': 'Eredivisie',
-    'BSA': 'Serie A Brasile', 'EC': 'UEFA Nations League', 'WC': 'FIFA World Cup'
+    'BSA': 'Serie A Brasile'
 }
 
 # --- 1.1. BANNER ---
@@ -343,7 +343,7 @@ def calcola_trend_forma(df_giocate, squadra):
 # --- SOSTITUISCI INTERA FUNZIONE aggiorna_database_calcio ---
 def aggiorna_database_calcio():
     headers = {'X-Auth-Token': API_TOKEN}
-    competitions = ['SA', 'PL', 'ELC', 'PD', 'BL1', 'FL1', 'CL', 'PPL', 'DED', 'BSA', 'EC', 'WC'] 
+    competitions = ['SA', 'PL', 'ELC', 'PD', 'BL1', 'FL1', 'CL', 'PPL', 'DED', 'BSA'] 
     
     rows = []
     progress_bar = st.progress(0)
@@ -890,6 +890,24 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
     # m è la riga del match trovata nel database
     logo_casa = m.get('HomeCrest') if 'HomeCrest' in m else None
     logo_fuori = m.get('AwayCrest') if 'AwayCrest' in m else None
+
+    # Controllo rodaggio stagionale (5 partite)
+    partite_giocate_casa = len(giocate[(giocate['HomeTeam'] == casa) | (giocate['AwayTeam'] == casa)])
+    partite_giocate_fuori = len(giocate[(giocate['HomeTeam'] == fuori) | (giocate['AwayTeam'] == fuori)])
+    rodaggio_completato = partite_giocate_casa >= 5 and partite_giocate_fuori >= 5
+
+    ADVICE_MAP = {
+        'Bundesliga': '🏆 TOP: 1X2, U/O 2.5 e Risultati Esatti | ⛔ EVITA: Gol/No Gol',
+        'La Liga': '🎯 TOP: Risultati Esatti Finali | ⛔ EVITA: 1X2',
+        'Serie A': '🎯 TOP: Risultati Esatti Finali | ⛔ EVITA: 1X2',
+        'Ligue 1': '⚽ TOP: U/O 2.5 e Gol/No Gol | ⛔ EVITA: 1X2',
+        'Championship': '✅ Campionato solido e bilanciato su tutti i mercati',
+        'Primeira Liga': '⏱️ TOP: Risultati Esatti 1° Tempo | ⛔ EVITA: Gol/No Gol',
+        'UEFA Champions League': '⚽ TOP: U/O 2.5 | ⛔ EVITA: Risultati Esatti',
+        'Eredivisie': '⚽ TOP: U/O 2.5 | ⛔ EVITA: Risultati Esatti (rischio goleade)',
+        'Premier League': '🛑 CAMPIONATO OSTICO: Agire solo con Fiducia altissima (>70%)'
+    }
+    market_advice = ADVICE_MAP.get(nome_lega, "Dati neutri per questo campionato.")
     
     # --- RETURN FINALE COMPLETO ---
     return {
@@ -917,6 +935,9 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
         "is_big_match": is_big_match, # Aggiunto per evitare errori nel frontend
         "logo_casa": logo_casa,  # <--- NUOVO
         "logo_fuori": logo_fuori # <--- NUOVO
+        "rodaggio_completato": rodaggio_completato,
+        "market_advice": market_advice,
+
     }
     
 def highlight_winners(row):
@@ -1030,10 +1051,25 @@ with tab1:
 
             st.header(f"🏟️ **{d['Partita']}**")
             
+            # 1. Suggeritore di Mercato per il Campionato
+            st.info(f"🧠 **Insight Delphi:** {d.get('market_advice', '')}")
+
             st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}")
             st.subheader(f"📅 Data: {d['Data']} ore {d['Ora']}")
         
-            if d.get('is_big_match'): st.warning("🛡️ **Filtro Big Match Attivo**: probabile partita molto tattica")
+            if d.get('is_big_match'): 
+                st.warning("🛡️ **Filtro Big Match Attivo**: probabile partita molto tattica")
+
+            # 2. Allerta Rodaggio (Sotto le 5 giornate)
+            if not d.get('rodaggio_completato', True):
+                st.error("⚠️ **ATTENZIONE: Campionato in fase di rodaggio.** Le squadre non hanno ancora disputato 5 partite. Le proiezioni matematiche potrebbero essere instabili.")
+
+            # 3. Semaforo della Fiducia
+            fiducia_val = int(d['Fiducia'].replace('%', ''))
+            if fiducia_val >= 60:
+                st.success(f"🔥 **FIDUCIA ALTA ({fiducia_val}%)**: Ottima affidabilità per 1X2 e Risultati Esatti.")
+            elif fiducia_val < 50:
+                st.warning(f"🧊 **Fiducia Bassa ({fiducia_val}%)**: Match altamente imprevedibile. Valutare solo U/O 2.5 o NoBet.")
 
             c_trend1, c_trend2 = st.columns(2)
             with c_trend1:
