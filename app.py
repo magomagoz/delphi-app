@@ -992,7 +992,7 @@ def scansiona_segnali_gold(giorni_anticipo=3):
     limite_futuro = today + pd.Timedelta(days=giorni_anticipo)
     
     # Filtriamo le partite nei campionati con le performance migliori
-    camp_gold = ['BL1', 'SA', 'PD', 'ELC'] 
+    camp_gold = ['BL1', 'SA', 'PD', 'ELC', 'FL1', 'PPL'] 
     
     matches_target = df[
         (df['League'].isin(camp_gold)) & 
@@ -1108,7 +1108,7 @@ tab1, tab2, tab3, tab4 = st.tabs(["🎯 **Analisi**", "📜 **Cronologia**", "�
 
 
 with tab1:
-    st.header("🚀 Radar Segnali Gold")
+    st.header("🚀 Radar Segnali Gold (Bundesliga, Serie A, Liga, Championship Inglese, Ligue 1 e Primeira Liga)")
     
     col_t, col_s = st.columns([1, 2])
     with col_t:
