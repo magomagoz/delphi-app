@@ -934,9 +934,9 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
         "Forma_H": molt_forma_h, "Forma_A": molt_forma_a,
         "is_big_match": is_big_match, # Aggiunto per evitare errori nel frontend
         "logo_casa": logo_casa,  # <--- NUOVO
-        "logo_fuori": logo_fuori # <--- NUOVO
+        "logo_fuori": logo_fuori, # <--- NUOVO
         "rodaggio_completato": rodaggio_completato,
-        "market_advice": market_advice,
+        "market_advice": market_advice
 
     }
     
