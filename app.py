@@ -1276,6 +1276,9 @@ with tab1:
             if d.get('is_big_match'): 
                 st.warning("🛡️ **Filtro Big Match Attivo**: probabile partita molto tattica")
 
+            if d.get('is_fine_stagione'):
+                st.error("🌪️ **ALLERTA FINE STAGIONE:** Partita del rush finale di campionato. La lotta per la salvezza o per il titolo altera pesantemente le statistiche pure. Calibrare i rischi.")
+
             # 2. Allerta Rodaggio (Sotto le 5 giornate)
             if not d.get('rodaggio_completato', True):
                 st.error("⚠️ **ATTENZIONE: Campionato in fase di rodaggio.** Le squadre non hanno ancora disputato 5 partite. Le proiezioni matematiche potrebbero essere instabili.")
