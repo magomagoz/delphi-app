@@ -1042,11 +1042,19 @@ def scansiona_segnali_gold(giorni_anticipo=3):
     avg_g = max(1.1, pd.to_numeric(giocate['FTHG'], errors='coerce').mean())
     
     segnali = []
-    rho = -0.15 # Fattore di correlazione Dixon-Coles
+    
+    # Mappa Rho per il Radar
+    RHO_MAP = {
+        'Serie A': -0.18, 'La Liga': -0.18, 'Serie A Brasile': -0.18, 
+        'Championship': -0.15, 'Ligue 1': -0.15, 'UEFA Champions League': -0.15,
+        'Premier League': -0.12, 'Primeira Liga': -0.12,
+        'Bundesliga': -0.10, 'Eredivisie': -0.10
+    }
     
     # Ricalcolo rapido e silenzioso della matematica base di Delphi
     for _, m in matches_target.iterrows():
         casa, fuori = m['HomeTeam'], m['AwayTeam']
+        nome_lega_radar = LEAGUE_MAP.get(m['League'], m['League'])
         
         att_h, dif_h = get_stats(casa, True, giocate)
         att_a, dif_a = get_stats(fuori, False, giocate)
@@ -1060,6 +1068,17 @@ def scansiona_segnali_gold(giorni_anticipo=3):
         
         p1, px, p2, tot = 0, 0, 0, 0
         re_fin_grezzi = []
+        
+        # Carica il Rho dinamico
+        rho = RHO_MAP.get(nome_lega_radar, -0.15)
+        
+        # Applica Varianza di Fine Stagione per abbattere quote insidiose
+        data_ora_ita = m['Date'].tz_convert('Europe/Rome')
+        mese_match = data_ora_ita.month
+        penalita_fine_stagione = 0.0
+        if (nome_lega_radar == 'Serie A Brasile' and mese_match in [11, 12]) or \
+           (nome_lega_radar != 'Serie A Brasile' and mese_match in [4, 5]):
+            penalita_fine_stagione = 0.05 # Togliamo 5% secco di fiducia
         
         for i in range(6):
             for j in range(6):
@@ -1085,20 +1104,18 @@ def scansiona_segnali_gold(giorni_anticipo=3):
         else:
             re_fin = re_fin_grezzi
             
-        fiducia_max = max(p1, px, p2)
+        # Calcolo Fiducia Depurata dalla varianza
+        fiducia_max = max(p1, px, p2) - penalita_fine_stagione
         
         # Filtro Rigido: Solo match con Fiducia >= 60%
         if fiducia_max >= 0.60:
-            data_ora_ita = m['Date'].tz_convert('Europe/Rome')
-            
-            # Estrazione dei Top 6 Risultati Esatti con le relative quote
             top_6_re = sorted(re_fin, key=lambda x: x['p'], reverse=True)[:6]
             stringa_re = ", ".join([f"{v['s']} (Q: {stima_quota(v['p']):.2f})" for v in top_6_re])
             
             segnali.append({
                 'Data': data_ora_ita.strftime("%d/%m"),
                 'Ora': data_ora_ita.strftime("%H:%M"),
-                'Lega': LEAGUE_MAP.get(m['League'], m['League']),
+                'Lega': nome_lega_radar,
                 'Partita': f"{casa} vs {fuori}",
                 'Fiducia': f"{int(fiducia_max*100)}%",
                 'Top 6 RE': stringa_re
