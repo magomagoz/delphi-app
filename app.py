@@ -497,25 +497,36 @@ def analizza_h2h(df_giocate, casa, fuori):
     return bonus_h2h_casa, bonus_h2h_fuori, testo_h2h
 
 def get_stats(team, is_home_side, df_giocate):
+    # 1. TIME DECAY: Ordiniamo cronologicamente per usare l'EWMA (Media Mobile Esponenziale)
+    df_giocate = df_giocate.sort_values('Date')
     t = df_giocate[(df_giocate['HomeTeam'] == team) | (df_giocate['AwayTeam'] == team)].tail(15)
+    
     if t.empty: return 1.2, 1.2
     
-    # Calcolo medie generali (campionamento largo)
-    gf_all = t.apply(lambda r: r['FTHG'] if r['HomeTeam']==team else r['FTAG'], axis=1).mean()
-    gs_all = t.apply(lambda r: r['FTAG'] if r['HomeTeam']==team else r['FTHG'], axis=1).mean()
+    # Estraiamo le serie temporali dei gol fatti e subiti
+    gf_series = t.apply(lambda r: r['FTHG'] if r['HomeTeam']==team else r['FTAG'], axis=1)
+    gs_series = t.apply(lambda r: r['FTAG'] if r['HomeTeam']==team else r['FTHG'], axis=1)
+    
+    # Calcolo medie generali con EWMA (span=5 dà più peso alle ultime 3-5 gare)
+    gf_all = gf_series.ewm(span=5, min_periods=1).mean().iloc[-1]
+    gs_all = gs_series.ewm(span=5, min_periods=1).mean().iloc[-1]
     
     stats_condizione = t[t['HomeTeam'] == team] if is_home_side else t[t['AwayTeam'] == team]
             
     if not stats_condizione.empty and len(stats_condizione) >= 3:
-        # Calcolo medie specifiche (casa o trasferta)
-        gf_cond = stats_condizione['FTHG'].mean() if is_home_side else stats_condizione['FTAG'].mean()
-        gs_cond = stats_condizione['FTAG'].mean() if is_home_side else stats_condizione['FTHG'].mean()
+        # Serie storiche per le gare specifiche in casa/trasferta
+        gf_cond_series = stats_condizione['FTHG'] if is_home_side else stats_condizione['FTAG']
+        gs_cond_series = stats_condizione['FTAG'] if is_home_side else stats_condizione['FTHG']
+        
+        # EWMA anche sulla condizione specifica (span=3 perché il campione è più piccolo)
+        gf_cond = gf_cond_series.ewm(span=3, min_periods=1).mean().iloc[-1]
+        gs_cond = gs_cond_series.ewm(span=3, min_periods=1).mean().iloc[-1]
         
         # Blending Bayesiano: 70% peso alla condizione specifica, 30% alla media generale
         gf = (gf_cond * 0.7) + (gf_all * 0.3)
         gs = (gs_cond * 0.7) + (gs_all * 0.3)
     else:
-        # Se i dati in casa/trasferta sono troppo pochi, usa i dati generali
+        # Se i dati in casa/trasferta sono troppo pochi, usa la media EWMA generale
         gf, gs = gf_all, gs_all
         
     return max(0.5, gf), max(0.5, gs)
@@ -816,8 +827,24 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
     sgf, sgc, sgo = {i:0 for i in range(12)}, {i:0 for i in range(6)}, {i:0 for i in range(6)}
     re_fin_grezzi = []
     
-    # --- 1. MODELLO DIXON-COLES PER IL FINALE (FT) ---
-    rho = -0.15 # Fattore di correlazione 
+    # --- RHO DINAMICO (DIXON-COLES PER CAMPIONATO) ---
+    RHO_MAP = {
+        'Serie A': -0.18, 'La Liga': -0.18, 'Serie A Brasile': -0.18, 
+        'Championship': -0.15, 'Ligue 1': -0.15, 'UEFA Champions League': -0.15,
+        'Premier League': -0.12, 'Primeira Liga': -0.12,
+        'Bundesliga': -0.10, 'Eredivisie': -0.10
+    }
+    # Assegna il Rho specifico, default a -0.15 se non mappato
+    rho = RHO_MAP.get(nome_lega, -0.15) 
+    rho_ht = rho # Applichiamo lo stesso fattore tattico anche al 1° tempo
+    
+    # --- CONTROLLO VARIANZA DI FINE STAGIONE ---
+    mese_match = dt_event_ita.month
+    is_fine_stagione = False
+    # Identifica il rush finale (Maggio/Aprile per l'Europa, Novembre/Dicembre per il Brasile)
+    if (nome_lega == 'Serie A Brasile' and mese_match in [11, 12]) or \
+       (nome_lega != 'Serie A Brasile' and mese_match in [4, 5]):
+        is_fine_stagione = True
     
     for i in range(6):
         for j in range(6):
@@ -986,7 +1013,8 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
         "logo_casa": logo_casa,  # <--- NUOVO
         "logo_fuori": logo_fuori, # <--- NUOVO
         "rodaggio_completato": rodaggio_completato,
-        "market_advice": market_advice
+        "market_advice": market_advice,
+        "is_fine_stagione": is_fine_stagione
 
     }
     
