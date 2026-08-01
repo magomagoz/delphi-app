@@ -125,11 +125,15 @@ def genera_pdf_pronostico(d):
     pdf.set_font("Arial", 'B', 14)
     pdf.set_fill_color(0, 96, 156)
     pdf.set_text_color(255, 255, 255)
-    pdf.cell(190, 10, " PRONOSTICO 1X2", ln=True, fill=True)
+    pdf.cell(190, 10, " PRONOSTICI PRINCIPALI", ln=True, fill=True)
 
-    # CORREZIONE TESTO NERO E VARIABILE 'd'
     pdf.set_text_color(0, 0, 0) 
-    pdf.cell(190, 12, pulisci_per_pdf(d.get('1X2', 'N.D.')), border=1, ln=True, align='C')
+    pdf.set_font("Arial", 'B', 11)
+    
+    # Dividiamo lo spazio in 3 colonne per affiancare Finale, 1°T e HT/FT
+    pdf.cell(63, 10, f"Finale: {pulisci_per_pdf(d.get('1X2', 'N.D.'))}", border=1, align='C')
+    pdf.cell(63, 10, f"1° Tempo: {pulisci_per_pdf(d.get('1X2 1°T', 'N.D.'))}", border=1, align='C')
+    pdf.cell(64, 10, f"HT/FT: {pulisci_per_pdf(d.get('Esito HT/FT', 'N.D.'))}", border=1, ln=True, align='C')
 
     pdf.ln(5)
         
@@ -220,7 +224,7 @@ def check_in_list(pred_string, value_to_find):
 def get_db_columns():
     return [
         "Data", "Ora", "League", "Partita", "Fiducia", "Affidabilità", 
-        "1X2", "U/O 2.5", "G/NG", "SGF", "SGC", "SGO", 
+        "1X2", "1X2 1°T", "Esito HT/FT", "U/O 2.5", "G/NG", "SGF", "SGC", "SGO", 
         "Top 6 RE Finali", "Top 3 RE 1°T", "Top 3 HT/FT", "Fatica", "Match_ID", "Risultato_Reale", "PT_Reale"
     ]
 
@@ -596,7 +600,7 @@ def analizza_performance_campionato(camp_filtro):
         st.success(f"Analisi completata su {match_contati} match per {camp_filtro}")
         
         # Dizionario per accumulare i successi [Vinti, Totali]
-        stats = {k: [0, 0] for k in ['1X2', 'U/O 2.5', 'G/NG', 'SGF', 'SGC (Casa)', 'SGO (Ospite)', 'RE Finali', 'RE 1°T', 'HT/FT']}
+        stats = {k: [0, 0] for k in ['1X2', '1X2 1°T', 'Esito HT/FT', 'U/O 2.5', 'G/NG', 'SGF', 'SGC', 'SGO', 'RE Finali', 'RE 1°T', 'Top 3 HT/FT']}
 
         for _, row in df_v.iterrows():
             try:
@@ -612,6 +616,13 @@ def analizza_performance_campionato(camp_filtro):
                 # 1. Mercati Standard
                 stats['1X2'][1] += 1
                 if check_1x2(row['1X2'], h, a): stats['1X2'][0] += 1
+                
+                # NUOVI CONTROLLI 1°T e HT/FT
+                stats['1X2 1°T'][1] += 1
+                if check_1x2(row.get('1X2 1°T', 'N/D'), ph, pa): stats['1X2 1°T'][0] += 1
+                
+                stats['Esito HT/FT'][1] += 1
+                if str(row.get('Esito HT/FT', 'N/D')).replace("/", "-") == real_htft: stats['Esito HT/FT'][0] += 1
                 
                 stats['U/O 2.5'][1] += 1
                 if check_uo(row['U/O 2.5'], h, a): stats['U/O 2.5'][0] += 1
@@ -928,10 +939,19 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
     items_htft = sorted(pf_final_dict.items(), key=lambda x: x[1], reverse=True)[:3]
     top_pf_string = ", ".join([f"{k} (Q: {stima_quota(v):.2f})" for k, v in items_htft])
     
-    # 1. Calcolo stringhe pronostici 1X2, U/O, G/NG
+    # 1. Calcolo stringhe pronostici 1X2, 1°T, HT/FT, U/O, G/NG
     if p1 >= px and p1 >= p2: d_1x2 = "1"
     elif p2 >= p1 and p2 >= px: d_1x2 = "2"
     else: d_1x2 = "X"
+    
+    # NUOVO: Estrazione Esito 1° Tempo
+    d_1x2_ht = max(prob_1t, key=prob_1t.get)
+    p_1t_max = prob_1t[d_1x2_ht]
+
+    # NUOVO: Estrazione Singolo Parziale/Finale
+    best_htft_key = max(pf_final_dict, key=pf_final_dict.get)
+    d_htft = best_htft_key.replace("-", "/") # Converte es. "1-X" in "1/X"
+    p_htft_max = pf_final_dict[best_htft_key]
     
     d_uo = "UNDER 2.5" if pu >= 0.5 else "OVER 2.5"
     d_gng = "GOL" if pg >= 0.5 else "NOGOL"
@@ -1014,7 +1034,11 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
         "logo_fuori": logo_fuori, # <--- NUOVO
         "rodaggio_completato": rodaggio_completato,
         "market_advice": market_advice,
-        "is_fine_stagione": is_fine_stagione
+        "is_fine_stagione": is_fine_stagione,
+        "1X2 1°T": d_1x2_ht, 
+        "Esito HT/FT": d_htft, 
+        "p_1t_max": p_1t_max, 
+        "p_htft_max": p_htft_max
 
     }
     
@@ -1151,6 +1175,8 @@ def highlight_winners(row):
 
         checks = [
             ('1X2', lambda: check_1x2(row['1X2'], h, a)),
+            ('1X2 1°T', lambda: check_1x2(row.get('1X2 1°T', 'N/D'), ph, pa)),
+            ('Esito HT/FT', lambda: str(row.get('Esito HT/FT', 'N/D')).replace("/", "-") == real_htft),
             ('U/O 2.5', lambda: check_uo(row['U/O 2.5'], h, a)),
             ('G/NG', lambda: check_gng(row['G/NG'], h, a)),
             ('SGF', lambda: check_in_list(row['SGF'], h+a)),
@@ -1344,6 +1370,14 @@ with tab1:
             with cx: st.success(f"**ESITO X:** \n 📈 Prob: {d['px']:.1%}\n 💰 Quota: {stima_quota(d['px'])}")
             with c2: st.success(f"**ESITO 2:** \n 📈 Prob: {d['p2']:.1%}\n 💰 Quota: {stima_quota(d['p2'])}")
 
+            st.divider()
+            st.subheader("⏱️ Pronostici 1° Tempo e Parziale/Finale")
+            c_1t, c_htft = st.columns(2)
+            with c_1t:
+                st.info(f"**ESITO 1X2 (1° TEMPO): {d['1X2 1°T']}**\n\n📈 Probabilità: {d['p_1t_max']:.1%} | 💰 Quota: {stima_quota(d['p_1t_max'])}")
+            with c_htft:
+                st.info(f"**PARZIALE/FINALE: {d['Esito HT/FT']}**\n\n📈 Probabilità: {d['p_htft_max']:.1%} | 💰 Quota: {stima_quota(d['p_htft_max'])}")
+            
             st.divider()
             st.subheader("⚔️ Under/Over 2,5 & Gol/NoGol")
             col_uo, col_gng = st.columns(2)
