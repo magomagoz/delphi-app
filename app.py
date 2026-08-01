@@ -1270,11 +1270,11 @@ with tab1:
         
         col_p1, col_p2 = st.columns(2)
         with col_p1:
-            pen_h = st.select_slider(f"**Potenza Attacco Casa**", options=[0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0], value=1.0)
+            pen_h = st.select_slider(f"**Potenza Attacco Squadra Casa**", options=[0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0], value=1.0)
         with col_p2:
-            pen_a = st.select_slider(f"**Potenza Attacco Fuori**", options=[0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0], value=1.0)        
+            pen_a = st.select_slider(f"**Potenza Attacco Squadra Ospite**", options=[0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0], value=1.0)        
             
-            is_big_match = st.toggle("🔥 Filtro Big Match / Derby")
+            is_big_match = st.toggle("🔥🔥🔥 Filtro Big Match/Derby 🔥🔥🔥")
             
         if st.button("🎯 Genera Pronostico", type="primary", use_container_width=True):
             risultati = esegui_analisi(sq, pen_h, pen_a, is_big_match)
