@@ -1407,7 +1407,7 @@ with tab1:
             with cfe1:
                 st.success(f"🏁 **RE FINALI (Top 6)**\n\n{d['Top 6 RE Finali']}")
             with cfe2:
-                st.info(f"⏱️ **RE 1° TEMPO (Top 3)**\n\n{d['Top 3 RE 1°T']}")
+                st.success(f"⏱️ **RE 1° TEMPO (Top 3)**\n\n{d['Top 3 RE 1°T']}")
 
             # --- LOGICA SALVATAGGIO ROBUSTA ---
             if st.button("💾 Salva in Cronologia", use_container_width=True):
