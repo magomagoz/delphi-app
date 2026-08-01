@@ -1308,7 +1308,7 @@ with tab1:
 
             # 2. Allerta Rodaggio (Sotto le 5 giornate)
             if not d.get('rodaggio_completato', True):
-                st.error("⚠️ **ATTENZIONE: Campionato in fase iniziale.** Le squadre non hanno ancora disputato 5 partite in casa e 5 in trasferta. I pronostici potrebbero essere instabili.")
+                st.error("⚠️ **ATTENZIONE: Campionato in fase iniziale.** Le squadre non hanno ancora disputato 5 partite. I pronostici potrebbero essere instabili.")
 
             # 1. Suggeritore di Mercato per il Campionato
             st.info(f"🧠 **Insight Delphi:** {d.get('market_advice', '')}")
