@@ -965,7 +965,7 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
     
     # NUOVA LOGICA: Se i valori sono a zero, mostra che mancano i dati
     if avg_1t == 0.0 and avg_2t == 0.0:
-        tempo_top = "Dati insufficienti (Campionato non iniziato)"
+        tempo_top = "Campionato non iniziato"
     else:
         tempo_top = "1° Tempo" if avg_1t > avg_2t else "2° Tempo"
 
@@ -1568,7 +1568,7 @@ with tab3:
         st.warning("Database non ancora creato.")
 
 with tab4:
-    st.info(f"⏰  Aggiorna Serie A, Premier League, Championship, Liga, Bundesliga, Ligue 1, Primeira Liga, Eredivisie, Brasileirao Betano, UEFA e FIFA")
+    st.info(f"⏰  Aggiorna Serie A, Premier League, Championship, Liga, Bundesliga, Ligue 1, Primeira Liga, Eredivisie, Brasileirao Betano, UEFA CL e FIFA WC")
 
     if st.button("🌐 Aggiorna tutti i Dati"):
         with st.spinner("Aggiornamento database in corso..."):
