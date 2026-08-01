@@ -994,12 +994,12 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
     rodaggio_completato = partite_giocate_casa >= 5 and partite_giocate_fuori >= 5
 
     ADVICE_MAP = {
-        'Bundesliga': '🏆 TOP: 1X2, U/O 2.5 e Risultati Esatti | ⛔ EVITA: Gol/No Gol',
+        'Bundesliga': '🏆 TOP: 1X2, U/O 2.5 e Risultati Esatti | ⛔ EVITA: Gol/NoGol',
         'La Liga': '🎯 TOP: Risultati Esatti Finali | ⛔ EVITA: 1X2',
         'Serie A': '🎯 TOP: Risultati Esatti Finali | ⛔ EVITA: 1X2',
-        'Ligue 1': '⚽ TOP: U/O 2.5 e Gol/No Gol | ⛔ EVITA: 1X2',
-        'Championship': '✅ Campionato solido e bilanciato su tutti i mercati',
-        'Primeira Liga': '⏱️ TOP: Risultati Esatti 1° Tempo | ⛔ EVITA: Gol/No Gol',
+        'Ligue 1': '⚽ TOP: U/O 2.5 e Gol/NoGol | ⛔ EVITA: 1X2',
+        'Championship': '✅ Campionato solido e bilanciato su tutti i pronostici',
+        'Primeira Liga': '⏱️ TOP: Risultati Esatti 1° Tempo | ⛔ EVITA: Gol/NoGol',
         'UEFA Champions League': '⚽ TOP: U/O 2.5 | ⛔ EVITA: Risultati Esatti',
         'Eredivisie': '⚽ TOP: U/O 2.5 | ⛔ EVITA: Risultati Esatti (rischio goleade)',
         'Premier League': '🛑 CAMPIONATO OSTICO: Agire solo con Fiducia altissima (>70%)'
