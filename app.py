@@ -602,6 +602,7 @@ def analizza_pericolosita_tempi(df_giocate, squadra):
     perc_2t = round((gol_fatti_2t / tot * 100), 1)
     return perc_1t, perc_2t
 
+# --- SOSTITUISCI INTERA FUNZIONE analizza_performance_campionato ---
 def analizza_performance_campionato(camp_filtro):
     if not os.path.exists(FILE_DB_PRONOSTICI):
         st.warning("Cronologia pronostici non trovata.")
@@ -609,25 +610,10 @@ def analizza_performance_campionato(camp_filtro):
 
     try:
         df_cron = pd.read_csv(FILE_DB_PRONOSTICI)
-        # Filtriamo solo i match con risultati reali completi
-        df_v = df_cron[(df_cron['Risultato_Reale'] != "N/D") & (df_cron['PT_Reale'] != "N/D")].copy()
         
-        if camp_filtro != 'TUTTI':
-            df_v = df_v[df_v['League'] == camp_filtro]
-
-        if df_v.empty:
-            st.info(f"Nessun match con dati completi trovato per {camp_filtro}.")
-            return
-
         if 'League' not in df_cron.columns:
             st.error("Il database non contiene la colonna 'League'. Prova a fare una nuova analisi per rigenerare il file correttamente.")
             return
-
-        # Assicuriamoci che esistano tutte le colonne necessarie
-        colonne_necessarie = ['Risultato_Reale', 'PT_Reale', '1X2', 'U/O 2.5', 'G/NG', 'SGF', 'SGC', 'SGO']
-        for col in colonne_necessarie:
-            if col not in df_cron.columns:
-                df_cron[col] = "N/D" # Crea colonna vuota se manca
 
         # Filtro match completati
         df_v = df_cron[(df_cron['Risultato_Reale'] != "N/D") & (df_cron['PT_Reale'] != "N/D")].copy()
@@ -636,23 +622,25 @@ def analizza_performance_campionato(camp_filtro):
             df_v = df_v[df_v['League'] == camp_filtro]
 
         if df_v.empty:
-            st.info(f"Nessun match con dati reali trovato per {camp_filtro}.")
+            st.info(f"Nessun match con dati completi trovato per {camp_filtro}.")
             return
         
         match_contati = len(df_v)
-
         st.success(f"Analisi completata su {match_contati} match per {camp_filtro}")
         
-        # Dizionario per accumulare i successi [Vinti, Totali]
-        stats = {k: [0, 0] for k in ['1X2', '1X2 1°T', 'Esito HT/FT', 'U/O 2.5', 'G/NG', 'SGF', 'SGC', 'SGO', 'RE Finali', 'RE 1°T', 'Top 3 HT/FT']}
+        # DIZIONARIO UNIFICATO A 11 PARAMETRI
+        stats = {k: [0, 0] for k in [
+            '1X2', '1X2 1°T', 'Esito HT/FT', 
+            'U/O 2.5', 'G/NG', 'SGF', 
+            'SGC (Casa)', 'SGO (Ospite)', 'RE Finali', 
+            'RE 1°T', 'Top 3 HT/FT'
+        ]}
 
         for _, row in df_v.iterrows():
             try:
                 h, a = map(int, str(row['Risultato_Reale']).split('-'))
-
                 ph, pa = map(int, str(row['PT_Reale']).split('-'))
 
-                # Calcolo segni reali per verifica
                 real_1t = "1" if ph > pa else ("2" if pa > ph else "X")
                 real_ft = "1" if h > a else ("2" if a > h else "X")
                 real_htft = f"{real_1t}-{real_ft}"
@@ -661,7 +649,6 @@ def analizza_performance_campionato(camp_filtro):
                 stats['1X2'][1] += 1
                 if check_1x2(row['1X2'], h, a): stats['1X2'][0] += 1
                 
-                # NUOVI CONTROLLI 1°T e HT/FT
                 stats['1X2 1°T'][1] += 1
                 if check_1x2(row.get('1X2 1°T', 'N/D'), ph, pa): stats['1X2 1°T'][0] += 1
                 
@@ -674,7 +661,7 @@ def analizza_performance_campionato(camp_filtro):
                 stats['G/NG'][1] += 1
                 if check_gng(row['G/NG'], h, a): stats['G/NG'][0] += 1
 
-                # 2. Somma Gol (SGF, SGC, SGO)
+                # 2. Somma Gol
                 stats['SGF'][1] += 1
                 if check_in_list(row['SGF'], h+a): stats['SGF'][0] += 1
 
@@ -684,16 +671,15 @@ def analizza_performance_campionato(camp_filtro):
                 stats['SGO (Ospite)'][1] += 1
                 if check_in_list(row['SGO'], a): stats['SGO (Ospite)'][0] += 1
 
-                # 3. Verifica RE Finali
+                # 3. Risultati Esatti e Avanzati
                 stats['RE Finali'][1] += 1
                 if check_in_list(row['Top 6 RE Finali'], row['Risultato_Reale']): stats['RE Finali'][0] += 1
 
-                # 4. Mercati Avanzati (RE 1°T e HT/FT)
                 stats['RE 1°T'][1] += 1
                 if check_in_list(row['Top 3 RE 1°T'], f"{ph}-{pa}"): stats['RE 1°T'][0] += 1
 
-                stats['HT/FT'][1] += 1
-                if check_in_list(row['Top 3 HT/FT'], real_htft): stats['HT/FT'][0] += 1
+                stats['Top 3 HT/FT'][1] += 1
+                if check_in_list(row['Top 3 HT/FT'], real_htft): stats['Top 3 HT/FT'][0] += 1
                 
             except Exception as e:
                 continue
@@ -701,7 +687,6 @@ def analizza_performance_campionato(camp_filtro):
         # --- INTERFACCIA GRAFICA ---
         st.subheader(f"📊 Precisione modello: {camp_filtro}")
         
-        # Visualizzazione a griglia (2 righe da 4 colonne)
         keys = list(stats.keys())
         for i in range(0, len(keys), 3):
             cols = st.columns(3)
@@ -716,7 +701,6 @@ def analizza_performance_campionato(camp_filtro):
                             st.metric(market, f"{wr:.1%}", f"{v[0]}/{v[1]}", delta_color="normal" if not is_gold else "inverse")
                             if is_gold: st.markdown("🏆 **SOGLIA GOLD**")
 
-        # Grafico comparativo
         st.divider()
         st.write("### 📈 Precisione per Pronostico")
         chart_data = pd.DataFrame({
@@ -728,6 +712,8 @@ def analizza_performance_campionato(camp_filtro):
     except Exception as e:
         st.error(f"Errore analisi: {e}")
 
+
+# --- SOSTITUISCI INTERA FUNZIONE analizza_performance_squadra_gold ---
 def analizza_performance_squadra_gold(squadra_target):
     if not os.path.exists(FILE_DB_PRONOSTICI):
         st.warning("Cronologia pronostici non trovata.")
@@ -736,8 +722,6 @@ def analizza_performance_squadra_gold(squadra_target):
     try:
         df_cron = pd.read_csv(FILE_DB_PRONOSTICI)
         
-        # Filtro: Cerchiamo la squadra sia come Casa che come Ospite nella colonna 'Partita'
-        # Assumiamo che la colonna Partita sia "SquadraA vs SquadraB"
         df_v = df_cron[
             (df_cron['Risultato_Reale'] != "N/D") & 
             (df_cron['PT_Reale'] != "N/D") & 
@@ -751,12 +735,16 @@ def analizza_performance_squadra_gold(squadra_target):
         match_contati = len(df_v)
         st.markdown(f"### 📊 Report: **{squadra_target}** ({match_contati} match)")
         
-        # Dizionario statistiche (Identico a quello delle Leghe)
-        stats = {k: [0, 0] for k in ['1X2', 'U/O 2.5', 'G/NG', 'SGF', 'SGC (Casa)', 'SGO (Ospite)', 'RE Finali', 'RE 1°T', 'HT/FT']}
+        # DIZIONARIO UNIFICATO A 11 PARAMETRI (Identico ai Campionati)
+        stats = {k: [0, 0] for k in [
+            '1X2', '1X2 1°T', 'Esito HT/FT', 
+            'U/O 2.5', 'G/NG', 'SGF', 
+            'SGC (Casa)', 'SGO (Ospite)', 'RE Finali', 
+            'RE 1°T', 'Top 3 HT/FT'
+        ]}
 
         for _, row in df_v.iterrows():
             try:
-                # Parsing risultati
                 h, a = map(int, str(row['Risultato_Reale']).split('-'))
                 ph, pa = map(int, str(row['PT_Reale']).split('-'))
                 
@@ -764,9 +752,15 @@ def analizza_performance_squadra_gold(squadra_target):
                 real_ft = "1" if h > a else ("2" if a > h else "X")
                 real_htft = f"{real_1t}-{real_ft}"
 
-                # --- CALCOLO WIN RATE (STESSA LOGICA LEGHE) ---
+                # 1. Mercati Standard
                 stats['1X2'][1] += 1
                 if check_1x2(row['1X2'], h, a): stats['1X2'][0] += 1
+                
+                stats['1X2 1°T'][1] += 1
+                if check_1x2(row.get('1X2 1°T', 'N/D'), ph, pa): stats['1X2 1°T'][0] += 1
+                
+                stats['Esito HT/FT'][1] += 1
+                if str(row.get('Esito HT/FT', 'N/D')).replace("/", "-") == real_htft: stats['Esito HT/FT'][0] += 1
                 
                 stats['U/O 2.5'][1] += 1
                 if check_uo(row['U/O 2.5'], h, a): stats['U/O 2.5'][0] += 1
@@ -774,6 +768,7 @@ def analizza_performance_squadra_gold(squadra_target):
                 stats['G/NG'][1] += 1
                 if check_gng(row['G/NG'], h, a): stats['G/NG'][0] += 1
 
+                # 2. Somma Gol
                 stats['SGF'][1] += 1
                 if check_in_list(row['SGF'], h+a): stats['SGF'][0] += 1
 
@@ -783,21 +778,22 @@ def analizza_performance_squadra_gold(squadra_target):
                 stats['SGO (Ospite)'][1] += 1
                 if check_in_list(row['SGO'], a): stats['SGO (Ospite)'][0] += 1
 
+                # 3. Risultati Esatti e Avanzati
                 stats['RE Finali'][1] += 1
                 if check_in_list(row['Top 6 RE Finali'], row['Risultato_Reale']): stats['RE Finali'][0] += 1
 
                 stats['RE 1°T'][1] += 1
                 if check_in_list(row['Top 3 RE 1°T'], f"{ph}-{pa}"): stats['RE 1°T'][0] += 1
 
-                stats['HT/FT'][1] += 1
-                if check_in_list(row['Top 3 HT/FT'], real_htft): stats['HT/FT'][0] += 1
+                stats['Top 3 HT/FT'][1] += 1
+                if check_in_list(row['Top 3 HT/FT'], real_htft): stats['Top 3 HT/FT'][0] += 1
                 
             except Exception as e:
                 continue
         
         # --- VISUALIZZAZIONE GRIGLIA ---
         keys = list(stats.keys())
-        for i in range(0, len(keys), 3): # 3 colonne per riga per le squadre
+        for i in range(0, len(keys), 3): 
             cols = st.columns(3)
             for j in range(3):
                 if i + j < len(keys):
@@ -805,27 +801,25 @@ def analizza_performance_squadra_gold(squadra_target):
                     v = stats[market]
                     if v[1] > 0:
                         wr = v[0] / v[1]
-                        # Soglia Gold: 75% o più
                         is_gold = wr >= 0.75
                         with cols[j]:
                             st.metric(
                                 label=market, 
                                 value=f"{wr:.1%}", 
                                 delta=f"{v[0]}/{v[1]} presi",
-                                delta_color="normal" if not is_gold else "off" # Trucco per evidenziare
+                                delta_color="normal" if not is_gold else "off" 
                             )
                             if is_gold: 
                                 st.markdown("🏆 **GOLD**")
                             else:
-                                st.markdown("➖") # Spaziatura
+                                st.markdown("➖") 
         
-        # Grafico
         st.write("#### 📈 Precisione per pronostico")
         chart_data = pd.DataFrame({
             'Mercato': stats.keys(),
             'Win Rate': [v[0]/v[1] if v[1]>0 else 0 for v in stats.values()]
         })
-        st.bar_chart(chart_data.set_index('Mercato'), color="#FFD700") # Colore Oro
+        st.bar_chart(chart_data.set_index('Mercato'), color="#FFD700") 
 
     except Exception as e:
         st.error(f"Errore analisi squadra: {e}")
