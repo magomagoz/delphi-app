@@ -350,6 +350,7 @@ def aggiorna_database_calcio():
     competitions = ['SA', 'PL', 'ELC', 'PD', 'BL1', 'FL1', 'CL', 'PPL', 'DED', 'BSA'] 
     
     rows = []
+    log_report = [] # <--- NUOVO: Raccoglitore per il report di log
     progress_bar = st.progress(0)
     status_text = st.empty()
     
@@ -358,12 +359,30 @@ def aggiorna_database_calcio():
             status_text.text(f"Scarico {comp}...")
             url = f"https://api.football-data.org/v4/competitions/{comp}/matches"
             r = requests.get(url, headers=headers)
+            
             if r.status_code == 200:
                 matches = r.json().get('matches', [])
+                conteggio_match = len(matches)
+                
+                # --- NUOVO: Estrazione date per il Log ---
+                if conteggio_match > 0:
+                    prima_data = matches[0]['utcDate'][:10]
+                    ultima_data = matches[-1]['utcDate'][:10]
+                    log_report.append({
+                        'Lega': comp, 
+                        'Match Estratti': conteggio_match, 
+                        'Data Primo Match': prima_data, 
+                        'Data Ultimo Match': ultima_data, 
+                        'Stato': '✅ OK'
+                    })
+                else:
+                    log_report.append({
+                        'Lega': comp, 'Match Estratti': 0, 'Data Primo Match': '-', 'Data Ultimo Match': '-', 'Stato': '⚠️ VUOTO'
+                    })
+                
                 for m in matches:
                     home = m['homeTeam']['shortName'] or m['homeTeam']['name']
                     away = m['awayTeam']['shortName'] or m['awayTeam']['name']
-                    # --- MODIFICA: RECUPERO CREST (LOGHI) ---
                     home_crest = m['homeTeam'].get('crest', '')
                     away_crest = m['awayTeam'].get('crest', '')
                     
@@ -372,19 +391,44 @@ def aggiorna_database_calcio():
                         comp, m['utcDate'], home, away, m['status'], 
                         m['score']['fullTime']['home'], m['score']['fullTime']['away'], 
                         m['score']['halfTime']['home'], m['score']['halfTime']['away'], 
-                        ref, m['id'], home_crest, away_crest # Aggiunti qui
+                        ref, m['id'], home_crest, away_crest
                     ])
+            else:
+                log_report.append({
+                    'Lega': comp, 'Match Estratti': 0, 'Data Primo Match': '-', 'Data Ultimo Match': '-', 'Stato': f'❌ Errore API {r.status_code}'
+                })
+                
             time.sleep(1) 
             progress_bar.progress((i + 1) / len(competitions))
 
-        # --- MODIFICA: AGGIUNTE COLONNE 'HomeCrest' E 'AwayCrest' ---
+        # Salvataggio su file
         df_new = pd.DataFrame(rows, columns=[
             'League', 'Date', 'HomeTeam', 'AwayTeam', 'Status', 
             'FTHG', 'FTAG', 'HTHG', 'HTAG', 'Referee', 'ID', 'HomeCrest', 'AwayCrest'
         ])
         df_new.to_csv(FILE_DB_CALCIO, index=False)
+        
         status_text.empty()
         st.success("✅ Database Calcio aggiornato con successo! Loghi acquisiti.")
+        
+        # --- NUOVO: MOSTRA IL REPORT NELL'INTERFACCIA ---
+        with st.expander("📋 Mostra Report Dettagliato API", expanded=True):
+            df_log = pd.DataFrame(log_report)
+            # Mappiamo i nomi delle leghe (da 'PPL' a 'Primeira Liga', ecc.)
+            df_log['Lega'] = df_log['Lega'].map(lambda x: LEAGUE_MAP.get(x, x))
+            
+            # Mostriamo la tabella pulita
+            st.dataframe(df_log, use_container_width=True, hide_index=True)
+            
+            # Check intelligente: avvisa se una lega ha meno di 100 partite (segno di dati parziali)
+            leghe_anomale = df_log[(df_log['Match Estratti'] < 100) & (df_log['Match Estratti'] > 0)]['Lega'].tolist()
+            leghe_vuote = df_log[df_log['Match Estratti'] == 0]['Lega'].tolist()
+            
+            if leghe_vuote:
+                st.error(f"❌ Nessun dato disponibile per: {', '.join(leghe_vuote)}.")
+            if leghe_anomale:
+                st.warning(f"⚠️ Attenzione: Il fornitore API sta inviando calendari incompleti per: **{', '.join(leghe_anomale)}**. Potresti riscontrare dati mancanti per le prime giornate.")
+
     except Exception as e:
         st.error(f"Errore aggiornamento dati: {e}")
 
