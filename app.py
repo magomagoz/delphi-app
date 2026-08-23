@@ -718,6 +718,10 @@ def analizza_performance_campionato(camp_filtro):
         # Generiamo il grafico usando la colonna 'Colore' per la formattazione
         st.bar_chart(chart_data, x='Mercato', y='Win Rate', color='Colore')
 
+    except Exception as e:
+        st.error(f"Errore analisi: {e}")
+
+
 # --- SOSTITUISCI INTERA FUNZIONE analizza_performance_squadra_gold ---
 def analizza_performance_squadra_gold(squadra_target):
     if not os.path.exists(FILE_DB_PRONOSTICI):
@@ -834,6 +838,10 @@ def analizza_performance_squadra_gold(squadra_target):
         
         # Generiamo il grafico usando la colonna 'Colore' per la formattazione
         st.bar_chart(chart_data, x='Mercato', y='Win Rate', color='Colore')
+
+    except Exception as e:
+        st.error(f"Errore analisi squadra: {e}")
+
 
 def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
     if not os.path.exists(FILE_DB_CALCIO):
