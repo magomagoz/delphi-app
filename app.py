@@ -701,17 +701,22 @@ def analizza_performance_campionato(camp_filtro):
                             st.metric(market, f"{wr:.1%}", f"{v[0]}/{v[1]}", delta_color="normal" if not is_gold else "inverse")
                             if is_gold: st.markdown("🏆 **SOGLIA GOLD**")
 
+        # --- GRAFICO COMPARATIVO (Campionati) ---
         st.divider()
         st.write("### 📈 Precisione per Pronostico")
+        
+        # Calcoliamo i Win Rate e assegniamo il colore dinamicamente
+        win_rates = [v[0]/v[1] if v[1]>0 else 0 for v in stats.values()]
+        colori = ["#FFD700" if wr >= 0.75 else "#4A90E2" for wr in win_rates] # Oro per >= 75%, Azzurro altrimenti
+        
         chart_data = pd.DataFrame({
-            'Mercato': stats.keys(),
-            'Win Rate': [v[0]/v[1] if v[1]>0 else 0 for v in stats.values()]
+            'Mercato': list(stats.keys()),
+            'Win Rate': win_rates,
+            'Colore': colori
         })
-        st.bar_chart(chart_data.set_index('Mercato'))
-
-    except Exception as e:
-        st.error(f"Errore analisi: {e}")
-
+        
+        # Generiamo il grafico usando la colonna 'Colore' per la formattazione
+        st.bar_chart(chart_data, x='Mercato', y='Win Rate', color='Colore')
 
 # --- SOSTITUISCI INTERA FUNZIONE analizza_performance_squadra_gold ---
 def analizza_performance_squadra_gold(squadra_target):
@@ -814,15 +819,21 @@ def analizza_performance_squadra_gold(squadra_target):
                             else:
                                 st.markdown("➖") 
         
+        # --- GRAFICO COMPARATIVO (Squadre) ---
         st.write("#### 📈 Precisione per pronostico")
+        
+        # Calcoliamo i Win Rate e assegniamo il colore dinamicamente
+        win_rates = [v[0]/v[1] if v[1]>0 else 0 for v in stats.values()]
+        colori = ["#FFD700" if wr >= 0.75 else "#4A90E2" for wr in win_rates] 
+        
         chart_data = pd.DataFrame({
-            'Mercato': stats.keys(),
-            'Win Rate': [v[0]/v[1] if v[1]>0 else 0 for v in stats.values()]
+            'Mercato': list(stats.keys()),
+            'Win Rate': win_rates,
+            'Colore': colori
         })
-        st.bar_chart(chart_data.set_index('Mercato'), color="#FFD700") 
-
-    except Exception as e:
-        st.error(f"Errore analisi squadra: {e}")
+        
+        # Generiamo il grafico usando la colonna 'Colore' per la formattazione
+        st.bar_chart(chart_data, x='Mercato', y='Win Rate', color='Colore')
 
 def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
     if not os.path.exists(FILE_DB_CALCIO):
