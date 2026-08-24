@@ -1278,10 +1278,15 @@ with tab1:
             
             # Generazione rapida del file da scaricare
             csv_segnali = df_segnali.to_csv(index=False).encode('utf-8')
+            
+            # --- NUOVO: Creazione nome file dinamico con data di oggi ---
+            data_creazione = date.today().strftime("%Y-%m-%d")
+            nome_file_export = f"Delphi_Gold_{data_creazione}_Prossimi_{giorni_radar}gg.csv"
+            
             st.download_button(
                 label="📥 Esporta Segnali (CSV)",
                 data=csv_segnali,
-                file_name=f"Delphi_Gold_Prossimi_{giorni_radar}gg.csv",
+                file_name=nome_file_export,
                 mime="text/csv",
                 use_container_width=True
             )
