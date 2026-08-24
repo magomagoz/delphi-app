@@ -1752,7 +1752,7 @@ with tab3:
     st.subheader("🔥 Radar Super Squadre (Top Performers)")
     st.info("Estrai istantaneamente le squadre più prevedibili dell'intero database per mercati specifici.")
     
-    col_soglia, col_match = st.columns([1, 1])
+    col_soglia, col_match = st.columns([1, 1, 4])
     with col_soglia:
         soglia_input = st.number_input("Soglia % YTD", min_value=50, max_value=100, value=85, step=5)
     with col_match:
