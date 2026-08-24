@@ -1757,7 +1757,7 @@ with tab3:
         soglia_input = st.number_input("Soglia % YTD", min_value=50, max_value=100, value=85, step=5)
     with col_match:
         min_match_input = st.number_input("Minimo match salvati", min_value=1, max_value=40, value=5, step=1, help="Ignora chi ha giocato troppe poche partite")
-    col_btn = st.columns(1)
+    
     with col_btn:
         st.write("") # Spaziatura per allineare il bottone
         st.write("")
