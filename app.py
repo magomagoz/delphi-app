@@ -1752,16 +1752,18 @@ with tab3:
     st.subheader("🔥 Radar Super Squadre (Top Performers)")
     st.info("Estrai istantaneamente le squadre più prevedibili dell'intero database per mercati specifici.")
     
-    col_soglia, col_match, col_btn = st.columns([1, 1, 4])
+    col_soglia, col_match = st.columns(2)
+    
     with col_soglia:
         soglia_input = st.number_input("Soglia % YTD", min_value=50, max_value=100, value=85, step=5)
+        
     with col_match:
-        min_match_input = st.number_input("Minimo match salvati", min_value=1, max_value=40, value=5, step=1, help="Ignora chi ha giocato troppe poche partite")    
-    with col_btn:
-        st.write("") # Spaziatura per allineare il bottone
-        st.write("")
-        if st.button("🚀 Estrai Lista Top Squadre", type="primary", use_container_width=True):
-            trova_super_squadre(soglia=soglia_input/100, min_match=min_match_input)
+        min_match_input = st.number_input("Minimo match salvati", min_value=1, max_value=40, value=5, step=1, help="Ignora chi ha giocato troppe poche partite")
+        
+    st.write("") # Aggiunge un po' di respiro tra i filtri e il pulsante
+    
+    if st.button("🚀 Estrai Lista Top Squadre", type="primary", use_container_width=True):
+        trova_super_squadre(soglia=soglia_input/100, min_match=min_match_input)
 
 with tab4:
     st.info(f"⏰  Aggiorna Serie A, Premier League, Championship, Liga, Bundesliga, Ligue 1, Primeira Liga, Eredivisie, Brasileirao Betano, UEFA CL e FIFA WC")
