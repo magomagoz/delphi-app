@@ -842,6 +842,123 @@ def analizza_performance_squadra_gold(squadra_target):
     except Exception as e:
         st.error(f"Errore analisi squadra: {e}")
 
+def trova_super_squadre(soglia=0.85, min_match=5):
+    if not os.path.exists(FILE_DB_PRONOSTICI):
+        st.warning("Cronologia pronostici non trovata.")
+        return
+
+    try:
+        df_cron = pd.read_csv(FILE_DB_PRONOSTICI)
+        df_v = df_cron[(df_cron['Risultato_Reale'] != "N/D") & (df_cron['PT_Reale'] != "N/D")].copy()
+
+        if df_v.empty:
+            st.info("Nessun match terminato trovato nel database.")
+            return
+
+        # Dizionario per accumulare le stats di TUTTE le squadre
+        stats_squadre = {}
+
+        for _, row in df_v.iterrows():
+            try:
+                partita = str(row['Partita'])
+                if ' vs ' not in partita: continue
+                casa, fuori = partita.split(' vs ')
+                casa, fuori = casa.strip(), fuori.strip()
+                lega = row.get('League', 'N.D.')
+
+                # Inizializza le squadre se non esistono
+                for team in [casa, fuori]:
+                    if team not in stats_squadre:
+                        stats_squadre[team] = {
+                            'Lega': lega,
+                            'Stats': {k: [0, 0] for k in [
+                                '1X2', '1X2 1°T', 'Esito HT/FT', 
+                                'U/O 2.5', 'G/NG', 'SGF', 
+                                'SGC (Casa)', 'SGO (Ospite)', 'RE Finali', 
+                                'RE 1°T', 'Top 3 HT/FT'
+                            ]}
+                        }
+
+                h, a = map(int, str(row['Risultato_Reale']).split('-'))
+                ph, pa = map(int, str(row['PT_Reale']).split('-'))
+                
+                real_1t = "1" if ph > pa else ("2" if pa > ph else "X")
+                real_ft = "1" if h > a else ("2" if a > h else "X")
+                real_htft = f"{real_1t}-{real_ft}"
+
+                # Funzione interna per aggiornare rapidamente
+                def update_team_stats(team, market, is_won):
+                    stats_squadre[team]['Stats'][market][1] += 1
+                    if is_won:
+                        stats_squadre[team]['Stats'][market][0] += 1
+
+                # Check di tutti i parametri per la riga corrente
+                win_1x2 = check_1x2(row['1X2'], h, a)
+                win_1x2_1t = check_1x2(row.get('1X2 1°T', 'N/D'), ph, pa)
+                win_htft = str(row.get('Esito HT/FT', 'N/D')).replace("/", "-") == real_htft
+                win_uo = check_uo(row['U/O 2.5'], h, a)
+                win_gng = check_gng(row['G/NG'], h, a)
+                win_sgf = check_in_list(row['SGF'], h+a)
+                win_sgc = check_in_list(row['SGC'], h)
+                win_sgo = check_in_list(row['SGO'], a)
+                win_re = check_in_list(row['Top 6 RE Finali'], row['Risultato_Reale'])
+                win_re_1t = check_in_list(row['Top 3 RE 1°T'], f"{ph}-{pa}")
+                win_top3_htft = check_in_list(row['Top 3 HT/FT'], real_htft)
+
+                # Assegna il risultato a ENTRAMBE le squadre coinvolte
+                for t in [casa, fuori]:
+                    update_team_stats(t, '1X2', win_1x2)
+                    update_team_stats(t, '1X2 1°T', win_1x2_1t)
+                    update_team_stats(t, 'Esito HT/FT', win_htft)
+                    update_team_stats(t, 'U/O 2.5', win_uo)
+                    update_team_stats(t, 'G/NG', win_gng)
+                    update_team_stats(t, 'SGF', win_sgf)
+                    update_team_stats(t, 'SGC (Casa)', win_sgc)
+                    update_team_stats(t, 'SGO (Ospite)', win_sgo)
+                    update_team_stats(t, 'RE Finali', win_re)
+                    update_team_stats(t, 'RE 1°T', win_re_1t)
+                    update_team_stats(t, 'Top 3 HT/FT', win_top3_htft)
+
+            except Exception as e:
+                continue
+        
+        # Filtra e formatta i risultati
+        risultati = []
+        for team, data in stats_squadre.items():
+            lega = data['Lega']
+            for market, (v, t) in data['Stats'].items():
+                if t >= min_match:
+                    wr = v / t
+                    if wr >= soglia:
+                        risultati.append({
+                            'Squadra': team,
+                            'Lega': lega,
+                            'Pronostico': market,
+                            'Percentuale YTD': wr,
+                            'Presi/Totali': f"{v}/{t}"
+                        })
+                        
+        if risultati:
+            df_ris = pd.DataFrame(risultati)
+            # Ordina per Win Rate decrescente, e poi alfabeticamente per squadra
+            df_ris = df_ris.sort_values(by=['Percentuale YTD', 'Squadra'], ascending=[False, True])
+            
+            # Formatta la percentuale in modo visivo dopo l'ordinamento
+            df_ris['Percentuale YTD'] = df_ris['Percentuale YTD'].apply(lambda x: f"{x:.1%}")
+            
+            st.success(f"🎯 Trovate {len(df_ris)} combinazioni d'oro (≥ {soglia*100:.0f}%)!")
+            
+            # Mostra tabella pulita
+            st.dataframe(df_ris, use_container_width=True, hide_index=True)
+            
+            # Tasto per esportare la lista
+            csv = df_ris.to_csv(index=False).encode('utf-8')
+            st.download_button("📥 Esporta Lista Super Squadre (CSV)", data=csv, file_name="Delphi_Super_Squadre.csv", mime="text/csv", use_container_width=True)
+        else:
+            st.info(f"🧊 Nessuna statistica supera la soglia dell'{soglia*100:.0f}% con almeno {min_match} match giocati a referto.")
+
+    except Exception as e:
+        st.error(f"Errore generazione report: {e}")
 
 def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
     if not os.path.exists(FILE_DB_CALCIO):
@@ -1629,6 +1746,22 @@ with tab3:
             st.error("Errore lettura database per elenco squadre.")
     else:
         st.warning("Database non ancora creato.")
+
+    st.divider()
+    # --- SEZIONE 3: SUPER SQUADRE (NEW) ---
+    st.subheader("🔥 Radar Super Squadre (Top Performers)")
+    st.info("Estrai istantaneamente le squadre più prevedibili dell'intero database per mercati specifici.")
+    
+    col_soglia, col_match, col_btn = st.columns([1, 1, 2])
+    with col_soglia:
+        soglia_input = st.number_input("Soglia % YTD", min_value=50, max_value=100, value=85, step=5)
+    with col_match:
+        min_match_input = st.number_input("Minimo match salvati", min_value=1, max_value=20, value=2, step=1, help="Ignora chi ha giocato troppe poche partite")
+    with col_btn:
+        st.write("") # Spaziatura per allineare il bottone
+        st.write("")
+        if st.button("🚀 Estrai Lista Top Squadre", type="primary", use_container_width=True):
+            trova_super_squadre(soglia=soglia_input/100, min_match=min_match_input)
 
 with tab4:
     st.info(f"⏰  Aggiorna Serie A, Premier League, Championship, Liga, Bundesliga, Ligue 1, Primeira Liga, Eredivisie, Brasileirao Betano, UEFA CL e FIFA WC")
