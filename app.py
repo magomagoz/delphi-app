@@ -469,6 +469,76 @@ def aggiorna_risultati_pronostici():
     else:
         st.info("Nessun nuovo risultato trovato.")
 
+def genera_pronostici_massivi(giorni_anticipo=7):
+    if not os.path.exists(FILE_DB_CALCIO):
+        st.error("❌ Aggiorna prima il DB Calcio!")
+        return
+
+    df_calcio = pd.read_csv(FILE_DB_CALCIO)
+    df_calcio['Date'] = pd.to_datetime(df_calcio['Date'], utc=True)
+    today = pd.Timestamp.now(tz='UTC').normalize()
+    limite = today + pd.Timedelta(days=giorni_anticipo)
+
+    # 1. Trova tutti i match programmati per la prossima settimana
+    match_validi = df_calcio[
+        (df_calcio['Status'].isin(['TIMED', 'SCHEDULED'])) &
+        (df_calcio['Date'].dt.normalize() >= today) &
+        (df_calcio['Date'].dt.normalize() <= limite)
+    ]
+
+    # 2. Escludi i match già presenti nel DB Pronostici
+    columns = get_db_columns()
+    if os.path.exists(FILE_DB_PRONOSTICI):
+        df_pron = pd.read_csv(FILE_DB_PRONOSTICI)
+        id_fatti = df_pron['Match_ID'].astype(str).tolist()
+    else:
+        df_pron = pd.DataFrame(columns=columns)
+        id_fatti = []
+
+    match_da_fare = match_validi[~match_validi['ID'].astype(str).isin(id_fatti)]
+
+    if match_da_fare.empty:
+        st.info("👍 Tutti i match dei prossimi 7 giorni sono già stati pronosticati e salvati!")
+        return
+
+    st.info(f"⏳ Calcolo in corso per {len(match_da_fare)} nuovi match... (Potrebbe richiedere un paio di minuti)")
+    progress_bar = st.progress(0)
+    nuove_righe = []
+
+    for i, row in match_da_fare.reset_index().iterrows():
+        try:
+            res = esegui_analisi(row['HomeTeam'], match_id_target=row['ID'])
+            
+            # Controllo: Assicuriamoci che l'algoritmo stia salvando esattamente il match richiesto
+            if res and str(res.get('Match_ID')) == str(row['ID']):
+                dati_puliti = res.copy()
+                campi_da_pulire = ["SGF", "SGC", "SGO", "Top 6 RE Finali", "Top 3 RE 1°T", "Top 3 HT/FT"]
+                
+                # Rimuove le quote come facciamo nel salvataggio manuale
+                for campo in campi_da_pulire:
+                    if campo in dati_puliti:
+                        dati_puliti[campo] = re.sub(r'\s\(Q:\s\d+\.\d+\)', '', str(dati_puliti[campo]))
+
+                # Calcolo fatica automatizzato
+                f_h = controlla_fatica(df_calcio, res['casa_nome'], res['Data'])
+                f_a = controlla_fatica(df_calcio, res['fuori_nome'], res['Data'])
+                dati_puliti['Fatica'] = "SÌ" if (f_h or f_a) else "NO"
+
+                nuova_riga = {col: dati_puliti.get(col, "N/D") for col in columns}
+                nuove_righe.append(nuova_riga)
+        except Exception as e:
+            pass # Ignora i match difettosi (es. squadre senza storico) per non fermare il loop
+        
+        progress_bar.progress((i + 1) / len(match_da_fare))
+
+    # 3. Salva tutto in un'unica operazione per non stressare il server
+    if nuove_righe:
+        df_updated = pd.concat([df_pron, pd.DataFrame(nuove_righe)], ignore_index=True)
+        df_updated.to_csv(FILE_DB_PRONOSTICI, index=False)
+        st.success(f"🚀 Fatto! Aggiunti {len(nuove_righe)} nuovi pronostici al database in un solo colpo.")
+        time.sleep(2)
+        st.rerun()
+
 # --- 5. LOGICA MATEMATICA E ANALISI ---
 def stima_quota(prob):
     if prob <= 0.001: return 99.00
@@ -965,7 +1035,8 @@ def trova_super_squadre(soglia=0.85, min_match=2, mercato_filtro="Tutti"):
     except Exception as e:
         st.error(f"Errore generazione report: {e}")
 
-def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
+# Sostituisci la prima riga della funzione:
+def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False, match_id_target=None):
     if not os.path.exists(FILE_DB_CALCIO):
         st.error("Database Calcio mancante. Aggiorna il DB"); return None
 
@@ -983,7 +1054,17 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False):
     if future_matches.empty:
         st.warning(f"Nessun prossimo match trovato per '{nome_input}'."); return None
 
-    m = future_matches.iloc[0]
+    # --- NUOVO: SELEZIONE INTELLIGENTE DEL MATCH ---
+    if match_id_target:
+        # Se è stato fornito un ID specifico (Autopilota), cerca esattamente quello
+        match_cercato = future_matches[future_matches['ID'].astype(str) == str(match_id_target)]
+        if not match_cercato.empty:
+            m = match_cercato.iloc[0]
+        else:
+            return None # Match non trovato
+    else:
+        # Se non c'è un ID specifico (Ricerca manuale), prendi il primo come sempre
+        m = future_matches.iloc[0]
 
     # Convertiamo la data da UTC a Fuso Orario Roma
     dt_utc = m['Date']
@@ -1783,3 +1864,14 @@ with tab4:
     
     st.markdown("---")
     
+    st.subheader("🤖 Autopilota: Generazione Massiva")
+    st.info("Esegue l'algoritmo per TUTTE le partite in programma e popola la Cronologia in automatico.")
+    
+    col_giorni, col_genera = st.columns([1, 2])
+    with col_giorni:
+        giorni_massivi = st.number_input("Quanti giorni in avanti?", min_value=1, max_value=14, value=7)
+    with col_genera:
+        st.write("")
+        st.write("")
+        if st.button("🚀 Genera e Salva Pronostici Massivi", type="primary", use_container_width=True):
+            genera_pronostici_massivi(giorni_massivi)
