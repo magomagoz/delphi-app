@@ -1179,50 +1179,42 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False, match_i
         re_1t = re_1t_grezzi
 
     # --- 3. CALCOLO PARZIALE/FINALE (HT/FT) ---
-    # Usiamo le probabilità già corrette e normalizzate di 1T e FT
     prob_ft = {'1': p1, 'X': px, '2': p2}
     pf_final_dict = {}
     
-    for s1 in ['1', 'X', '2']:
-        for s2 in ['1', 'X', '2']:
-            comb = f"{s1}-{s2}"
-            
-            # Nuovi pesi basati sulle reali probabilità condizionate storiche:
-            if s1 == s2 and s1 != 'X':
-                weight = 0.75 # 1/1 o 2/2 (È molto probabile che chi vince al 45' vinca anche alla fine)
-            elif s1 == 'X' and s2 == 'X':
-                weight = 0.45 # X/X (Le partite bloccate tendono a rimanere tali, ma non sempre)
-            elif s1 == 'X' and s2 in ['1', '2']:
-                weight = 0.40 # X/1 o X/2 (Rottura dell'equilibrio nel 2° Tempo)
-            elif s1 in ['1', '2'] and s2 == 'X':
-                weight = 0.15 # 1/X o 2/X (La squadra in svantaggio recupera)
-            else:
-                weight = 0.05 # 1/2 o 2/1 (Ribaltoni completi, molto rari)
-                
-            pf_final_dict[comb] = (prob_1t[s1] * prob_ft[s2]) * weight
+    # Matrice storica condizionata P(HT | FT) per calcolare quote ultra-realistiche
+    cond_prob = {
+        '1': {'1': 0.55, 'X': 0.40, '2': 0.05}, 
+        'X': {'1': 0.15, 'X': 0.70, '2': 0.15},
+        '2': {'1': 0.05, 'X': 0.40, '2': 0.55}
+    }
+    
+    for ft in ['1', 'X', '2']:
+        for ht in ['1', 'X', '2']:
+            comb = f"{ht}-{ft}"
+            pf_final_dict[comb] = (prob_1t[ht] * prob_ft[ft]) * cond_prob[ft][ht]
 
     # Normalizzazione HT/FT
     total_pf = sum(pf_final_dict.values())
     if total_pf > 0:
         for k in pf_final_dict: pf_final_dict[k] /= total_pf
 
-    # Generazione stringa TOP 3 HT/FT
+    # Generazione stringa TOP 3 HT/FT (rimane intatta per il report in basso)
     items_htft = sorted(pf_final_dict.items(), key=lambda x: x[1], reverse=True)[:3]
     top_pf_string = ", ".join([f"{k} (Q: {stima_quota(v):.2f})" for k, v in items_htft])
     
-    # 1. Calcolo stringhe pronostici 1X2, 1°T, HT/FT, U/O, G/NG
+    # --- 4. ESTRAZIONE E ALLINEAMENTO PRONOSTICI SINGOLI E COMBO ---
     if p1 >= px and p1 >= p2: d_1x2 = "1"
     elif p2 >= p1 and p2 >= px: d_1x2 = "2"
     else: d_1x2 = "X"
     
-    # NUOVO: Estrazione Esito 1° Tempo
     d_1x2_ht = max(prob_1t, key=prob_1t.get)
     p_1t_max = prob_1t[d_1x2_ht]
 
-    # NUOVO: Estrazione Singolo Parziale/Finale
-    best_htft_key = max(pf_final_dict, key=pf_final_dict.get)
-    d_htft = best_htft_key.replace("-", "/") # Converte es. "1-X" in "1/X"
-    p_htft_max = pf_final_dict[best_htft_key]
+    # NUOVO: Allineamento FORZATO Assoluto. Il box HT/FT combacerà sempre con i singoli.
+    d_htft = f"{d_1x2_ht}/{d_1x2}"
+    chiave_htft = f"{d_1x2_ht}-{d_1x2}"
+    p_htft_max = pf_final_dict.get(chiave_htft, 0)
     
     d_uo = "UNDER 2.5" if pu >= 0.5 else "OVER 2.5"
     d_gng = "GOL" if pg >= 0.5 else "NOGOL"
