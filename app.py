@@ -1186,8 +1186,19 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False, match_i
     for s1 in ['1', 'X', '2']:
         for s2 in ['1', 'X', '2']:
             comb = f"{s1}-{s2}"
-            # Peso statistico (è più probabile che una squadra mantenga il vantaggio)
-            weight = 0.6 if s1 == s2 else (0.3 if s1 == 'X' else 0.1)
+            
+            # Nuovi pesi basati sulle reali probabilità condizionate storiche:
+            if s1 == s2 and s1 != 'X':
+                weight = 0.75 # 1/1 o 2/2 (È molto probabile che chi vince al 45' vinca anche alla fine)
+            elif s1 == 'X' and s2 == 'X':
+                weight = 0.45 # X/X (Le partite bloccate tendono a rimanere tali, ma non sempre)
+            elif s1 == 'X' and s2 in ['1', '2']:
+                weight = 0.40 # X/1 o X/2 (Rottura dell'equilibrio nel 2° Tempo)
+            elif s1 in ['1', '2'] and s2 == 'X':
+                weight = 0.15 # 1/X o 2/X (La squadra in svantaggio recupera)
+            else:
+                weight = 0.05 # 1/2 o 2/1 (Ribaltoni completi, molto rari)
+                
             pf_final_dict[comb] = (prob_1t[s1] * prob_ft[s2]) * weight
 
     # Normalizzazione HT/FT
