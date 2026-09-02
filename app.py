@@ -1378,6 +1378,13 @@ def highlight_winners(row):
         pass 
     return colors
 
+# --- SINCRONIZZAZIONE AUTOMATICA ALL'AVVIO ---
+if 'aggiornamento_iniziale_completato' not in st.session_state:
+    st.session_state['aggiornamento_iniziale_completato'] = True
+    st.toast("🔄 Sincronizzazione automatica palinsesto in corso...", icon="⏳")
+    with st.spinner("Scaricamento dati API iniziale..."):
+        aggiorna_database_calcio()
+
 # --- 7. MAIN ---
 tab1, tab2, tab3, tab4 = st.tabs(["🎯 **Analisi**", "📜 **Cronologia**", "📊 **Statistiche**", "⚙️ **Database**"])
 
