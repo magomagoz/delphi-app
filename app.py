@@ -946,6 +946,19 @@ def trova_super_squadre(soglia=0.85, min_match=2, mercato_filtro="Tutti", solo_g
     except Exception as e:
         st.error(f"Errore generazione report: {e}")
 
+def calcola_rho_dinamico(team_home, team_away, df_giocate):
+    try:
+        # Estrae lo storico degli scontri diretti o match simili
+        match_storici = df_giocate[(df_giocate['HomeTeam'] == team_home) & (df_giocate['AwayTeam'] == team_away)]
+        if len(match_storici) >= 5:
+            corr, _ = pearsonr(match_storici['FTHG'], match_storici['FTAG'])
+            # Il rho è tipicamente negativo; lo mappiamo dinamicamente tra -0.25 e 0
+            return max(-0.25, min(0.0, -abs(corr) * 0.3))
+    except Exception:
+        pass
+    
+    return -0.15 # Fallback standard se mancano dati storici sufficienti
+
 def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False, match_id_target=None):
     if not os.path.exists(FILE_DB_CALCIO):
         st.error("Database Calcio mancante. Aggiorna il DB"); return None
