@@ -9,6 +9,42 @@ from datetime import datetime, date
 import pytz
 from fpdf import FPDF
 from scipy.stats import pearsonr
+import json
+
+def ottieni_xg_squadra(nome_squadra_understat):
+    # Esempio URL: https://understat.com/team/Roma/2026
+    # Assicurati di passare l'anno corretto della stagione in corso
+    url = f"https://understat.com/team/{nome_squadra_understat.replace(' ', '_')}/2026"
+    
+    try:
+        r = requests.get(url)
+        if r.status_code == 200:
+            # Understat inietta i dati JSON in una variabile javascript chiamata datesData
+            match = re.search(r"var datesData \s*=\s* JSON\.parse\('(.*?)'\);", r.text)
+            if match:
+                # Decodifica stringhe esadecimali usate nel JSON di Understat
+                raw_data = match.group(1).encode('utf-8').decode('unicode_escape')
+                dati_partite = json.loads(raw_data)
+                
+                xg_fatti = []
+                xg_subiti = []
+                
+                # Estrae gli xG delle ultime 5 partite giocate
+                for p in dati_partite[-5:]:
+                    side = 'h' if p['h']['title'] == nome_squadra_understat else 'a'
+                    opponent_side = 'a' if side == 'h' else 'h'
+                    
+                    xg_fatti.append(float(p['xG'][side]))
+                    xg_subiti.append(float(p['xG'][opponent_side]))
+                
+                media_xg_fatti = sum(xg_fatti) / len(xg_fatti) if xg_fatti else 1.0
+                media_xg_subiti = sum(xg_subiti) / len(xg_subiti) if xg_subiti else 1.0
+                
+                return media_xg_fatti, media_xg_subiti
+    except Exception as e:
+        print(f"Errore scraping Understat: {e}")
+        
+    return 1.2, 1.2 # Valori di fallback in caso di errore
 
 # --- 1. CONFIGURAZIONE ---
 st.set_page_config(page_title="Delphi Predictor Pro", layout="wide") 
