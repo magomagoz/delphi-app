@@ -8,6 +8,7 @@ import re
 from datetime import datetime, date
 import pytz
 from fpdf import FPDF
+from scipy.stats import pearsonr
 
 # --- 1. CONFIGURAZIONE ---
 st.set_page_config(page_title="Delphi Predictor Pro", layout="wide") 
@@ -614,40 +615,22 @@ def analizza_h2h(df_giocate, casa, fuori):
     testo_h2h = f"Ultimi {len(storico)} match: {punti_casa} pt fatti dal team casa"
     return bonus_h2h_casa, bonus_h2h_fuori, testo_h2h
 
-def get_stats(team, is_home_side, df_giocate):
-    # 1. TIME DECAY: Ordiniamo cronologicamente per usare l'EWMA (Media Mobile Esponenziale)
+def get_stats_xg(team, is_home_side, df_giocate):
+    # Ordine cronologico per applicare l'EWMA correttamente
     df_giocate = df_giocate.sort_values('Date')
     t = df_giocate[(df_giocate['HomeTeam'] == team) | (df_giocate['AwayTeam'] == team)].tail(15)
     
     if t.empty: return 1.2, 1.2
     
-    # Estraiamo le serie temporali dei gol fatti e subiti
-    gf_series = t.apply(lambda r: r['FTHG'] if r['HomeTeam']==team else r['FTAG'], axis=1)
-    gs_series = t.apply(lambda r: r['FTAG'] if r['HomeTeam']==team else r['FTHG'], axis=1)
+    # Estrazione xG invece dei gol reali (richiede le colonne xG_Home e xG_Away nel DB)
+    xg_f_series = t.apply(lambda r: r['xG_Home'] if r['HomeTeam']==team else r['xG_Away'], axis=1)
+    xg_s_series = t.apply(lambda r: r['xG_Away'] if r['HomeTeam']==team else r['xG_Home'], axis=1)
     
-    # Calcolo medie generali con EWMA (span=5 dà più peso alle ultime 3-5 gare)
-    gf_all = gf_series.ewm(span=5, min_periods=1).mean().iloc[-1]
-    gs_all = gs_series.ewm(span=5, min_periods=1).mean().iloc[-1]
+    # Media mobile esponenziale per dare peso maggiore alle partite recenti
+    xg_f = xg_f_series.ewm(span=5, min_periods=1).mean().iloc[-1]
+    xg_s = xg_s_series.ewm(span=5, min_periods=1).mean().iloc[-1]
     
-    stats_condizione = t[t['HomeTeam'] == team] if is_home_side else t[t['AwayTeam'] == team]
-            
-    if not stats_condizione.empty and len(stats_condizione) >= 3:
-        # Serie storiche per le gare specifiche in casa/trasferta
-        gf_cond_series = stats_condizione['FTHG'] if is_home_side else stats_condizione['FTAG']
-        gs_cond_series = stats_condizione['FTAG'] if is_home_side else stats_condizione['FTHG']
-        
-        # EWMA anche sulla condizione specifica (span=3 perché il campione è più piccolo)
-        gf_cond = gf_cond_series.ewm(span=3, min_periods=1).mean().iloc[-1]
-        gs_cond = gs_cond_series.ewm(span=3, min_periods=1).mean().iloc[-1]
-        
-        # Blending Bayesiano: 70% peso alla condizione specifica, 30% alla media generale
-        gf = (gf_cond * 0.7) + (gf_all * 0.3)
-        gs = (gs_cond * 0.7) + (gs_all * 0.3)
-    else:
-        # Se i dati in casa/trasferta sono troppo pochi, usa la media EWMA generale
-        gf, gs = gf_all, gs_all
-        
-    return max(0.5, gf), max(0.5, gs)
+    return max(0.5, xg_f), max(0.5, xg_s)
 
 def analizza_pericolosita_tempi(df_giocate, squadra):
     ultime = df_giocate[(df_giocate['HomeTeam'] == squadra) | (df_giocate['AwayTeam'] == squadra)].tail(15)
@@ -1098,16 +1081,18 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False, match_i
     sgf, sgc, sgo = {i:0 for i in range(12)}, {i:0 for i in range(6)}, {i:0 for i in range(6)}
     re_fin_grezzi = []
     
-    # --- RHO DINAMICO (DIXON-COLES PER CAMPIONATO) ---
-    RHO_MAP = {
-        'Serie A': -0.18, 'La Liga': -0.18, 'Serie A Brasile': -0.18, 
-        'Championship': -0.15, 'Ligue 1': -0.15, 'UEFA Champions League': -0.15,
-        'Premier League': -0.12, 'Primeira Liga': -0.12,
-        'Bundesliga': -0.10, 'Eredivisie': -0.10
-    }
-    # Assegna il Rho specifico, default a -0.15 se non mappato
-    rho = RHO_MAP.get(nome_lega, -0.15) 
-    rho_ht = rho # Applichiamo lo stesso fattore tattico anche al 1° tempo
+def calcola_rho_dinamico(team_home, team_away, df_giocate):
+    try:
+        # Estrae lo storico degli scontri diretti o match simili
+        match_storici = df_giocate[(df_giocate['HomeTeam'] == team_home) & (df_giocate['AwayTeam'] == team_away)]
+        if len(match_storici) >= 5:
+            corr, _ = pearsonr(match_storici['FTHG'], match_storici['FTAG'])
+            # Il rho è tipicamente negativo; lo mappiamo dinamicamente tra -0.25 e 0
+            return max(-0.25, min(0.0, -abs(corr) * 0.3))
+    except Exception:
+        pass
+    
+    return -0.15 # Fallback standard se mancano dati storici sufficienti
     
     # --- CONTROLLO VARIANZA DI FINE STAGIONE ---
     mese_match = dt_event_ita.month
