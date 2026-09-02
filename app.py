@@ -12,14 +12,69 @@ from scipy.stats import pearsonr
 import json
 
 MAPPA_UNDERSTAT = {
+    # --- SERIE A ---
     'Milan': 'AC_Milan', 'Inter': 'Inter', 'Roma': 'Roma', 
     'Lazio': 'Lazio', 'Juventus': 'Juventus', 'Napoli': 'Napoli',
     'Atalanta': 'Atalanta', 'Bologna': 'Bologna', 'Fiorentina': 'Fiorentina',
     'Genoa': 'Genoa', 'Torino': 'Torino', 'Sassuolo': 'Sassuolo',
     'Verona': 'Verona', 'Empoli': 'Empoli', 'Lecce': 'Lecce',
     'Udinese': 'Udinese', 'Cagliari': 'Cagliari', 'Frosinone': 'Frosinone',
-    'Salernitana': 'Salernitana', 'Monza': 'Monza'
-    # Puoi aggiungere altre squadre estere seguendo la stessa logica
+    'Salernitana': 'Salernitana', 'Monza': 'Monza', 'Como': 'Como', 
+    'Parma': 'Parma', 'Venezia': 'Venezia',
+
+    # --- PREMIER LEAGUE ---
+    'Man City': 'Manchester_City', 'Manchester City': 'Manchester_City',
+    'Man United': 'Manchester_United', 'Manchester United': 'Manchester_United',
+    'Newcastle': 'Newcastle_United', 'Newcastle United': 'Newcastle_United',
+    'Tottenham': 'Tottenham', 'Spurs': 'Tottenham',
+    'Arsenal': 'Arsenal', 'Chelsea': 'Chelsea', 'Liverpool': 'Liverpool',
+    'Aston Villa': 'Aston_Villa', 'West Ham': 'West_Ham', 'Brighton': 'Brighton',
+    'Wolves': 'Wolverhampton_Wanderers', 'Wolverhampton': 'Wolverhampton_Wanderers',
+    'Nott\'m Forest': 'Nottingham_Forest', 'Nottingham': 'Nottingham_Forest',
+    'Crystal Palace': 'Crystal_Palace', 'Everton': 'Everton',
+    'Brentford': 'Brentford', 'Fulham': 'Fulham', 'Bournemouth': 'Bournemouth',
+    'Luton': 'Luton', 'Burnley': 'Burnley', 'Sheffield Utd': 'Sheffield_United',
+    'Leicester': 'Leicester', 'Ipswich': 'Ipswich', 'Southampton': 'Southampton',
+
+    # --- LA LIGA ---
+    'Real Madrid': 'Real_Madrid', 'Barcelona': 'Barcelona', 
+    'Atletico': 'Atletico_Madrid', 'Atletico Madrid': 'Atletico_Madrid',
+    'Girona': 'Girona', 'Athletic Bilbao': 'Athletic_Club', 'Athletic': 'Athletic_Club',
+    'Real Sociedad': 'Real_Sociedad', 'Sociedad': 'Real_Sociedad',
+    'Betis': 'Real_Betis', 'Real Betis': 'Real_Betis',
+    'Valencia': 'Valencia', 'Villarreal': 'Villarreal',
+    'Getafe': 'Getafe', 'Osasuna': 'Osasuna', 'Sevilla': 'Sevilla',
+    'Alaves': 'Alaves', 'Las Palmas': 'Las_Palmas', 
+    'Rayo Vallecano': 'Rayo_Vallecano', 'Rayo': 'Rayo_Vallecano',
+    'Mallorca': 'Mallorca', 'Celta Vigo': 'Celta_Vigo', 'Celta': 'Celta_Vigo',
+    'Cadiz': 'Cadiz', 'Almeria': 'Almeria', 'Granada': 'Granada',
+    'Valladolid': 'Valladolid', 'Leganes': 'Leganes', 'Espanyol': 'Espanyol',
+
+    # --- BUNDESLIGA ---
+    'Bayern Munich': 'Bayern_Munich', 'Bayern': 'Bayern_Munich',
+    'Dortmund': 'Borussia_Dortmund', 'Borussia Dortmund': 'Borussia_Dortmund',
+    'Leverkusen': 'Bayer_Leverkusen', 'Bayer Leverkusen': 'Bayer_Leverkusen',
+    'RB Leipzig': 'RB_Leipzig', 'Leipzig': 'RB_Leipzig',
+    'Stuttgart': 'Stuttgart', 'Eintracht Frankfurt': 'Eintracht_Frankfurt', 'Frankfurt': 'Eintracht_Frankfurt',
+    'Freiburg': 'Freiburg', 'Hoffenheim': 'Hoffenheim',
+    'Heidenheim': 'Heidenheim', 'Werder Bremen': 'Werder_Bremen', 'Werder': 'Werder_Bremen',
+    'Augsburg': 'Augsburg', 'Wolfsburg': 'Wolfsburg',
+    'Mainz': 'Mainz_05', 'Mainz 05': 'Mainz_05',
+    'M\'gladbach': 'Borussia_M.Gladbach', 'Gladbach': 'Borussia_M.Gladbach', 'Borussia Monchengladbach': 'Borussia_M.Gladbach',
+    'Union Berlin': 'Union_Berlin', 'Bochum': 'Bochum', 
+    'Koln': 'FC_Cologne', 'Cologne': 'FC_Cologne', 'Darmstadt': 'Darmstadt',
+    'St. Pauli': 'St_Pauli', 'Kiel': 'Holstein_Kiel',
+
+    # --- LIGUE 1 ---
+    'PSG': 'Paris_Saint_Germain', 'Paris SG': 'Paris_Saint_Germain', 'Paris Saint-Germain': 'Paris_Saint_Germain',
+    'Monaco': 'Monaco', 'Brest': 'Brest', 'Lille': 'Lille',
+    'Nice': 'Nice', 'Lens': 'Lens', 'Lyon': 'Lyon', 
+    'Marseille': 'Marseille', 'Rennes': 'Rennes', 
+    'Toulouse': 'Toulouse', 'Reims': 'Reims', 
+    'Montpellier': 'Montpellier', 'Strasbourg': 'Strasbourg',
+    'Nantes': 'Nantes', 'Le Havre': 'Le_Havre', 'Havre': 'Le_Havre',
+    'Lorient': 'Lorient', 'Metz': 'Metz', 'Clermont': 'Clermont_Foot',
+    'Auxerre': 'Auxerre', 'Angers': 'Angers', 'Saint-Etienne': 'Saint-Etienne'
 }
 
 def ottieni_xg_understat(nome_squadra):
