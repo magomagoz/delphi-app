@@ -11,40 +11,40 @@ from fpdf import FPDF
 from scipy.stats import pearsonr
 import json
 
-def ottieni_xg_squadra(nome_squadra_understat):
-    # Esempio URL: https://understat.com/team/Roma/2026
-    # Assicurati di passare l'anno corretto della stagione in corso
-    url = f"https://understat.com/team/{nome_squadra_understat.replace(' ', '_')}/2026"
+MAPPA_UNDERSTAT = {
+    'Milan': 'AC_Milan', 'Inter': 'Inter', 'Roma': 'Roma', 
+    'Lazio': 'Lazio', 'Juventus': 'Juventus', 'Napoli': 'Napoli',
+    'Atalanta': 'Atalanta', 'Bologna': 'Bologna', 'Fiorentina': 'Fiorentina',
+    'Genoa': 'Genoa', 'Torino': 'Torino', 'Sassuolo': 'Sassuolo',
+    'Verona': 'Verona', 'Empoli': 'Empoli', 'Lecce': 'Lecce',
+    'Udinese': 'Udinese', 'Cagliari': 'Cagliari', 'Frosinone': 'Frosinone',
+    'Salernitana': 'Salernitana', 'Monza': 'Monza'
+    # Puoi aggiungere altre squadre estere seguendo la stessa logica
+}
+
+def ottieni_xg_understat(nome_squadra):
+    nome_url = MAPPA_UNDERSTAT.get(nome_squadra, nome_squadra.replace(" ", "_"))
+    url = f"https://understat.com/team/{nome_url}/2026"
     
     try:
-        r = requests.get(url)
+        r = requests.get(url, timeout=5)
         if r.status_code == 200:
-            # Understat inietta i dati JSON in una variabile javascript chiamata datesData
             match = re.search(r"var datesData \s*=\s* JSON\.parse\('(.*?)'\);", r.text)
             if match:
-                # Decodifica stringhe esadecimali usate nel JSON di Understat
                 raw_data = match.group(1).encode('utf-8').decode('unicode_escape')
                 dati_partite = json.loads(raw_data)
                 
-                xg_fatti = []
-                xg_subiti = []
+                xg_f = [float(p['xG']['h'] if p['h']['title'] == nome_url else p['xG']['a']) for p in dati_partite[-5:]]
+                xg_s = [float(p['xG']['a'] if p['h']['title'] == nome_url else p['xG']['h']) for p in dati_partite[-5:]]
                 
-                # Estrae gli xG delle ultime 5 partite giocate
-                for p in dati_partite[-5:]:
-                    side = 'h' if p['h']['title'] == nome_squadra_understat else 'a'
-                    opponent_side = 'a' if side == 'h' else 'h'
-                    
-                    xg_fatti.append(float(p['xG'][side]))
-                    xg_subiti.append(float(p['xG'][opponent_side]))
-                
-                media_xg_fatti = sum(xg_fatti) / len(xg_fatti) if xg_fatti else 1.0
-                media_xg_subiti = sum(xg_subiti) / len(xg_subiti) if xg_subiti else 1.0
-                
-                return media_xg_fatti, media_xg_subiti
-    except Exception as e:
-        print(f"Errore scraping Understat: {e}")
+                media_xg_f = sum(xg_f) / len(xg_f) if xg_f else 1.0
+                media_xg_s = sum(xg_s) / len(xg_s) if xg_s else 1.0
+                return media_xg_f, media_xg_s
+    except Exception:
+        pass # In caso di errore di rete, silente
         
-    return 1.2, 1.2 # Valori di fallback in caso di errore
+    return None, None
+
 
 # --- 1. CONFIGURAZIONE ---
 st.set_page_config(page_title="Delphi Predictor Pro", layout="wide") 
@@ -70,7 +70,6 @@ def pulisci_per_pdf(testo):
     """Rimuove emoji e caratteri speciali che mandano in crash FPDF"""
     if not isinstance(testo, str):
         return str(testo)
-    # Rimuove emoji e caratteri non-latin1
     return testo.encode('latin-1', 'ignore').decode('latin-1')
 
 def genera_pdf_pronostico(d):
@@ -91,7 +90,6 @@ def genera_pdf_pronostico(d):
     pdf.set_text_color(255, 255, 255)
     pdf.set_font("Arial", 'B', 20)
     pdf.cell(0, 10, "DELPHI PREDICTOR PRO", ln=True, align='C')
-    # CORRETTO: pdf minuscolo
     pdf.set_font("Arial", 'B', 16)
     pdf.cell(0, 10, "PRONOSTICI PARTITA", ln=True, align='C') 
     pdf.set_font("Arial", '', 10)
@@ -141,18 +139,14 @@ def genera_pdf_pronostico(d):
 
     pdf.set_font("Arial", '', 10)
     
-    # Funzione interna veloce per convertire emoji in testo per il PDF
     def converti_forma(trend_emoji):
         if not trend_emoji: return "N.D."
-        # Sostituiamo le emoji con lettere leggibili
         t = trend_emoji.replace('🟢', ' V ').replace('🟡', ' N ').replace('🔴', ' P ')
-        # Rimuoviamo eventuali altre emoji residue
         return pulisci_per_pdf(t)
 
     trend_h = converti_forma(d.get('Trend_Casa', ''))
     trend_a = converti_forma(d.get('Trend_Fuori', ''))
 
-    # Stampiamo i due box della forma
     pdf.cell(95, 10, f"Ultime 4 partite giocate: {trend_h}", border=1, align='C')
     pdf.cell(95, 10, f"Ultime 4 partite giocate: {trend_a}", border=1, ln=True, align='C')
     
@@ -167,31 +161,26 @@ def genera_pdf_pronostico(d):
     pdf.set_text_color(0, 0, 0) 
     pdf.set_font("Arial", 'B', 11)
     
-    # Dividiamo lo spazio in 3 colonne per affiancare Finale, 1°T e HT/FT
     pdf.cell(63, 10, f"Finale: {pulisci_per_pdf(d.get('1X2', 'N.D.'))}", border=1, align='C')
     pdf.cell(63, 10, f"1° Tempo: {pulisci_per_pdf(d.get('1X2 1°T', 'N.D.'))}", border=1, align='C')
     pdf.cell(64, 10, f"HT/FT: {pulisci_per_pdf(d.get('Esito HT/FT', 'N.D.'))}", border=1, ln=True, align='C')
 
     pdf.ln(5)
         
-# Tabella U/O e GNG
     pdf.set_font("Arial", 'B', 12)
     pdf.set_fill_color(0, 96, 156)
     pdf.set_text_color(255, 255, 255)
     pdf.cell(190, 10, " UNDER/OVER E GOL/NOGOL", ln=True, fill=True)
     
-    # RIPRISTINO TESTO NERO
     pdf.set_text_color(0, 0, 0)
-    pdf.set_font("Arial", 'B', 12) # Font un po' più grande per far risaltare l'esito
+    pdf.set_font("Arial", 'B', 12)
     
-    # Calcolo dell'esito più probabile
     p_over = 1 - d['pu']
     p_nogol = 1 - d['pg']
     
     esito_uo = "UNDER 2.5" if d['pu'] >= p_over else "OVER 2.5"
     esito_gng = "GOL" if d['pg'] >= p_nogol else "NO GOL"
     
-    # Stampiamo solo il risultato vincente in due celle affiancate
     pdf.cell(95, 12, esito_uo, border=1, align='C')
     pdf.cell(95, 12, esito_gng, border=1, ln=True, align='C')
 
@@ -203,11 +192,9 @@ def genera_pdf_pronostico(d):
     pdf.set_text_color(255, 255, 255)
     pdf.cell(190, 10, " SOMMA GOL", ln=True, fill=True)
     
-    # RIPRISTINO TESTO NERO
     pdf.set_text_color(0, 0, 0)
     pdf.set_font("Arial", '', 10)
     
-    # Inserimento SGF, SGC e SGO (usiamo .get() per sicurezza nel caso i dati manchino)
     pdf.multi_cell(0, 6, f"SOMMA GOL FINALE: {pulisci_per_pdf(d.get('SGF', 'N.D.'))}", border=1)
     pdf.ln(3)
     pdf.multi_cell(0, 6, f"SOMMA GOL CASA: {pulisci_per_pdf(d.get('SGC', 'N.D.'))}", border=1)
@@ -218,23 +205,15 @@ def genera_pdf_pronostico(d):
     # --- 5. RISULTATI ESATTI ---
     pdf.set_font("Arial", 'B', 12)
     pdf.set_fill_color(0, 96, 156)
-    #pdf.set_fill_color(30, 58, 138)
     pdf.set_text_color(255, 255, 255)
     pdf.cell(190, 10, " RISULTATI ESATTI", ln=True, fill=True)
 
-    # RIPRISTINO TESTO NERO
     pdf.set_text_color(0, 0, 0)
     pdf.set_font("Arial", '', 9)
     
     pdf.multi_cell(0, 6, f"TOP 6 RE FINALI:\n{pulisci_per_pdf(d.get('Top 6 RE Finali', 'N.D.'))}", border=1)
     pdf.ln(3)
     pdf.multi_cell(0, 6, f"TOP 3 RE 1°T:\n{pulisci_per_pdf(d.get('Top 3 RE 1°T', 'N.D.'))}", border=1)
-    
-    # Footer
-    #pdf.set_y(-20)
-    #pdf.set_text_color(150, 150, 150)
-    #pdf.set_font("Arial", 'I', 8)
-    #pdf.cell(0, 10, "Generato da Delphi Predictor Pro", align='C')
     
     return pdf.output(dest='S').encode('latin-1', errors='replace')
     
@@ -257,10 +236,10 @@ def check_in_list(pred_string, value_to_find):
     preds = [p.strip() for p in str(pred_string).split(",")]
     return str(value_to_find).strip() in [p.strip() for p in preds]
 
-# --- 3. FUNZIONI DATABASE (CORRETTE) ---
+# --- 3. FUNZIONI DATABASE ---
 def get_db_columns():
     return [
-        "Data", "Ora", "League", "Partita", "Fiducia", "Affidabilità", 
+        "Data", "Ora", "League", "Partita", "Fiducia", "Affidabilità", "Categoria", 
         "1X2", "1X2 1°T", "Esito HT/FT", "U/O 2.5", "G/NG", "SGF", "SGC", "SGO", 
         "Top 6 RE Finali", "Top 3 RE 1°T", "Top 3 HT/FT", "Fatica", "Match_ID", "Risultato_Reale", "PT_Reale"
     ]
@@ -271,7 +250,6 @@ def inizializza_db():
         df = pd.DataFrame(columns=columns)
         df.to_csv(FILE_DB_PRONOSTICI, index=False)
     else:
-        # Se esiste, controlla che le colonne siano giuste
         try:
             df = pd.read_csv(FILE_DB_PRONOSTICI)
             mancanti = [c for c in columns if c not in df.columns]
@@ -280,11 +258,9 @@ def inizializza_db():
                     df[c] = "N/D"
                 df.to_csv(FILE_DB_PRONOSTICI, index=False)
         except:
-            # Se è corrotto, lo ricrea
             df = pd.DataFrame(columns=columns)
             df.to_csv(FILE_DB_PRONOSTICI, index=False)
 
-# ESEGUIAMO SUBITO L'INIZIALIZZAZIONE
 inizializza_db()
 
 def crea_backup_automatico():
@@ -292,22 +268,17 @@ def crea_backup_automatico():
         os.makedirs("backups")
     
     if os.path.exists(FILE_DB_PRONOSTICI):
-        # Controlliamo che il file non sia vuoto (almeno più di 100 byte per sicurezza)
         if os.path.getsize(FILE_DB_PRONOSTICI) < 50: 
-            return # Evitiamo di backuppare un file vuoto o solo intestazioni
-
+            return 
         data_oggi = datetime.now().strftime("%Y-%m-%d")
         nome_backup = f"backups/pronostici_backup_{data_oggi}.csv"
         
-        # Facciamo il backup solo se non esiste già per oggi
         if not os.path.exists(nome_backup):
             try:
                 df_backup = pd.read_csv(FILE_DB_PRONOSTICI)
                 df_backup.to_csv(nome_backup, index=False)
-                
-                # Pulizia: tieni solo gli ultimi 10 backup
                 files = [os.path.join("backups", f) for f in os.listdir("backups") if f.endswith(".csv")]
-                files.sort(key=os.path.getmtime) # Ordina dal più vecchio
+                files.sort(key=os.path.getmtime) 
                 while len(files) > 10:
                     os.remove(files.pop(0))
             except Exception as e:
@@ -316,20 +287,16 @@ def crea_backup_automatico():
 def ripristina_ultimo_backup():
     if not os.path.exists("backups"):
         return False, "Cartella backup non trovata."
-    
-    # Prende i file e li ordina per DATA DI MODIFICA (il più recente per ultimo)
     files = [os.path.join("backups", f) for f in os.listdir("backups") if f.startswith("pronostici_backup")]
     files.sort(key=os.path.getmtime) 
-    
     if not files:
         return False, "Nessun file di backup disponibile."
     
-    ultimo_file = files[-1] # Il più recente effettivamente scritto su disco
+    ultimo_file = files[-1]
     try:
         df_backup = pd.read_csv(ultimo_file)
         if df_backup.empty:
             return False, "L'ultimo backup trovato è vuoto!"
-            
         df_backup.to_csv(FILE_DB_PRONOSTICI, index=False)
         return True, f"Ripristinato backup del: {datetime.fromtimestamp(os.path.getmtime(ultimo_file)).strftime('%d/%m/%Y %H:%M')}"
     except Exception as e:
@@ -339,13 +306,10 @@ def salva_completo_in_locale(d_dict):
     try:
         columns = get_db_columns()
         df_old = pd.read_csv(FILE_DB_PRONOSTICI) if os.path.exists(FILE_DB_PRONOSTICI) else pd.DataFrame(columns=columns)
-        
         dati_puliti = d_dict.copy()
-        # Aggiungi 'Top 3 HT/FT' alla lista dei campi da pulire dalle quote
         campi_da_pulire = ["SGF", "SGC", "SGO", "Top 6 RE Finali", "Top 3 RE 1°T", "Top 3 HT/FT"]
         for campo in campi_da_pulire:
             if campo in dati_puliti:
-                # Questa regex rimuove tutto ciò che somiglia a (Q: 1.23)
                 dati_puliti[campo] = re.sub(r'\s\(Q:\s\d+\.\d+\)', '', str(dati_puliti[campo]))
 
         nuova_riga = {col: dati_puliti.get(col, "N/D") for col in columns}
@@ -381,13 +345,12 @@ def calcola_trend_forma(df_giocate, squadra):
     return "".join(stringa_trend), moltiplicatore
 
 # --- 4. FUNZIONI AGGIORNAMENTO API ---
-# --- SOSTITUISCI INTERA FUNZIONE aggiorna_database_calcio ---
 def aggiorna_database_calcio():
     headers = {'X-Auth-Token': API_TOKEN}
     competitions = ['SA', 'PL', 'ELC', 'PD', 'BL1', 'FL1', 'CL', 'PPL', 'DED', 'BSA'] 
     
     rows = []
-    log_report = [] # <--- NUOVO: Raccoglitore per il report di log
+    log_report = [] 
     progress_bar = st.progress(0)
     status_text = st.empty()
     
@@ -401,7 +364,6 @@ def aggiorna_database_calcio():
                 matches = r.json().get('matches', [])
                 conteggio_match = len(matches)
                 
-                # --- NUOVO: Estrazione date per il Log ---
                 if conteggio_match > 0:
                     prima_data = matches[0]['utcDate'][:10]
                     ultima_data = matches[-1]['utcDate'][:10]
@@ -438,7 +400,6 @@ def aggiorna_database_calcio():
             time.sleep(1) 
             progress_bar.progress((i + 1) / len(competitions))
 
-        # Salvataggio su file
         df_new = pd.DataFrame(rows, columns=[
             'League', 'Date', 'HomeTeam', 'AwayTeam', 'Status', 
             'FTHG', 'FTAG', 'HTHG', 'HTAG', 'Referee', 'ID', 'HomeCrest', 'AwayCrest'
@@ -448,23 +409,18 @@ def aggiorna_database_calcio():
         status_text.empty()
         st.success("✅ Database Calcio aggiornato con successo! Loghi acquisiti.")
         
-        # --- NUOVO: MOSTRA IL REPORT NELL'INTERFACCIA ---
         with st.expander("📋 Mostra Report Dettagliato API", expanded=True):
             df_log = pd.DataFrame(log_report)
-            # Mappiamo i nomi delle leghe (da 'PPL' a 'Primeira Liga', ecc.)
             df_log['Lega'] = df_log['Lega'].map(lambda x: LEAGUE_MAP.get(x, x))
-            
-            # Mostriamo la tabella pulita
             st.dataframe(df_log, use_container_width=True, hide_index=True)
             
-            # Check intelligente: avvisa se una lega ha meno di 100 partite (segno di dati parziali)
             leghe_anomale = df_log[(df_log['Match Estratti'] < 100) & (df_log['Match Estratti'] > 0)]['Lega'].tolist()
             leghe_vuote = df_log[df_log['Match Estratti'] == 0]['Lega'].tolist()
             
             if leghe_vuote:
                 st.error(f"❌ Nessun dato disponibile per: {', '.join(leghe_vuote)}.")
             if leghe_anomale:
-                st.warning(f"⚠️ Attenzione: Il fornitore API sta inviando calendari incompleti per: **{', '.join(leghe_anomale)}**. Potresti riscontrare dati mancanti per le prime giornate.")
+                st.warning(f"⚠️ Attenzione: Il fornitore API sta inviando calendari incompleti per: **{', '.join(leghe_anomale)}**.")
 
     except Exception as e:
         st.error(f"Errore aggiornamento dati: {e}")
@@ -516,14 +472,12 @@ def genera_pronostici_massivi(giorni_anticipo=7):
     today = pd.Timestamp.now(tz='UTC').normalize()
     limite = today + pd.Timedelta(days=giorni_anticipo)
 
-    # 1. Trova tutti i match programmati per la prossima settimana
     match_validi = df_calcio[
         (df_calcio['Status'].isin(['TIMED', 'SCHEDULED'])) &
         (df_calcio['Date'].dt.normalize() >= today) &
         (df_calcio['Date'].dt.normalize() <= limite)
     ]
 
-    # 2. Escludi i match già presenti nel DB Pronostici
     columns = get_db_columns()
     if os.path.exists(FILE_DB_PRONOSTICI):
         df_pron = pd.read_csv(FILE_DB_PRONOSTICI)
@@ -545,18 +499,14 @@ def genera_pronostici_massivi(giorni_anticipo=7):
     for i, row in match_da_fare.reset_index().iterrows():
         try:
             res = esegui_analisi(row['HomeTeam'], match_id_target=row['ID'])
-            
-            # Controllo: Assicuriamoci che l'algoritmo stia salvando esattamente il match richiesto
             if res and str(res.get('Match_ID')) == str(row['ID']):
                 dati_puliti = res.copy()
                 campi_da_pulire = ["SGF", "SGC", "SGO", "Top 6 RE Finali", "Top 3 RE 1°T", "Top 3 HT/FT"]
                 
-                # Rimuove le quote come facciamo nel salvataggio manuale
                 for campo in campi_da_pulire:
                     if campo in dati_puliti:
                         dati_puliti[campo] = re.sub(r'\s\(Q:\s\d+\.\d+\)', '', str(dati_puliti[campo]))
 
-                # Calcolo fatica automatizzato
                 f_h = controlla_fatica(df_calcio, res['casa_nome'], res['Data'])
                 f_a = controlla_fatica(df_calcio, res['fuori_nome'], res['Data'])
                 dati_puliti['Fatica'] = "SÌ" if (f_h or f_a) else "NO"
@@ -564,11 +514,9 @@ def genera_pronostici_massivi(giorni_anticipo=7):
                 nuova_riga = {col: dati_puliti.get(col, "N/D") for col in columns}
                 nuove_righe.append(nuova_riga)
         except Exception as e:
-            pass # Ignora i match difettosi (es. squadre senza storico) per non fermare il loop
-        
+            pass 
         progress_bar.progress((i + 1) / len(match_da_fare))
 
-    # 3. Salva tutto in un'unica operazione per non stressare il server
     if nuove_righe:
         df_updated = pd.concat([df_pron, pd.DataFrame(nuove_righe)], ignore_index=True)
         df_updated.to_csv(FILE_DB_PRONOSTICI, index=False)
@@ -610,16 +558,34 @@ def controlla_fatica(df, squadra, data_match_str):
             giorni_riposo = (data_m - ultima_partita).days
             return giorni_riposo <= 3
     except Exception as e:
-        print(f"Errore controllo fatica: {e}")
+        pass
     return False
 
 def calcola_late_goal_index(casa, fuori):
     val = (len(str(casa)) + len(str(fuori))) % 10
     return round(val * 0.10 + 0.5, 2)
 
-def analizza_distribuzione_tempi(df_giocate, squadra):
-    p1, p2 = analizza_pericolosita_tempi(df_giocate, squadra)
-    return p1, p2
+def analizza_pericolosita_tempi(df_giocate, squadra):
+    ultime = df_giocate[(df_giocate['HomeTeam'] == squadra) | (df_giocate['AwayTeam'] == squadra)].tail(15)
+    gol_fatti_1t, gol_fatti_2t, match_validi = 0, 0, 0
+    
+    for _, r in ultime.iterrows():
+        is_home = r['HomeTeam'] == squadra
+        f_tot = r['FTHG'] if is_home else r['FTAG']
+        h_1t = r.get('HTHG') if is_home else r.get('HTAG')
+        
+        if pd.notnull(h_1t):
+            gol_fatti_1t += h_1t
+            gol_fatti_2t += (f_tot - h_1t)
+            match_validi += 1
+            
+    if match_validi == 0: return 0.0, 0.0
+    tot = gol_fatti_1t + gol_fatti_2t
+    if tot == 0: return 0.0, 0.0
+    
+    perc_1t = round((gol_fatti_1t / tot * 100), 1)
+    perc_2t = round((gol_fatti_2t / tot * 100), 1)
+    return perc_1t, perc_2t
 
 def analizza_h2h(df_giocate, casa, fuori):
     storico = df_giocate[
@@ -651,48 +617,35 @@ def analizza_h2h(df_giocate, casa, fuori):
     testo_h2h = f"Ultimi {len(storico)} match: {punti_casa} pt fatti dal team casa"
     return bonus_h2h_casa, bonus_h2h_fuori, testo_h2h
 
-def get_stats_xg(team, is_home_side, df_giocate):
-    # Ordine cronologico per applicare l'EWMA correttamente
+def get_stats(team, is_home_side, df_giocate):
     df_giocate = df_giocate.sort_values('Date')
     t = df_giocate[(df_giocate['HomeTeam'] == team) | (df_giocate['AwayTeam'] == team)].tail(15)
     
     if t.empty: return 1.2, 1.2
     
-    # Estrazione xG invece dei gol reali (richiede le colonne xG_Home e xG_Away nel DB)
-    xg_f_series = t.apply(lambda r: r['xG_Home'] if r['HomeTeam']==team else r['xG_Away'], axis=1)
-    xg_s_series = t.apply(lambda r: r['xG_Away'] if r['HomeTeam']==team else r['xG_Home'], axis=1)
+    gf_series = t.apply(lambda r: r['FTHG'] if r['HomeTeam']==team else r['FTAG'], axis=1)
+    gs_series = t.apply(lambda r: r['FTAG'] if r['HomeTeam']==team else r['FTHG'], axis=1)
     
-    # Media mobile esponenziale per dare peso maggiore alle partite recenti
-    xg_f = xg_f_series.ewm(span=5, min_periods=1).mean().iloc[-1]
-    xg_s = xg_s_series.ewm(span=5, min_periods=1).mean().iloc[-1]
+    gf_all = gf_series.ewm(span=5, min_periods=1).mean().iloc[-1]
+    gs_all = gs_series.ewm(span=5, min_periods=1).mean().iloc[-1]
     
-    return max(0.5, xg_f), max(0.5, xg_s)
-
-def analizza_pericolosita_tempi(df_giocate, squadra):
-    ultime = df_giocate[(df_giocate['HomeTeam'] == squadra) | (df_giocate['AwayTeam'] == squadra)].tail(15)
-    gol_fatti_1t, gol_fatti_2t, match_validi = 0, 0, 0
-    
-    for _, r in ultime.iterrows():
-        is_home = r['HomeTeam'] == squadra
-        f_tot = r['FTHG'] if is_home else r['FTAG']
-        h_1t = r.get('HTHG') if is_home else r.get('HTAG')
-        
-        if pd.notnull(h_1t):
-            gol_fatti_1t += h_1t
-            gol_fatti_2t += (f_tot - h_1t)
-            match_validi += 1
+    stats_condizione = t[t['HomeTeam'] == team] if is_home_side else t[t['AwayTeam'] == team]
             
-    # SOSTITUITO 50.0 CON 0.0
-    if match_validi == 0: return 0.0, 0.0
-    tot = gol_fatti_1t + gol_fatti_2t
-    if tot == 0: return 0.0, 0.0
-    
-    perc_1t = round((gol_fatti_1t / tot * 100), 1)
-    perc_2t = round((gol_fatti_2t / tot * 100), 1)
-    return perc_1t, perc_2t
+    if not stats_condizione.empty and len(stats_condizione) >= 3:
+        gf_cond_series = stats_condizione['FTHG'] if is_home_side else stats_condizione['FTAG']
+        gs_cond_series = stats_condizione['FTAG'] if is_home_side else stats_condizione['FTHG']
+        
+        gf_cond = gf_cond_series.ewm(span=3, min_periods=1).mean().iloc[-1]
+        gs_cond = gs_cond_series.ewm(span=3, min_periods=1).mean().iloc[-1]
+        
+        gf = (gf_cond * 0.7) + (gf_all * 0.3)
+        gs = (gs_cond * 0.7) + (gs_all * 0.3)
+    else:
+        gf, gs = gf_all, gs_all
+        
+    return max(0.5, gf), max(0.5, gs)
 
-# --- SOSTITUISCI INTERA FUNZIONE analizza_performance_campionato ---
-def analizza_performance_campionato(camp_filtro):
+def analizza_performance_campionato(camp_filtro, solo_gold=False):
     if not os.path.exists(FILE_DB_PRONOSTICI):
         st.warning("Cronologia pronostici non trovata.")
         return
@@ -704,8 +657,11 @@ def analizza_performance_campionato(camp_filtro):
             st.error("Il database non contiene la colonna 'League'. Prova a fare una nuova analisi per rigenerare il file correttamente.")
             return
 
-        # Filtro match completati
         df_v = df_cron[(df_cron['Risultato_Reale'] != "N/D") & (df_cron['PT_Reale'] != "N/D")].copy()
+        
+        # NUOVO FILTRO GOLD
+        if solo_gold and 'Categoria' in df_v.columns:
+            df_v = df_v[df_v['Categoria'] == '🏆 GOLD']
         
         if camp_filtro != 'TUTTI':
             df_v = df_v[df_v['League'] == camp_filtro]
@@ -717,7 +673,6 @@ def analizza_performance_campionato(camp_filtro):
         match_contati = len(df_v)
         st.success(f"Analisi completata su {match_contati} match per {camp_filtro}")
         
-        # DIZIONARIO UNIFICATO A 11 PARAMETRI
         stats = {k: [0, 0] for k in [
             '1X2', '1X2 1°T', 'Esito HT/FT', 
             'U/O 2.5', 'G/NG', 'SGF', 
@@ -729,53 +684,36 @@ def analizza_performance_campionato(camp_filtro):
             try:
                 h, a = map(int, str(row['Risultato_Reale']).split('-'))
                 ph, pa = map(int, str(row['PT_Reale']).split('-'))
-
                 real_1t = "1" if ph > pa else ("2" if pa > ph else "X")
                 real_ft = "1" if h > a else ("2" if a > h else "X")
                 real_htft = f"{real_1t}-{real_ft}"
 
-                # 1. Mercati Standard
                 stats['1X2'][1] += 1
                 if check_1x2(row['1X2'], h, a): stats['1X2'][0] += 1
-                
                 stats['1X2 1°T'][1] += 1
                 if check_1x2(row.get('1X2 1°T', 'N/D'), ph, pa): stats['1X2 1°T'][0] += 1
-                
                 stats['Esito HT/FT'][1] += 1
                 if str(row.get('Esito HT/FT', 'N/D')).replace("/", "-") == real_htft: stats['Esito HT/FT'][0] += 1
-                
                 stats['U/O 2.5'][1] += 1
                 if check_uo(row['U/O 2.5'], h, a): stats['U/O 2.5'][0] += 1
-                
                 stats['G/NG'][1] += 1
                 if check_gng(row['G/NG'], h, a): stats['G/NG'][0] += 1
-
-                # 2. Somma Gol
                 stats['SGF'][1] += 1
                 if check_in_list(row['SGF'], h+a): stats['SGF'][0] += 1
-
                 stats['SGC (Casa)'][1] += 1
                 if check_in_list(row['SGC'], h): stats['SGC (Casa)'][0] += 1
-
                 stats['SGO (Ospite)'][1] += 1
                 if check_in_list(row['SGO'], a): stats['SGO (Ospite)'][0] += 1
-
-                # 3. Risultati Esatti e Avanzati
                 stats['RE Finali'][1] += 1
                 if check_in_list(row['Top 6 RE Finali'], row['Risultato_Reale']): stats['RE Finali'][0] += 1
-
                 stats['RE 1°T'][1] += 1
                 if check_in_list(row['Top 3 RE 1°T'], f"{ph}-{pa}"): stats['RE 1°T'][0] += 1
-
                 stats['Top 3 HT/FT'][1] += 1
                 if check_in_list(row['Top 3 HT/FT'], real_htft): stats['Top 3 HT/FT'][0] += 1
-                
-            except Exception as e:
+            except Exception:
                 continue
         
-        # --- INTERFACCIA GRAFICA ---
         st.subheader(f"📊 Precisione modello: {camp_filtro}")
-        
         keys = list(stats.keys())
         for i in range(0, len(keys), 3):
             cols = st.columns(3)
@@ -790,41 +728,37 @@ def analizza_performance_campionato(camp_filtro):
                             st.metric(market, f"{wr:.1%}", f"{v[0]}/{v[1]}", delta_color="normal" if not is_gold else "inverse")
                             if is_gold: st.markdown("🏆 **SOGLIA GOLD**")
 
-        # --- GRAFICO COMPARATIVO (Campionati) ---
         st.divider()
         st.write("### 📈 Precisione per Pronostico")
-        
-        # Calcoliamo i Win Rate e assegniamo il colore dinamicamente
         win_rates = [v[0]/v[1] if v[1]>0 else 0 for v in stats.values()]
-        colori = ["#FFD700" if wr >= 0.75 else "#4A90E2" for wr in win_rates] # Oro per >= 75%, Azzurro altrimenti
+        colori = ["#FFD700" if wr >= 0.75 else "#4A90E2" for wr in win_rates]
         
         chart_data = pd.DataFrame({
             'Mercato': list(stats.keys()),
             'Win Rate': win_rates,
             'Colore': colori
         })
-        
-        # Generiamo il grafico usando la colonna 'Colore' per la formattazione
         st.bar_chart(chart_data, x='Mercato', y='Win Rate', color='Colore')
 
     except Exception as e:
         st.error(f"Errore analisi: {e}")
 
-
-# --- SOSTITUISCI INTERA FUNZIONE analizza_performance_squadra_gold ---
-def analizza_performance_squadra_gold(squadra_target):
+def analizza_performance_squadra_gold(squadra_target, solo_gold=False):
     if not os.path.exists(FILE_DB_PRONOSTICI):
         st.warning("Cronologia pronostici non trovata.")
         return
 
     try:
         df_cron = pd.read_csv(FILE_DB_PRONOSTICI)
-        
         df_v = df_cron[
             (df_cron['Risultato_Reale'] != "N/D") & 
             (df_cron['PT_Reale'] != "N/D") & 
             (df_cron['Partita'].str.contains(squadra_target, case=False, na=False))
         ].copy()
+
+        # NUOVO FILTRO GOLD
+        if solo_gold and 'Categoria' in df_v.columns:
+            df_v = df_v[df_v['Categoria'] == '🏆 GOLD']
 
         if df_v.empty:
             st.info(f"Nessun match terminato trovato per **{squadra_target}**.")
@@ -833,7 +767,6 @@ def analizza_performance_squadra_gold(squadra_target):
         match_contati = len(df_v)
         st.markdown(f"### 📊 Report: **{squadra_target}** ({match_contati} match)")
         
-        # DIZIONARIO UNIFICATO A 11 PARAMETRI (Identico ai Campionati)
         stats = {k: [0, 0] for k in [
             '1X2', '1X2 1°T', 'Esito HT/FT', 
             'U/O 2.5', 'G/NG', 'SGF', 
@@ -845,51 +778,35 @@ def analizza_performance_squadra_gold(squadra_target):
             try:
                 h, a = map(int, str(row['Risultato_Reale']).split('-'))
                 ph, pa = map(int, str(row['PT_Reale']).split('-'))
-                
                 real_1t = "1" if ph > pa else ("2" if pa > ph else "X")
                 real_ft = "1" if h > a else ("2" if a > h else "X")
                 real_htft = f"{real_1t}-{real_ft}"
 
-                # 1. Mercati Standard
                 stats['1X2'][1] += 1
                 if check_1x2(row['1X2'], h, a): stats['1X2'][0] += 1
-                
                 stats['1X2 1°T'][1] += 1
                 if check_1x2(row.get('1X2 1°T', 'N/D'), ph, pa): stats['1X2 1°T'][0] += 1
-                
                 stats['Esito HT/FT'][1] += 1
                 if str(row.get('Esito HT/FT', 'N/D')).replace("/", "-") == real_htft: stats['Esito HT/FT'][0] += 1
-                
                 stats['U/O 2.5'][1] += 1
                 if check_uo(row['U/O 2.5'], h, a): stats['U/O 2.5'][0] += 1
-                
                 stats['G/NG'][1] += 1
                 if check_gng(row['G/NG'], h, a): stats['G/NG'][0] += 1
-
-                # 2. Somma Gol
                 stats['SGF'][1] += 1
                 if check_in_list(row['SGF'], h+a): stats['SGF'][0] += 1
-
                 stats['SGC (Casa)'][1] += 1
                 if check_in_list(row['SGC'], h): stats['SGC (Casa)'][0] += 1
-
                 stats['SGO (Ospite)'][1] += 1
                 if check_in_list(row['SGO'], a): stats['SGO (Ospite)'][0] += 1
-
-                # 3. Risultati Esatti e Avanzati
                 stats['RE Finali'][1] += 1
                 if check_in_list(row['Top 6 RE Finali'], row['Risultato_Reale']): stats['RE Finali'][0] += 1
-
                 stats['RE 1°T'][1] += 1
                 if check_in_list(row['Top 3 RE 1°T'], f"{ph}-{pa}"): stats['RE 1°T'][0] += 1
-
                 stats['Top 3 HT/FT'][1] += 1
                 if check_in_list(row['Top 3 HT/FT'], real_htft): stats['Top 3 HT/FT'][0] += 1
-                
-            except Exception as e:
+            except Exception:
                 continue
         
-        # --- VISUALIZZAZIONE GRIGLIA ---
         keys = list(stats.keys())
         for i in range(0, len(keys), 3): 
             cols = st.columns(3)
@@ -901,37 +818,24 @@ def analizza_performance_squadra_gold(squadra_target):
                         wr = v[0] / v[1]
                         is_gold = wr >= 0.75
                         with cols[j]:
-                            st.metric(
-                                label=market, 
-                                value=f"{wr:.1%}", 
-                                delta=f"{v[0]}/{v[1]} presi",
-                                delta_color="normal" if not is_gold else "off" 
-                            )
-                            if is_gold: 
-                                st.markdown("🏆 **GOLD**")
-                            else:
-                                st.markdown("➖") 
+                            st.metric(label=market, value=f"{wr:.1%}", delta=f"{v[0]}/{v[1]} presi", delta_color="normal" if not is_gold else "off")
+                            if is_gold: st.markdown("🏆 **GOLD**")
+                            else: st.markdown("➖") 
         
-        # --- GRAFICO COMPARATIVO (Squadre) ---
         st.write("#### 📈 Precisione per pronostico")
-        
-        # Calcoliamo i Win Rate e assegniamo il colore dinamicamente
         win_rates = [v[0]/v[1] if v[1]>0 else 0 for v in stats.values()]
         colori = ["#FFD700" if wr >= 0.75 else "#4A90E2" for wr in win_rates] 
-        
         chart_data = pd.DataFrame({
             'Mercato': list(stats.keys()),
             'Win Rate': win_rates,
             'Colore': colori
         })
-        
-        # Generiamo il grafico usando la colonna 'Colore' per la formattazione
         st.bar_chart(chart_data, x='Mercato', y='Win Rate', color='Colore')
 
     except Exception as e:
         st.error(f"Errore analisi squadra: {e}")
 
-def trova_super_squadre(soglia=0.85, min_match=2, mercato_filtro="Tutti"):
+def trova_super_squadre(soglia=0.85, min_match=2, mercato_filtro="Tutti", solo_gold=False):
     if not os.path.exists(FILE_DB_PRONOSTICI):
         st.warning("Cronologia pronostici non trovata.")
         return
@@ -940,11 +844,14 @@ def trova_super_squadre(soglia=0.85, min_match=2, mercato_filtro="Tutti"):
         df_cron = pd.read_csv(FILE_DB_PRONOSTICI)
         df_v = df_cron[(df_cron['Risultato_Reale'] != "N/D") & (df_cron['PT_Reale'] != "N/D")].copy()
 
+        # NUOVO FILTRO GOLD
+        if solo_gold and 'Categoria' in df_v.columns:
+            df_v = df_v[df_v['Categoria'] == '🏆 GOLD']
+
         if df_v.empty:
             st.info("Nessun match terminato trovato nel database.")
             return
 
-        # Dizionario per accumulare le stats di TUTTE le squadre
         stats_squadre = {}
 
         for _, row in df_v.iterrows():
@@ -955,7 +862,6 @@ def trova_super_squadre(soglia=0.85, min_match=2, mercato_filtro="Tutti"):
                 casa, fuori = casa.strip(), fuori.strip()
                 lega = row.get('League', 'N.D.')
 
-                # Inizializza le squadre se non esistono
                 for team in [casa, fuori]:
                     if team not in stats_squadre:
                         stats_squadre[team] = {
@@ -970,18 +876,15 @@ def trova_super_squadre(soglia=0.85, min_match=2, mercato_filtro="Tutti"):
 
                 h, a = map(int, str(row['Risultato_Reale']).split('-'))
                 ph, pa = map(int, str(row['PT_Reale']).split('-'))
-                
                 real_1t = "1" if ph > pa else ("2" if pa > ph else "X")
                 real_ft = "1" if h > a else ("2" if a > h else "X")
                 real_htft = f"{real_1t}-{real_ft}"
 
-                # Funzione interna per aggiornare rapidamente
                 def update_team_stats(team, market, is_won):
                     stats_squadre[team]['Stats'][market][1] += 1
                     if is_won:
                         stats_squadre[team]['Stats'][market][0] += 1
 
-                # Check di tutti i parametri per la riga corrente
                 win_1x2 = check_1x2(row['1X2'], h, a)
                 win_1x2_1t = check_1x2(row.get('1X2 1°T', 'N/D'), ph, pa)
                 win_htft = str(row.get('Esito HT/FT', 'N/D')).replace("/", "-") == real_htft
@@ -994,7 +897,6 @@ def trova_super_squadre(soglia=0.85, min_match=2, mercato_filtro="Tutti"):
                 win_re_1t = check_in_list(row['Top 3 RE 1°T'], f"{ph}-{pa}")
                 win_top3_htft = check_in_list(row['Top 3 HT/FT'], real_htft)
 
-                # Assegna il risultato a ENTRAMBE le squadre coinvolte
                 for t in [casa, fuori]:
                     update_team_stats(t, '1X2', win_1x2)
                     update_team_stats(t, '1X2 1°T', win_1x2_1t)
@@ -1008,19 +910,15 @@ def trova_super_squadre(soglia=0.85, min_match=2, mercato_filtro="Tutti"):
                     update_team_stats(t, 'RE 1°T', win_re_1t)
                     update_team_stats(t, 'Top 3 HT/FT', win_top3_htft)
 
-            except Exception as e:
+            except Exception:
                 continue
         
-        # Filtra e formatta i risultati
         risultati = []
         for team, data in stats_squadre.items():
             lega = data['Lega']
             for market, (v, t) in data['Stats'].items():
-                
-                # NUOVO: Salta i mercati che non corrispondono alla scelta dell'utente (se non è "Tutti")
                 if mercato_filtro != "Tutti" and market != mercato_filtro:
                     continue
-                
                 if t >= min_match:
                     wr = v / t
                     if wr >= soglia:
@@ -1034,18 +932,12 @@ def trova_super_squadre(soglia=0.85, min_match=2, mercato_filtro="Tutti"):
                         
         if risultati:
             df_ris = pd.DataFrame(risultati)
-            # Ordina per Win Rate decrescente, e poi alfabeticamente per squadra
             df_ris = df_ris.sort_values(by=['Percentuale YTD', 'Squadra'], ascending=[False, True])
-            
-            # Formatta la percentuale in modo visivo dopo l'ordinamento
             df_ris['Percentuale YTD'] = df_ris['Percentuale YTD'].apply(lambda x: f"{x:.1%}")
             
             st.success(f"🎯 Trovate {len(df_ris)} combinazioni d'oro (≥ {soglia*100:.0f}%)!")
-            
-            # Mostra tabella pulita
             st.dataframe(df_ris, use_container_width=True, hide_index=True)
             
-            # Tasto per esportare la lista
             csv = df_ris.to_csv(index=False).encode('utf-8')
             st.download_button("📥 Esporta Lista Super Squadre (CSV)", data=csv, file_name=f"Delphi_Super_Squadre_{mercato_filtro.replace(' ', '_').replace('/', '')}.csv", mime="text/csv", use_container_width=True)
         else:
@@ -1054,7 +946,6 @@ def trova_super_squadre(soglia=0.85, min_match=2, mercato_filtro="Tutti"):
     except Exception as e:
         st.error(f"Errore generazione report: {e}")
 
-# Sostituisci la prima riga della funzione:
 def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False, match_id_target=None):
     if not os.path.exists(FILE_DB_CALCIO):
         st.error("Database Calcio mancante. Aggiorna il DB"); return None
@@ -1073,19 +964,15 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False, match_i
     if future_matches.empty:
         st.warning(f"Nessun prossimo match trovato per '{nome_input}'."); return None
 
-    # --- NUOVO: SELEZIONE INTELLIGENTE DEL MATCH ---
     if match_id_target:
-        # Se è stato fornito un ID specifico (Autopilota), cerca esattamente quello
         match_cercato = future_matches[future_matches['ID'].astype(str) == str(match_id_target)]
         if not match_cercato.empty:
             m = match_cercato.iloc[0]
         else:
-            return None # Match non trovato
+            return None 
     else:
-        # Se non c'è un ID specifico (Ricerca manuale), prendi il primo come sempre
         m = future_matches.iloc[0]
 
-    # Convertiamo la data da UTC a Fuso Orario Roma
     dt_utc = m['Date']
     dt_event_ita = dt_utc.tz_convert('Europe/Rome')
     
@@ -1099,11 +986,21 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False, match_i
     molt_arbitro = analizza_severita_arbitro(giocate, arbitro)
     avg_g = max(1.1, pd.to_numeric(giocate['FTHG'], errors='coerce').mean())
     
+    # --- INTEGRAZIONE xG UNDERSTAT ---
     att_h, dif_h = get_stats(casa, True, giocate)
     att_a, dif_a = get_stats(fuori, False, giocate)
+    
+    xg_fatti_h, xg_subiti_h = ottieni_xg_understat(casa)
+    xg_fatti_a, xg_subiti_a = ottieni_xg_understat(fuori)
+    
+    if xg_fatti_h is not None and xg_fatti_a is not None:
+        att_h = (att_h * 0.4) + (xg_fatti_h * 0.6)
+        dif_h = (dif_h * 0.4) + (xg_subiti_h * 0.6)
+        att_a = (att_a * 0.4) + (xg_fatti_a * 0.6)
+        dif_a = (dif_a * 0.4) + (xg_subiti_a * 0.6)
+        
     trend_h, molt_forma_h = calcola_trend_forma(giocate, casa)
     trend_a, molt_forma_a = calcola_trend_forma(giocate, fuori)
-
     m_h2h_h, m_h2h_a, testo_h2h = analizza_h2h(giocate, casa, fuori)
     
     exp_h = (att_h * dif_a / avg_g) * molt_forma_h * (2 - molt_arbitro) * pen_h * m_h2h_h
@@ -1117,23 +1014,10 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False, match_i
     sgf, sgc, sgo = {i:0 for i in range(12)}, {i:0 for i in range(6)}, {i:0 for i in range(6)}
     re_fin_grezzi = []
     
-def calcola_rho_dinamico(team_home, team_away, df_giocate):
-    try:
-        # Estrae lo storico degli scontri diretti o match simili
-        match_storici = df_giocate[(df_giocate['HomeTeam'] == team_home) & (df_giocate['AwayTeam'] == team_away)]
-        if len(match_storici) >= 5:
-            corr, _ = pearsonr(match_storici['FTHG'], match_storici['FTAG'])
-            # Il rho è tipicamente negativo; lo mappiamo dinamicamente tra -0.25 e 0
-            return max(-0.25, min(0.0, -abs(corr) * 0.3))
-    except Exception:
-        pass
+    rho = calcola_rho_dinamico(casa, fuori, giocate)
     
-    return -0.15 # Fallback standard se mancano dati storici sufficienti
-    
-    # --- CONTROLLO VARIANZA DI FINE STAGIONE ---
     mese_match = dt_event_ita.month
     is_fine_stagione = False
-    # Identifica il rush finale (Maggio/Aprile per l'Europa, Novembre/Dicembre per il Brasile)
     if (nome_lega == 'Serie A Brasile' and mese_match in [11, 12]) or \
        (nome_lega != 'Serie A Brasile' and mese_match in [4, 5]):
         is_fine_stagione = True
@@ -1141,8 +1025,6 @@ def calcola_rho_dinamico(team_home, team_away, df_giocate):
     for i in range(6):
         for j in range(6):
             prob = poisson_probability(i, exp_h) * poisson_probability(j, exp_a)
-            
-            # Applicazione correzione ai risultati più frequenti (0-0, 1-0, 0-1, 1-1)
             if i == 0 and j == 0: prob *= max(0, 1 - exp_h * exp_a * rho)
             elif i == 0 and j == 1: prob *= max(0, 1 + exp_h * rho)
             elif i == 1 and j == 0: prob *= max(0, 1 + exp_a * rho)
@@ -1159,7 +1041,6 @@ def calcola_rho_dinamico(team_home, team_away, df_giocate):
             sgo[j] += prob
             re_fin_grezzi.append({'s': f"{i}-{j}", 'p': prob})
             
-    # Normalizzazione Finale (per riportare la somma a 100% dopo l'alterazione di Dixon-Coles)
     if tot > 0:
         p1 /= tot; px /= tot; p2 /= tot; pu /= tot; pg /= tot
         for k in sgf: sgf[k] /= tot
@@ -1169,19 +1050,15 @@ def calcola_rho_dinamico(team_home, team_away, df_giocate):
     else:
         re_fin = re_fin_grezzi
         
-    # --- 2. MODELLO DIXON-COLES PER IL 1° TEMPO (HT) ---
     eh1, ea1 = exp_h * 0.42, exp_a * 0.42
     prob_1t = {'1': 0, 'X': 0, '2': 0}
     re_1t_grezzi = []
     tot_ht = 0
-    
-    rho_ht = -0.15 # Stesso fattore di correlazione per il primo tempo
+    rho_ht = -0.15 
     
     for i in range(4):
         for j in range(4):
             pb = poisson_probability(i, eh1) * poisson_probability(j, ea1)
-            
-            # Applicazione correzione per il 1° Tempo
             if i == 0 and j == 0: pb *= max(0, 1 - eh1 * ea1 * rho_ht)
             elif i == 0 and j == 1: pb *= max(0, 1 + eh1 * rho_ht)
             elif i == 1 and j == 0: pb *= max(0, 1 + ea1 * rho_ht)
@@ -1192,18 +1069,14 @@ def calcola_rho_dinamico(team_home, team_away, df_giocate):
             sign = "1" if i > j else ("2" if j > i else "X")
             prob_1t[sign] += pb
 
-    # Normalizzazione 1° Tempo
     if tot_ht > 0:
         for k in prob_1t: prob_1t[k] /= tot_ht
         re_1t = [{'s': item['s'], 'p': item['p'] / tot_ht} for item in re_1t_grezzi]
     else:
         re_1t = re_1t_grezzi
 
-    # --- 3. CALCOLO PARZIALE/FINALE (HT/FT) ---
     prob_ft = {'1': p1, 'X': px, '2': p2}
     pf_final_dict = {}
-    
-    # Matrice storica condizionata P(HT | FT) per calcolare quote ultra-realistiche
     cond_prob = {
         '1': {'1': 0.55, 'X': 0.40, '2': 0.05}, 
         'X': {'1': 0.15, 'X': 0.70, '2': 0.15},
@@ -1215,16 +1088,13 @@ def calcola_rho_dinamico(team_home, team_away, df_giocate):
             comb = f"{ht}-{ft}"
             pf_final_dict[comb] = (prob_1t[ht] * prob_ft[ft]) * cond_prob[ft][ht]
 
-    # Normalizzazione HT/FT
     total_pf = sum(pf_final_dict.values())
     if total_pf > 0:
         for k in pf_final_dict: pf_final_dict[k] /= total_pf
 
-    # Generazione stringa TOP 3 HT/FT (rimane intatta per il report in basso)
     items_htft = sorted(pf_final_dict.items(), key=lambda x: x[1], reverse=True)[:3]
     top_pf_string = ", ".join([f"{k} (Q: {stima_quota(v):.2f})" for k, v in items_htft])
     
-    # --- 4. ESTRAZIONE E ALLINEAMENTO PRONOSTICI SINGOLI E COMBO ---
     if p1 >= px and p1 >= p2: d_1x2 = "1"
     elif p2 >= p1 and p2 >= px: d_1x2 = "2"
     else: d_1x2 = "X"
@@ -1232,7 +1102,6 @@ def calcola_rho_dinamico(team_home, team_away, df_giocate):
     d_1x2_ht = max(prob_1t, key=prob_1t.get)
     p_1t_max = prob_1t[d_1x2_ht]
 
-    # NUOVO: Allineamento FORZATO Assoluto. Il box HT/FT combacerà sempre con i singoli.
     d_htft = f"{d_1x2_ht}/{d_1x2}"
     chiave_htft = f"{d_1x2_ht}-{d_1x2}"
     p_htft_max = pf_final_dict.get(chiave_htft, 0)
@@ -1240,25 +1109,17 @@ def calcola_rho_dinamico(team_home, team_away, df_giocate):
     d_uo = "UNDER 2.5" if pu >= 0.5 else "OVER 2.5"
     d_gng = "GOL" if pg >= 0.5 else "NOGOL"
 
-    # 2. Calcolo statistiche tempi (dist_1t_h, ecc.)
     dist_1t_h, dist_2t_h = analizza_pericolosita_tempi(giocate, casa)
     dist_1t_a, dist_2t_a = analizza_pericolosita_tempi(giocate, fuori)
-    
     avg_1t = (dist_1t_h + dist_1t_a) / 2
     avg_2t = (dist_2t_h + dist_2t_a) / 2
     
-    # NUOVA LOGICA: Se i valori sono a zero, mostra che mancano i dati
-    if avg_1t == 0.0 and avg_2t == 0.0:
-        tempo_top = "Campionato non iniziato"
-    else:
-        tempo_top = "1° Tempo" if avg_1t > avg_2t else "2° Tempo"
+    if avg_1t == 0.0 and avg_2t == 0.0: tempo_top = "Campionato non iniziato"
+    else: tempo_top = "1° Tempo" if avg_1t > avg_2t else "2° Tempo"
 
-    # 3. Controllo sicurezza data
     if 'dt_event_ita' not in locals():
-        # Se per qualche motivo dt_event_ita non è definita sopra, la ricalcoliamo
         dt_event_ita = m['Date'].tz_convert('Europe/Rome')
 
-    # Funzioni di formattazione interne
     def formatta_somma_con_quote(diz, limite, top_n):
         items = sorted(diz.items(), key=lambda x: x[1], reverse=True)[:top_n]
         return ", ".join([f"{str(k) if k < limite else '>'+str(limite-1)} (Q: {stima_quota(v):.2f})" for k, v in items])
@@ -1267,12 +1128,9 @@ def calcola_rho_dinamico(team_home, team_away, df_giocate):
         items = sorted(lista, key=lambda x: x['p'], reverse=True)[:top_n]
         return ", ".join([f"{v['s']} (Q: {stima_quota(v['p']):.2f})" for v in items])
 
-    # --- RECUPERO LOGHI DAL DATAFRAME ---
-    # m è la riga del match trovata nel database
     logo_casa = m.get('HomeCrest') if 'HomeCrest' in m else None
     logo_fuori = m.get('AwayCrest') if 'AwayCrest' in m else None
 
-    # Controllo rodaggio stagionale (5 partite)
     partite_giocate_casa = len(giocate[(giocate['HomeTeam'] == casa) | (giocate['AwayTeam'] == casa)])
     partite_giocate_fuori = len(giocate[(giocate['HomeTeam'] == fuori) | (giocate['AwayTeam'] == fuori)])
     rodaggio_completato = partite_giocate_casa >= 5 and partite_giocate_fuori >= 5
@@ -1290,12 +1148,12 @@ def calcola_rho_dinamico(team_home, team_away, df_giocate):
     }
     market_advice = ADVICE_MAP.get(nome_lega, "Dati neutri per questo campionato.")
     
-    # --- RETURN FINALE COMPLETO ---
     return {
         "Data": dt_event_ita.strftime("%d/%m/%Y"), 
         "Ora": dt_event_ita.strftime("%H:%M"),
         "League": nome_lega,
         "Partita": f"{casa} vs {fuori}",
+        "Categoria": "🏆 GOLD" if max(p1, px, p2) >= 0.60 else "Standard",
         "Fiducia": f"{int(max(p1,px,p2)*100)}%", 
         "Affidabilità": f"{85 + int(molt_arbitro*2)}%",
         "1X2": d_1x2, "U/O 2.5": d_uo, "G/NG": d_gng,
@@ -1313,9 +1171,9 @@ def calcola_rho_dinamico(team_home, team_away, df_giocate):
         "arbitro": arbitro, "molt_arbitro": molt_arbitro,
         "Trend_Casa": trend_h, "Trend_Fuori": trend_a,
         "Forma_H": molt_forma_h, "Forma_A": molt_forma_a,
-        "is_big_match": is_big_match, # Aggiunto per evitare errori nel frontend
-        "logo_casa": logo_casa,  # <--- NUOVO
-        "logo_fuori": logo_fuori, # <--- NUOVO
+        "is_big_match": is_big_match, 
+        "logo_casa": logo_casa,  
+        "logo_fuori": logo_fuori, 
         "rodaggio_completato": rodaggio_completato,
         "market_advice": market_advice,
         "is_fine_stagione": is_fine_stagione,
@@ -1323,7 +1181,6 @@ def calcola_rho_dinamico(team_home, team_away, df_giocate):
         "Esito HT/FT": d_htft, 
         "p_1t_max": p_1t_max, 
         "p_htft_max": p_htft_max
-
     }
     
 def scansiona_segnali_gold(giorni_anticipo=3):
@@ -1334,9 +1191,7 @@ def scansiona_segnali_gold(giorni_anticipo=3):
     today = pd.Timestamp.now(tz='UTC').normalize()
     limite_futuro = today + pd.Timedelta(days=giorni_anticipo)
     
-    # Filtriamo le partite nei campionati con le performance migliori (inclusi FL1 e PPL)
     camp_gold = ['BL1', 'SA', 'PD', 'ELC', 'FL1', 'PPL'] 
-    
     matches_target = df[
         (df['League'].isin(camp_gold)) & 
         (df['Status'].isin(['TIMED', 'SCHEDULED'])) &
@@ -1348,24 +1203,23 @@ def scansiona_segnali_gold(giorni_anticipo=3):
     
     giocate = df[df['Status'] == 'FINISHED'].copy()
     avg_g = max(1.1, pd.to_numeric(giocate['FTHG'], errors='coerce').mean())
-    
     segnali = []
     
-    # Mappa Rho per il Radar
-    RHO_MAP = {
-        'Serie A': -0.18, 'La Liga': -0.18, 'Serie A Brasile': -0.18, 
-        'Championship': -0.15, 'Ligue 1': -0.15, 'UEFA Champions League': -0.15,
-        'Premier League': -0.12, 'Primeira Liga': -0.12,
-        'Bundesliga': -0.10, 'Eredivisie': -0.10
-    }
-    
-    # Ricalcolo rapido e silenzioso della matematica base di Delphi
     for _, m in matches_target.iterrows():
         casa, fuori = m['HomeTeam'], m['AwayTeam']
         nome_lega_radar = LEAGUE_MAP.get(m['League'], m['League'])
         
         att_h, dif_h = get_stats(casa, True, giocate)
         att_a, dif_a = get_stats(fuori, False, giocate)
+        
+        xg_fatti_h, xg_subiti_h = ottieni_xg_understat(casa)
+        xg_fatti_a, xg_subiti_a = ottieni_xg_understat(fuori)
+        if xg_fatti_h is not None and xg_fatti_a is not None:
+            att_h = (att_h * 0.4) + (xg_fatti_h * 0.6)
+            dif_h = (dif_h * 0.4) + (xg_subiti_h * 0.6)
+            att_a = (att_a * 0.4) + (xg_fatti_a * 0.6)
+            dif_a = (dif_a * 0.4) + (xg_subiti_a * 0.6)
+            
         trend_h, molt_h = calcola_trend_forma(giocate, casa)
         trend_a, molt_a = calcola_trend_forma(giocate, fuori)
         m_h2h_h, m_h2h_a, _ = analizza_h2h(giocate, casa, fuori)
@@ -1376,23 +1230,18 @@ def scansiona_segnali_gold(giorni_anticipo=3):
         
         p1, px, p2, tot = 0, 0, 0, 0
         re_fin_grezzi = []
+        rho = calcola_rho_dinamico(casa, fuori, giocate)
         
-        # Carica il Rho dinamico
-        rho = RHO_MAP.get(nome_lega_radar, -0.15)
-        
-        # Applica Varianza di Fine Stagione per abbattere quote insidiose
         data_ora_ita = m['Date'].tz_convert('Europe/Rome')
         mese_match = data_ora_ita.month
         penalita_fine_stagione = 0.0
         if (nome_lega_radar == 'Serie A Brasile' and mese_match in [11, 12]) or \
            (nome_lega_radar != 'Serie A Brasile' and mese_match in [4, 5]):
-            penalita_fine_stagione = 0.05 # Togliamo 5% secco di fiducia
+            penalita_fine_stagione = 0.05 
         
         for i in range(6):
             for j in range(6):
                 prob = poisson_probability(i, exp_h) * poisson_probability(j, exp_a)
-                
-                # Applicazione Dixon-Coles
                 if i == 0 and j == 0: prob *= max(0, 1 - exp_h * exp_a * rho)
                 elif i == 0 and j == 1: prob *= max(0, 1 + exp_h * rho)
                 elif i == 1 and j == 0: prob *= max(0, 1 + exp_a * rho)
@@ -1402,20 +1251,16 @@ def scansiona_segnali_gold(giorni_anticipo=3):
                 if i > j: p1 += prob
                 elif i == j: px += prob
                 else: p2 += prob
-                
                 re_fin_grezzi.append({'s': f"{i}-{j}", 'p': prob})
         
-        # Normalizzazione
         if tot > 0:
             p1 /= tot; px /= tot; p2 /= tot
             re_fin = [{'s': item['s'], 'p': item['p'] / tot} for item in re_fin_grezzi]
         else:
             re_fin = re_fin_grezzi
             
-        # Calcolo Fiducia Depurata dalla varianza
         fiducia_max = max(p1, px, p2) - penalita_fine_stagione
         
-        # Filtro Rigido: Solo match con Fiducia >= 60%
         if fiducia_max >= 0.60:
             top_6_re = sorted(re_fin, key=lambda x: x['p'], reverse=True)[:6]
             stringa_re = ", ".join([f"{v['s']} (Q: {stima_quota(v['p']):.2f})" for v in top_6_re])
@@ -1429,32 +1274,20 @@ def scansiona_segnali_gold(giorni_anticipo=3):
                 'Top 6 RE': stringa_re
             })
                 
-    # Ordiniamo prima per data e poi per ora
     return sorted(segnali, key=lambda x: (x['Data'], x['Ora']))
-            
-    #return sorted(segnali, key=lambda x: x['Ora (ITA)'])
     
 def highlight_winners(row):
-    # Creiamo una lista di stili vuoti lunga quanto la riga
     colors = [''] * len(row)
-    
-    # Se non c'è il risultato reale, non coloriamo nulla
     if row.get('Risultato_Reale') == "N/D" or pd.isna(row.get('Risultato_Reale')):
         return colors
-    
     try:
-        # 1. Recupero dati reali
         h, a = map(int, str(row['Risultato_Reale']).split('-'))
         ph, pa = map(int, str(row['PT_Reale']).split('-'))
         
         real_1t_sign = "1" if ph > pa else ("2" if pa > ph else "X")
         real_ft_sign = "1" if h > a else ("2" if a > h else "X")
         real_htft = f"{real_1t_sign}-{real_ft_sign}"
-        
         green = 'background-color: #d4edda; color: #155724; font-weight: bold'
-
-        # 2. Mappatura colonne per nome (evita errori di indice)
-        # Cerchiamo la posizione della colonna nella riga corrente
         cols_list = list(row.index)
 
         checks = [
@@ -1470,14 +1303,11 @@ def highlight_winners(row):
             ('Top 3 RE 1°T', lambda: check_in_list(row['Top 3 RE 1°T'], row['PT_Reale'])),
             ('Top 3 HT/FT', lambda: check_in_list(row['Top 3 HT/FT'], real_htft))
         ]
-
         for col_name, condition_func in checks:
             if col_name in cols_list and condition_func():
                 colors[cols_list.index(col_name)] = green
-
-    except Exception as e:
-        pass # In caso di errore nel parsing (es. dati sporchi), non colora
-        
+    except Exception:
+        pass 
     return colors
 
 # --- 7. MAIN ---
@@ -1503,10 +1333,7 @@ with tab1:
             df_segnali = pd.DataFrame(segnali_trovati)
             st.dataframe(df_segnali, use_container_width=True, hide_index=True)
             
-            # Generazione rapida del file da scaricare
             csv_segnali = df_segnali.to_csv(index=False).encode('utf-8')
-            
-            # --- NUOVO: Creazione nome file dinamico con data di oggi ---
             data_creazione = date.today().strftime("%Y-%m-%d")
             nome_file_export = f"Delphi_Gold_{data_creazione}_Prossimi_{giorni_radar}gg.csv"
             
@@ -1543,15 +1370,13 @@ with tab1:
             else:
                 st.error("Squadra non trovata.")
 
-    # Il controllo 'if' previene il KeyError
     if st.session_state.get('dati_acquisiti'):
         d = st.session_state['dati_temp']
-        d_temp = d # Definiamo d_temp per compatibilità con le righe successive
+        d_temp = d
         st.success(f"✅ Dati acquisiti per {d['Partita']}")
         
         search_query = f"**Formazione {sq} nella partita del {d_temp['Data']}**"
         google_news_url = f"https://www.google.com/search?q={search_query.replace(' ', '+')}&tbm=nws"
-        
         st.markdown(f"👉 [**Controlla Formazione e Assenti per il {d_temp['Data']}**]({google_news_url})")
 
         st.divider()
@@ -1560,9 +1385,7 @@ with tab1:
         col_p1, col_p2 = st.columns(2)
         with col_p1:
             pen_h = st.select_slider(f"**Potenza Attacco Squadra Casa**", options=[0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0], value=1.0)
-            
             is_big_match = st.toggle("🔥🔥🔥 Filtro Big Match/Derby 🔥🔥🔥")
-
         with col_p2:
             pen_a = st.select_slider(f"**Potenza Attacco Squadra Ospite**", options=[0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0], value=1.0)        
                         
@@ -1576,33 +1399,25 @@ with tab1:
             df_calcio = pd.read_csv(FILE_DB_CALCIO)
             casa_nome, fuori_nome = d['casa_nome'], d['fuori_nome']
             
-            # Creiamo due colonne: la prima occupa l'80% dello spazio, la seconda il 20%
             col_logo_casa, col_logo_fuori, col_vuota = st.columns([1, 1, 3])
             with col_logo_casa:
                 st.image(d['logo_casa'], width = 120)
-
             with col_logo_fuori:
                 st.image(d['logo_fuori'], width = 120)
 
             st.header(f"🏟️ **{d['Partita']}**")
-            
             st.subheader(f"🏆 Lega: {d.get('League', 'N.D.')}")
             st.subheader(f"📅 Data: {d['Data']} ore {d['Ora']}")
         
             if d.get('is_big_match'): 
                 st.warning("🛡️ **Filtro Big Match Attivo**: probabile partita molto tattica")
-
             if d.get('is_fine_stagione'):
                 st.error("🌪️ **ALLERTA FINE STAGIONE:** Rush finale di campionato. La lotta per la salvezza o per il titolo altera pesantemente le statistiche pure.")
-
-            # 2. Allerta Rodaggio (Sotto le 5 giornate)
             if not d.get('rodaggio_completato', True):
                 st.error("⚠️ **ATTENZIONE: Campionato in fase iniziale.** Le squadre non hanno ancora disputato 5 partite. I pronostici potrebbero essere instabili.")
 
-            # 1. Suggeritore di Mercato per il Campionato
             st.info(f"🧠 **Insight Delphi:** {d.get('market_advice', '')}")
             
-            # 3. Semaforo della Fiducia
             fiducia_val = int(d['Fiducia'].replace('%', ''))
             if fiducia_val >= 60:
                 st.success(f"🔥 **FIDUCIA ALTA ({fiducia_val}%)**: Ottima affidabilità per 1X2 e Risultati Esatti.")
@@ -1676,31 +1491,20 @@ with tab1:
             with col_uo: st.warning(f"**UNDER 2.5:** 📈 Prob: {d['pu']:.1%}\n 💰 Quota: {stima_quota(d['pu'])}\n\n**OVER 2.5:** 📈 Prob: {p_over:.1%}\n 💰 Quota: {stima_quota(p_over)}")
             with col_gng: st.warning(f"**GOL:** 📈 Prob: {d['pg']:.1%} 💰 Quota: {stima_quota(d['pg'])}\n\n**NOGOL:** 📈 Prob: {p_nogol:.1%} 💰 Quota: {stima_quota(p_nogol)}")
 
-            # --- RISULTATI E SOMME GOL CON QUOTE ---
             st.divider()
             st.subheader("⚽ Analisi Somma Gol")
             cr1, cr2, cr3 = st.columns(3)
-            with cr1:
-                # Mostra i Top 3 esiti del match con le relative quote
-                st.error(f"🎯 **SOMMA GOL FINALE (Top 3)**\n\n{d['SGF']}")           
-            with cr2:
-                # Mostra i Top 2 esiti per squadra in box separati e puliti
-                st.error(f"🏠 **SOMMA GOL CASA (Top 2)**\n\n{d['SGC']}")
-            with cr3:
-                st.error(f"🚀 **SOMMA GOL OSPITE (Top 2)**\n\n{d['SGO']}")
+            with cr1: st.error(f"🎯 **SOMMA GOL FINALE (Top 3)**\n\n{d['SGF']}")           
+            with cr2: st.error(f"🏠 **SOMMA GOL CASA (Top 2)**\n\n{d['SGC']}")
+            with cr3: st.error(f"🚀 **SOMMA GOL OSPITE (Top 2)**\n\n{d['SGO']}")
 
-            # --- RISULTATI ESATTI ---
             st.divider()
             st.subheader("🎯 Risultati Esatti")
             cfe1, cfe2 = st.columns([7, 5])
-            with cfe1:
-                st.success(f"🏁 **RE FINALI (Top 6)**\n\n{d['Top 6 RE Finali']}")
-            with cfe2:
-                st.success(f"⏱️ **RE 1° TEMPO (Top 3)**\n\n{d['Top 3 RE 1°T']}")
+            with cfe1: st.success(f"🏁 **RE FINALI (Top 6)**\n\n{d['Top 6 RE Finali']}")
+            with cfe2: st.success(f"⏱️ **RE 1° TEMPO (Top 3)**\n\n{d['Top 3 RE 1°T']}")
 
-            # --- LOGICA SALVATAGGIO ROBUSTA ---
             if st.button("💾 Salva in Cronologia", use_container_width=True):
-                # Calcola la fatica prima di salvare
                 df_c = pd.read_csv(FILE_DB_CALCIO)
                 f_h = controlla_fatica(df_c, d['casa_nome'], d['Data'])
                 f_a = controlla_fatica(df_c, d['fuori_nome'], d['Data'])
@@ -1711,12 +1515,8 @@ with tab1:
                     time.sleep(1)
                     st.rerun()
 
-            # --- 3. PULSANTE DI STAMPA PDF ---
-            # Apparirà in fondo all'analisi e non scomparirà se l'utente ci clicca
             try:
-                # Sostituito 'p' con 'd', che è la variabile corretta usata in questo blocco
                 pdf_bytes = genera_pdf_pronostico(d)
-                
                 st.download_button(
                     label="🖨️ Scarica PDF per Stampa",
                     data=pdf_bytes,
@@ -1733,7 +1533,6 @@ with tab2:
     mostra_tabella = False
     df_cronologia = pd.DataFrame()
 
-    # 1. CARICAMENTO DATI ATTUALI
     if os.path.exists(FILE_DB_PRONOSTICI):
         try:
             df_cronologia = pd.read_csv(FILE_DB_PRONOSTICI)
@@ -1743,9 +1542,7 @@ with tab2:
         except:
             st.error("Il file della cronologia sembra corrotto.")
 
-    # 2. BOTTONE SCARICA (SALVA SU ICLOUD/TELEFONO)
     if mostra_tabella:
-        # Generiamo il CSV
         csv_data = df_cronologia.to_csv(index=False).encode('utf-8')
         
         col_down, col_msg = st.columns([1, 2])
@@ -1761,7 +1558,6 @@ with tab2:
         with col_msg:
             st.caption("💡 Su iPhone/iPad: dopo il download scegli **'Salva su File'** per metterlo su iCloud.")
 
-        # Filtri e Tabella
         st.divider()
         date_disponibili = sorted(df_cronologia['Data'].unique(), reverse=True)
         date_disponibili.insert(0, "Tutte")
@@ -1783,7 +1579,6 @@ with tab2:
     else:
         st.info("📭 Nessun dato in cronologia.")
 
-    # 3. AREA DI RIPRISTINO (FUNZIONA CON ICLOUD)
     st.divider()
     st.subheader("☁️ Ripristina Backup")
     
@@ -1792,12 +1587,8 @@ with tab2:
         
         if uploaded_file is not None:
             try:
-                # Legge il file caricato
                 df_uploaded = pd.read_csv(uploaded_file)
-                
-                # Controllo base validità
                 if 'Partita' in df_uploaded.columns and '1X2' in df_uploaded.columns:
-                    # Pulsante conferma
                     if st.button("🔥 Conferma e Sovrascrivi Cronologia attuale"):
                         df_uploaded.to_csv(FILE_DB_PRONOSTICI, index=False)
                         st.success("✅ Database ripristinato con successo!")
@@ -1808,7 +1599,6 @@ with tab2:
             except Exception as e:
                 st.error(f"Errore nel caricamento: {e}")
 
-    # Tasto Cancellazione (sempre utile averlo nascosto)
     with st.expander("🗑️ Zona Pericolo: Cancella tutto"):
         st.warning("Vuoi cancellare tutta la cronologia attuale?")
         if st.button("🔥 Cancella definitivamente"):
@@ -1819,13 +1609,16 @@ with tab2:
 with tab3:
     st.header("📊 Performance Delphi")
     
+    # INTERRUTTORE GENERALE
+    toggle_gold = st.toggle("🏆 Isola solo Segnali GOLD (Fiducia ≥ 60%)", value=False)
+    
     # --- SEZIONE 1: ANALISI CAMPIONATO ---
     st.subheader("🌍 Analisi per Campionato")
     opzioni_camp = ['TUTTI', 'Serie A', 'Premier League', 'Championship', 'La Liga', 'Bundesliga', 'Ligue 1', 'Primeira Liga', 'Eredivisie', 'Champions League', 'Nations League', 'Brasileirao Betano']
     scelta_camp = st.selectbox("Seleziona Campionato:", opzioni_camp, index=0)
     
     if st.button("Analizza Campionato", type="primary"):
-        analizza_performance_campionato(scelta_camp)
+        analizza_performance_campionato(scelta_camp, solo_gold=toggle_gold)
 
     st.divider()
     # --- SEZIONE 2: ANALISI SQUADRA (GOLD STYLE) ---
@@ -1834,8 +1627,6 @@ with tab3:
     if os.path.exists(FILE_DB_PRONOSTICI):
         try:
             df_cron = pd.read_csv(FILE_DB_PRONOSTICI)
-            
-            # Estraiamo la lista pulita di tutte le squadre presenti nel DB
             tutte_squadre = set()
             for partita in df_cron['Partita'].dropna():
                 if ' vs ' in str(partita):
@@ -1848,7 +1639,7 @@ with tab3:
                 scelta_sq = st.selectbox("Seleziona la Squadra:", lista_squadre)
                 
                 if st.button(f"Analizza precisione {scelta_sq}", type="primary"):
-                    analizza_performance_squadra_gold(scelta_sq)
+                    analizza_performance_squadra_gold(scelta_sq, solo_gold=toggle_gold)
             else:
                 st.info("Nessuna squadra trovata nel database.")
                 
@@ -1874,10 +1665,10 @@ with tab3:
         lista_mercati = ['Tutti', '1X2', '1X2 1°T', 'Esito HT/FT', 'U/O 2.5', 'G/NG', 'SGF', 'SGC (Casa)', 'SGO (Ospite)', 'RE Finali', 'RE 1°T', 'Top 3 HT/FT']
         mercato_input = st.selectbox("Filtra per Pronostico", lista_mercati)
         
-    st.write("") # Spaziatura per allineare il bottone
+    st.write("") 
     
     if st.button("🚀 Estrai Lista Top Squadre", type="primary", use_container_width=True):
-        trova_super_squadre(soglia=soglia_input/100, min_match=min_match_input, mercato_filtro=mercato_input)
+        trova_super_squadre(soglia=soglia_input/100, min_match=min_match_input, mercato_filtro=mercato_input, solo_gold=toggle_gold)
 
 with tab4:
     st.info(f"⏰  Aggiorna Serie A, Premier League, Championship, Liga, Bundesliga, Ligue 1, Primeira Liga, Eredivisie, Brasileirao Betano, UEFA CL e FIFA WC")
