@@ -89,8 +89,8 @@ def ottieni_xg_understat(nome_squadra):
                 raw_data = match.group(1).encode('utf-8').decode('unicode_escape')
                 dati_partite = json.loads(raw_data)
                 
-                xg_f = [float(p['xG']['h'] if p['h']['title'] == nome_url else p['xG']['a']) for p in dati_partite[-5:]]
-                xg_s = [float(p['xG']['a'] if p['h']['title'] == nome_url else p['xG']['h']) for p in dati_partite[-5:]]
+                xg_f = [float(p['xG']['h'] if p['h']['title'] == nome_url else p['xG']['a']) for p in dati_partite[-4:]]
+                xg_s = [float(p['xG']['a'] if p['h']['title'] == nome_url else p['xG']['h']) for p in dati_partite[-4:]]
                 
                 media_xg_f = sum(xg_f) / len(xg_f) if xg_f else 1.0
                 media_xg_s = sum(xg_s) / len(xg_s) if xg_s else 1.0
@@ -206,8 +206,8 @@ def genera_pdf_pronostico(d):
     pdf.cell(95, 10, f"Ultime 4 partite giocate: {trend_a}", border=1, ln=True, align='C')
     
     # --- NUOVO: Inserimento riga xG nel PDF ---
-    pdf.cell(95, 8, f"xG (ultime 5): {d.get('xg_casa', 'N/D')}", border=1, align='C')
-    pdf.cell(95, 8, f"xG (ultime 5): {d.get('xg_fuori', 'N/D')}", border=1, ln=True, align='C')
+    pdf.cell(95, 8, f"xG (ultime 4): {d.get('xg_casa', 'N/D')}", border=1, align='C')
+    pdf.cell(95, 8, f"xG (ultime 4): {d.get('xg_fuori', 'N/D')}", border=1, ln=True, align='C')
     
     pdf.ln(5)
 
