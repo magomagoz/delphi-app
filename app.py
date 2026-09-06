@@ -205,6 +205,10 @@ def genera_pdf_pronostico(d):
     pdf.cell(95, 10, f"Ultime 4 partite giocate: {trend_h}", border=1, align='C')
     pdf.cell(95, 10, f"Ultime 4 partite giocate: {trend_a}", border=1, ln=True, align='C')
     
+    # --- NUOVO: Inserimento riga xG nel PDF ---
+    pdf.cell(95, 8, f"xG (ultime 5): {d.get('xg_casa', 'N/D')}", border=1, align='C')
+    pdf.cell(95, 8, f"xG (ultime 5): {d.get('xg_fuori', 'N/D')}", border=1, ln=True, align='C')
+    
     pdf.ln(5)
 
     # --- 4. PRONOSTICI PRINCIPALI ---
@@ -1067,6 +1071,10 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False, match_i
         att_a = (att_a * 0.4) + (xg_fatti_a * 0.6)
         dif_a = (dif_a * 0.4) + (xg_subiti_a * 0.6)
         
+    # --- NUOVO: Formattazione testo xG per il PDF ---
+    xg_str_h = f"{xg_fatti_h:.2f} fatti / {xg_subiti_h:.2f} subiti" if xg_fatti_h else "N/D (Usa gol reali)"
+    xg_str_a = f"{xg_fatti_a:.2f} fatti / {xg_subiti_a:.2f} subiti" if xg_fatti_a else "N/D (Usa gol reali)"
+        
     trend_h, molt_forma_h = calcola_trend_forma(giocate, casa)
     trend_a, molt_forma_a = calcola_trend_forma(giocate, fuori)
     m_h2h_h, m_h2h_a, testo_h2h = analizza_h2h(giocate, casa, fuori)
@@ -1248,7 +1256,9 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False, match_i
         "1X2 1°T": d_1x2_ht, 
         "Esito HT/FT": d_htft, 
         "p_1t_max": p_1t_max, 
-        "p_htft_max": p_htft_max
+        "p_htft_max": p_htft_max,
+        "xg_casa": xg_str_h,  # <--- AGGIUNGI QUESTA
+        "xg_fuori": xg_str_a  # <--- AGGIUNGI QUESTA
     }
     
 def scansiona_segnali_gold(giorni_anticipo=3):
@@ -1503,9 +1513,11 @@ with tab1:
             with c_trend1:
                 st.markdown(f"**Forma {casa_nome}:** {d['Trend_Casa']}")
                 st.caption(f"Incidenza: {d['Forma_H']}x")
+                st.caption(f"🎯 xG: {d.get('xg_casa', 'N/D')}") # <--- Aggiunto
             with c_trend2:
                 st.markdown(f"**Forma {fuori_nome}:** {d['Trend_Fuori']}")
                 st.caption(f"Incidenza: {d['Forma_A']}x")
+                st.caption(f"🎯 xG: {d.get('xg_fuori', 'N/D')}") # <--- Aggiunto
             
             fatica_casa = controlla_fatica(df_calcio, casa_nome, d['Data'])
             fatica_fuori = controlla_fatica(df_calcio, fuori_nome, d['Data'])
