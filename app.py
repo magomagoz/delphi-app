@@ -641,12 +641,12 @@ def calcola_late_goal_index(casa, fuori):
     val = (len(str(casa)) + len(str(fuori))) % 10
     return round(val * 0.10 + 0.5, 2)
 
-def calcola_criterio_kelly(prob_modello, quota_bookmaker, frazione=0.80):
+def calcola_criterio_kelly(prob_modello, quota_bookmaker, frazione=0.30):
     """
     Calcola la percentuale di bankroll da investire usando il Criterio di Kelly Frazionato (Third-Kelly).
     - prob_modello: la probabilità stimata da Delphi (es. 0.65)
     - quota_bookmaker: la quota decimale offerta dal bookmaker (es. 1.75)
-    - frazione: 0.30 indica il 30% del Kelly pieno (prudente/aggressivo)
+    - frazione: 0.30 indica il 30% del Kelly pieno (prudente)
     """
     if quota_bookmaker <= 1.0 or prob_modello <= 0:
         return 0.0
