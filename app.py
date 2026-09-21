@@ -1333,8 +1333,16 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False, match_i
         "p_htft_max": p_htft_max,
         "xg_casa": xg_str_h,  # <--- AGGIUNGI QUESTA
         "xg_fuori": xg_str_a  # <--- AGGIUNGI QUESTA
+
+        # --- NUOVO: Dati grezzi per il Calcolatore Kelly ---
+        "raw_re_fin": re_fin,
+        "raw_re_1t": re_1t,
+        "raw_htft": pf_final_dict,
+        "raw_sgf": sgf,
+        "raw_sgc": sgc,
+        "raw_sgo": sgo
     }
-    
+
 def scansiona_segnali_gold(giorni_anticipo=3):
     if not os.path.exists(FILE_DB_CALCIO): return []
     
@@ -1665,34 +1673,81 @@ with tab1:
             with cfe1: st.success(f"🏁 **RE FINALI (Top 6)**\n\n{d['Top 6 RE Finali']}")
             with cfe2: st.success(f"⏱️ **RE 1° TEMPO (Top 3)**\n\n{d['Top 3 RE 1°T']}")
 
+            # --- INIZIO BLOCCO KELLY POTENZIATO ---
             st.divider()
             st.subheader("🧮 Calcolatore Criterio di Kelly (Value Bet)")
             st.info("Inserisci la quota reale proposta dal tuo bookmaker per verificare se c'è margine di profitto (Value Bet) e quanta percentuale del tuo bankroll investire.")
             
+            # 1. Costruiamo il dizionario dinamico di TUTTI i pronostici principali
+            kelly_options = {
+                "1X2 - Segno 1": d['p1'],
+                "1X2 - Segno X": d['px'],
+                "1X2 - Segno 2": d['p2'],
+                "Over 2.5": 1 - d['pu'],
+                "Under 2.5": d['pu'],
+                "Gol": d['pg'],
+                "NoGol": 1 - d['pg']
+            }
+            
+            # Aggiungiamo i Top 6 Risultati Esatti Finali
+            if 'raw_re_fin' in d:
+                top_6_re = sorted(d['raw_re_fin'], key=lambda x: x['p'], reverse=True)[:6]
+                for item in top_6_re:
+                    kelly_options[f"Risultato Esatto {item['s']}"] = item['p']
+                    
+            # Aggiungiamo i Top 3 Risultati Esatti 1° Tempo
+            if 'raw_re_1t' in d:
+                top_3_re1t = sorted(d['raw_re_1t'], key=lambda x: x['p'], reverse=True)[:3]
+                for item in top_3_re1t:
+                    kelly_options[f"Risultato 1° Tempo {item['s']}"] = item['p']
+                    
+            # Aggiungiamo i Top 3 Parziale/Finale
+            if 'raw_htft' in d:
+                top_3_htft = sorted(d['raw_htft'].items(), key=lambda x: x[1], reverse=True)[:3]
+                for k, v in top_3_htft:
+                    kelly_options[f"Parziale/Finale {k.replace('-', '/')}"] = v
+                    
+            # Aggiungiamo le Top 3 Somma Gol Finali
+            if 'raw_sgf' in d:
+                top_3_sgf = sorted(d['raw_sgf'].items(), key=lambda x: x[1], reverse=True)[:3]
+                for k, v in top_3_sgf:
+                    label = f"Somma Gol Finale {k}" if k < 5 else "Somma Gol Finale >4"
+                    if label not in kelly_options:
+                        kelly_options[label] = v
+                        
+            # Aggiungiamo le Top 3 Somma Gol Casa
+            if 'raw_sgc' in d:
+                top_3_sgc = sorted(d['raw_sgc'].items(), key=lambda x: x[1], reverse=True)[:3]
+                for k, v in top_3_sgc:
+                    label = f"Somma Gol Casa {k}" if k < 3 else "Somma Gol Casa >2"
+                    if label not in kelly_options:
+                        kelly_options[label] = v
+                        
+            # Aggiungiamo le Top 3 Somma Gol Ospite
+            if 'raw_sgo' in d:
+                top_3_sgo = sorted(d['raw_sgo'].items(), key=lambda x: x[1], reverse=True)[:3]
+                for k, v in top_3_sgo:
+                    label = f"Somma Gol Ospite {k}" if k < 3 else "Somma Gol Ospite >2"
+                    if label not in kelly_options:
+                        kelly_options[label] = v
+
             col_k1, col_k2, col_k3 = st.columns(3)
             with col_k1:
                 mercato_scelto = st.selectbox(
                     "Seleziona Mercato", 
-                    ["1X2 - Segno 1", "1X2 - Segno X", "1X2 - Segno 2", "Over 2.5", "Under 2.5", "Gol", "NoGol"],
+                    list(kelly_options.keys()),
                     key="kelly_mercato"
                 )
             with col_k2:
                 quota_reale = st.number_input(
                     "Quota Reale Bookmaker", 
-                    min_value=1.01, max_value=50.0, value=2.00, step=0.05,
+                    min_value=1.01, max_value=200.0, value=2.00, step=0.05,
                     key="kelly_quota"
                 )
             with col_k3:
-                # Estrae la probabilità corretta in base al mercato scelto
-                prob_mappata = d['p1']
-                if "X" in mercato_scelto: prob_mappata = d['px']
-                elif "2" in mercato_scelto: prob_mappata = d['p2']
-                elif "Over" in mercato_scelto: prob_mappata = 1 - d['pu']
-                elif "Under" in mercato_scelto: prob_mappata = d['pu']
-                elif "Gol" in mercato_scelto: prob_mappata = d['pg']
-                elif "NoGol" in mercato_scelto: prob_mappata = 1 - d['pg']
+                # Recuperiamo la probabilità esatta matematica direttamente dal dizionario
+                prob_mappata = kelly_options[mercato_scelto]
                 
-                # Calcolo del Valore Atteso (EV) matematico = (Probabilità * Quota) - 1
                 ev = (prob_mappata * quota_reale) - 1.0
                 pct_kelly = calcola_criterio_kelly(prob_mappata, quota_reale, frazione=0.25)
                 
@@ -1704,6 +1759,7 @@ with tab1:
                 else:
                     st.warning(f"❌ **NO VALUE** (EV: {ev*100:.1f}%)")
                     st.metric("Puntata Consigliata", "0.0% (Salta)")
+            # --- FINE BLOCCO KELLY POTENZIATO ---
             
             if st.button("💾 Salva in Cronologia", use_container_width=True):
                 df_c = pd.read_csv(FILE_DB_CALCIO)
