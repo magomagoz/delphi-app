@@ -1331,8 +1331,8 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False, match_i
         "Esito HT/FT": d_htft, 
         "p_1t_max": p_1t_max, 
         "p_htft_max": p_htft_max,
-        "xg_casa": xg_str_h,  # <--- AGGIUNGI QUESTA
-        "xg_fuori": xg_str_a  # <--- AGGIUNGI QUESTA
+        "xg_casa": xg_str_h,
+        "xg_fuori": xg_str_a,
         "raw_re_fin": re_fin,
         "raw_re_1t": re_1t,
         "raw_htft": pf_final_dict,
