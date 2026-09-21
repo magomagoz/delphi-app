@@ -1018,6 +1018,19 @@ def calcola_rho_dinamico(team_home, team_away, df_giocate):
     
     return -0.15 # Fallback standard se mancano dati storici sufficienti
 
+def calcola_tasso_zero_zero(df_giocate, squadra):
+    # Filtra lo storico per la singola squadra
+    storico = df_giocate[(df_giocate['HomeTeam'] == squadra) | (df_giocate['AwayTeam'] == squadra)]
+    
+    # Serve un minimo di 5 partite per avere una statistica affidabile
+    if len(storico) < 5:
+        return 0.0
+        
+    zeri = len(storico[(storico['FTHG'] == 0) & (storico['FTAG'] == 0)])
+    tasso = zeri / len(storico)
+    
+    return round(tasso, 2)
+
 def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False, match_id_target=None):
     if not os.path.exists(FILE_DB_CALCIO):
         st.error("Database Calcio mancante. Aggiorna il DB"); return None
@@ -1092,12 +1105,24 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False, match_i
     
     rho = calcola_rho_dinamico(casa, fuori, giocate)
     
+    # --- NUOVO: Calcolo ZIP (Zero-Inflated Poisson) dinamico ---
+    tasso_00_h = calcola_tasso_zero_zero(giocate, casa)
+    tasso_00_a = calcola_tasso_zero_zero(giocate, fuori)
+    
+    soglia_zip = 0.20 # Trigger al 20% di 0-0
+    zip_multiplier = 1.0
+    
+    # Se almeno una delle due squadre è un "muro tattico", aumentiamo la probabilità dello 0-0 del 30%
+    if tasso_00_h >= soglia_zip or tasso_00_a >= soglia_zip:
+        zip_multiplier = 1.30
+        
     mese_match = dt_event_ita.month
+
     is_fine_stagione = False
     if (nome_lega == 'Serie A Brasile' and mese_match in [11, 12]) or \
        (nome_lega != 'Serie A Brasile' and mese_match in [4, 5]):
         is_fine_stagione = True
-    
+
     for i in range(6):
         for j in range(6):
             prob = poisson_probability(i, exp_h) * poisson_probability(j, exp_a)
@@ -1106,7 +1131,12 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False, match_i
             elif i == 1 and j == 0: prob *= max(0, 1 + exp_a * rho)
             elif i == 1 and j == 1: prob *= max(0, 1 - rho)
                 
+            # APPLICAZIONE CORREZIONE ZIP ALLA COMBINAZIONE 0-0
+            if i == 0 and j == 0: 
+                prob *= zip_multiplier
+                
             tot += prob
+
             if i>j: p1+=prob
             elif i==j: px+=prob
             else: p2+=prob
