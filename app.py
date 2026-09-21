@@ -641,6 +641,31 @@ def calcola_late_goal_index(casa, fuori):
     val = (len(str(casa)) + len(str(fuori))) % 10
     return round(val * 0.10 + 0.5, 2)
 
+def calcola_criterio_kelly(prob_modello, quota_bookmaker, frazione=0.25):
+    """
+    Calcola la percentuale di bankroll da investire usando il Criterio di Kelly Frazionato (Quarter-Kelly).
+    - prob_modello: la probabilità stimata da Delphi (es. 0.65)
+    - quota_bookmaker: la quota decimale offerta dal bookmaker (es. 1.75)
+    - frazione: 0.25 indica il 25% del Kelly pieno (prudenziale)
+    """
+    if quota_bookmaker <= 1.0 or prob_modello <= 0:
+        return 0.0
+        
+    b = quota_bookmaker - 1.0  # Quota netta
+    p = prob_modello
+    q = 1.0 - p
+    
+    # Formula di Kelly: f* = (b * p - q) / b
+    kelly_fraction = (b * p - q) / b
+    
+    # Se il valore atteso (EV) è negativo o zero, non c'è value bet
+    if kelly_fraction <= 0:
+        return 0.0
+        
+    # Applichiamo la frazione prudenziale
+    puntata_consigliata = kelly_fraction * frazione
+    return round(puntata_consigliata * 100, 2) # Restituisce la percentuale del bankroll (%)
+
 def analizza_pericolosita_tempi(df_giocate, squadra):
     ultime = df_giocate[(df_giocate['HomeTeam'] == squadra) | (df_giocate['AwayTeam'] == squadra)].tail(15)
     gol_fatti_1t, gol_fatti_2t, match_validi = 0, 0, 0
@@ -1640,6 +1665,46 @@ with tab1:
             with cfe1: st.success(f"🏁 **RE FINALI (Top 6)**\n\n{d['Top 6 RE Finali']}")
             with cfe2: st.success(f"⏱️ **RE 1° TEMPO (Top 3)**\n\n{d['Top 3 RE 1°T']}")
 
+            st.divider()
+            st.subheader("🧮 Calcolatore Criterio di Kelly (Value Bet)")
+            st.info("Inserisci la quota reale proposta dal tuo bookmaker per verificare se c'è margine di profitto (Value Bet) e quanta percentuale del tuo bankroll investire.")
+            
+            col_k1, col_k2, col_k3 = st.columns(3)
+            with col_k1:
+                mercato_scelto = st.selectbox(
+                    "Seleziona Mercato", 
+                    ["1X2 - Segno 1", "1X2 - Segno X", "1X2 - Segno 2", "Over 2.5", "Under 2.5", "Gol", "NoGol"],
+                    key="kelly_mercato"
+                )
+            with col_k2:
+                quota_reale = st.number_input(
+                    "Quota Reale Bookmaker", 
+                    min_value=1.01, max_value=50.0, value=2.00, step=0.05,
+                    key="kelly_quota"
+                )
+            with col_k3:
+                # Estrae la probabilità corretta in base al mercato scelto
+                prob_mappata = d['p1']
+                if "X" in mercato_scelto: prob_mappata = d['px']
+                elif "2" in mercato_scelto: prob_mappata = d['p2']
+                elif "Over" in mercato_scelto: prob_mappata = 1 - d['pu']
+                elif "Under" in mercato_scelto: prob_mappata = d['pu']
+                elif "Gol" in mercato_scelto: prob_mappata = d['pg']
+                elif "NoGol" in mercato_scelto: prob_mappata = 1 - d['pg']
+                
+                # Calcolo del Valore Atteso (EV) matematico = (Probabilità * Quota) - 1
+                ev = (prob_mappata * quota_reale) - 1.0
+                pct_kelly = calcola_criterio_kelly(prob_mappata, quota_reale, frazione=0.25)
+                
+                st.write("")
+                st.write("")
+                if ev > 0:
+                    st.success(f"✅ **VALUE BET!** (EV: +{ev*100:.1f}%)")
+                    st.metric("Puntata Consigliata", f"{pct_kelly}% del Bankroll")
+                else:
+                    st.warning(f"❌ **NO VALUE** (EV: {ev*100:.1f}%)")
+                    st.metric("Puntata Consigliata", "0.0% (Salta)")
+            
             if st.button("💾 Salva in Cronologia", use_container_width=True):
                 df_c = pd.read_csv(FILE_DB_CALCIO)
                 f_h = controlla_fatica(df_c, d['casa_nome'], d['Data'])
