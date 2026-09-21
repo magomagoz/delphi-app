@@ -1713,18 +1713,18 @@ with tab1:
                     if label not in kelly_options:
                         kelly_options[label] = v
                         
-            # Aggiungiamo le Top 3 Somma Gol Casa
+            # Aggiungiamo le Top 2 Somma Gol Casa
             if 'raw_sgc' in d:
-                top_3_sgc = sorted(d['raw_sgc'].items(), key=lambda x: x[1], reverse=True)[:3]
-                for k, v in top_3_sgc:
+                top_2_sgc = sorted(d['raw_sgc'].items(), key=lambda x: x[1], reverse=True)[:2]
+                for k, v in top_2_sgc:
                     label = f"Somma Gol Casa {k}" if k < 3 else "Somma Gol Casa >2"
                     if label not in kelly_options:
                         kelly_options[label] = v
                         
-            # Aggiungiamo le Top 3 Somma Gol Ospite
+            # Aggiungiamo le Top 2 Somma Gol Ospite
             if 'raw_sgo' in d:
-                top_3_sgo = sorted(d['raw_sgo'].items(), key=lambda x: x[1], reverse=True)[:3]
-                for k, v in top_3_sgo:
+                top_2_sgo = sorted(d['raw_sgo'].items(), key=lambda x: x[1], reverse=True)[:2]
+                for k, v in top_2_sgo:
                     label = f"Somma Gol Ospite {k}" if k < 3 else "Somma Gol Ospite >2"
                     if label not in kelly_options:
                         kelly_options[label] = v
