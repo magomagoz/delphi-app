@@ -584,6 +584,23 @@ def genera_pronostici_massivi(giorni_anticipo=7):
         st.rerun()
 
 # --- 5. LOGICA MATEMATICA E ANALISI ---
+def applica_filtro_gaussiano(valori, sigma):
+    if len(valori) == 0:
+        return 1.2
+    
+    pesi = []
+    # N è il numero di partite. Il match all'ultimo indice è il più recente (distanza = 0)
+    N = len(valori)
+    for i in range(N):
+        distanza = (N - 1) - i 
+        # Formula della curva a campana (Distribuzione Normale)
+        peso = math.exp(-(distanza ** 2) / (2 * (sigma ** 2)))
+        pesi.append(peso)
+    
+    # Media pesata gaussiana
+    media_pesata = sum(v * p for v, p in zip(valori, pesi)) / sum(pesi)
+    return media_pesata
+
 def stima_quota(prob):
     if prob <= 0.001: return 99.00
     return round(1 / prob, 2)
@@ -682,20 +699,22 @@ def get_stats(team, is_home_side, df_giocate):
     
     if t.empty: return 1.2, 1.2
     
-    gf_series = t.apply(lambda r: r['FTHG'] if r['HomeTeam']==team else r['FTAG'], axis=1)
-    gs_series = t.apply(lambda r: r['FTAG'] if r['HomeTeam']==team else r['FTHG'], axis=1)
+    gf_list = t.apply(lambda r: r['FTHG'] if r['HomeTeam']==team else r['FTAG'], axis=1).tolist()
+    gs_list = t.apply(lambda r: r['FTAG'] if r['HomeTeam']==team else r['FTHG'], axis=1).tolist()
     
-    gf_all = gf_series.ewm(span=5, min_periods=1).mean().iloc[-1]
-    gs_all = gs_series.ewm(span=5, min_periods=1).mean().iloc[-1]
+    # --- NUOVO: Applicazione del Filtro Gaussiano globale ---
+    gf_all = applica_filtro_gaussiano(gf_list, sigma=5.0)
+    gs_all = applica_filtro_gaussiano(gs_list, sigma=5.0)
     
     stats_condizione = t[t['HomeTeam'] == team] if is_home_side else t[t['AwayTeam'] == team]
             
     if not stats_condizione.empty and len(stats_condizione) >= 3:
-        gf_cond_series = stats_condizione['FTHG'] if is_home_side else stats_condizione['FTAG']
-        gs_cond_series = stats_condizione['FTAG'] if is_home_side else stats_condizione['FTHG']
+        gf_cond_list = (stats_condizione['FTHG'] if is_home_side else stats_condizione['FTAG']).tolist()
+        gs_cond_list = (stats_condizione['FTAG'] if is_home_side else stats_condizione['FTHG']).tolist()
         
-        gf_cond = gf_cond_series.ewm(span=3, min_periods=1).mean().iloc[-1]
-        gs_cond = gs_cond_series.ewm(span=3, min_periods=1).mean().iloc[-1]
+        # --- NUOVO: Applicazione del Filtro Gaussiano per Casa/Trasferta ---
+        gf_cond = applica_filtro_gaussiano(gf_cond_list, sigma=3.0)
+        gs_cond = applica_filtro_gaussiano(gs_cond_list, sigma=3.0)
         
         gf = (gf_cond * 0.7) + (gf_all * 0.3)
         gs = (gs_cond * 0.7) + (gs_all * 0.3)
