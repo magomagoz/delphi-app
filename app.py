@@ -160,14 +160,14 @@ def genera_pdf_pronostico(d):
     pdf.cell(0, 8, f"Campionato: {pulisci_per_pdf(d.get('League', 'N.D.'))}", ln=True, align='C')
     pdf.cell(0, 8, f"Evento del {d['Data']} - Ore {d['Ora']}", ln=True, align='C')
     
-    pdf.ln(5)
+    pdf.ln(2)
     if d.get('is_big_match'):
         pdf.set_font("Arial", 'B', 10)
         pdf.set_text_color(200, 0, 0)
-        pdf.cell(0, 7, "ATTENZIONE: Big Match/Derby - Probabile partita molto tattica", ln=True, align='C')
+        pdf.cell(0, 6, "ATTENZIONE: Big Match/Derby - Probabile partita molto tattica", ln=True, align='C')
     
     pdf.set_text_color(0, 0, 0)
-    pdf.ln(5)
+    pdf.ln(2)
     
     # --- 3. INFO TECNICHE ---
     pdf.set_fill_color(240, 240, 240)
@@ -240,8 +240,8 @@ def genera_pdf_pronostico(d):
     esito_uo = "UNDER 2.5" if d['pu'] >= p_over else "OVER 2.5"
     esito_gng = "GOL" if d['pg'] >= p_nogol else "NO GOL"
     
-    pdf.cell(95, 12, esito_uo, border=1, align='C')
-    pdf.cell(95, 12, esito_gng, border=1, ln=True, align='C')
+    pdf.cell(95, 10, esito_uo, border=1, align='C')
+    pdf.cell(95, 10, esito_gng, border=1, ln=True, align='C')
 
     pdf.ln(5)
 
