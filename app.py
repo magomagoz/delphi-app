@@ -1419,7 +1419,7 @@ def scansiona_segnali_gold(giorni_anticipo=3):
             
         fiducia_max = max(p1, px, p2) - penalita_fine_stagione
         
-        if fiducia_max >= 0.60:
+        if fiducia_max >= 0.85:
             top_6_re = sorted(re_fin, key=lambda x: x['p'], reverse=True)[:6]
             stringa_re = ", ".join([f"{v['s']} (Q: {stima_quota(v['p']):.2f})" for v in top_6_re])
             
@@ -1865,7 +1865,7 @@ with tab3:
     st.header("📊 Performance Delphi")
     
     # INTERRUTTORE GENERALE
-    toggle_gold = st.toggle("🏆 Isola solo Segnali GOLD (Fiducia ≥ 60%)", value=False)
+    toggle_gold = st.toggle("🏆 Isola solo Segnali GOLD (Fiducia ≥ 85%)", value=False)
     
     # --- SEZIONE 1: ANALISI CAMPIONATO ---
     st.subheader("🌍 Analisi per Campionato")
