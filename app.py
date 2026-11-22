@@ -126,62 +126,70 @@ def ottieni_xg_understat(nome_squadra):
 
 FILE_DB_MINUTI = 'database_minuti_gol.csv'
 
-def estrai_minuti_gol_understat_squadra(nome_squadra, stagione="2026"):
-    """
-    Scarica da Understat le partite della stagione in corso per la squadra
-    e ricava i minuti del primo e dell'ultimo gol di ogni match disputato.
-    """
+def estrai_minuti_gol_understat_squadra(nome_squadra, stagione="2026", debug=False):
     nome_url = MAPPA_UNDERSTAT.get(nome_squadra, nome_squadra.replace(" ", "_"))
     url = f"https://understat.com/team/{nome_url}/{stagione}"
-    headers = {"User-Agent": "Mozilla/5.0"}
+    headers = {
+        "User-Agent": "Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9,it;q=0.8",
+        "Referer": "https://understat.com/",
+    }
 
     try:
-        r = requests.get(url, headers=headers, timeout=8)
+        r = requests.get(url, headers=headers, timeout=10)
         if r.status_code != 200:
+            if debug:
+                st.warning(f"Debug {nome_squadra}: HTTP {r.status_code} su {url}")
             return None
 
-        match_dates = re.search(r"var datesData\s*=\s*JSON\.parse\('(.*?)'\);", r.text)
+        # Supporta var datesData = JSON.parse('...') oppure JSON.parse("...")
+        match_dates = re.search(r"var\s+datesData\s*=\s*JSON\.parse\((['\"])(.*?)\1\);", r.text, re.DOTALL)
         if not match_dates:
+            if debug:
+                st.warning(f"Debug {nome_squadra}: regex datesData non trovata (lunghezza HTML: {len(r.text)})")
             return None
 
-        raw_dates = match_dates.group(1).encode('utf-8').decode('unicode_escape')
+        raw_dates = match_dates.group(2).encode("utf-8").decode("unicode_escape")
         partite = json.loads(raw_dates)
 
-        # Filtriamo solo le partite già giocate (isResult == True)
-        giocate = [p for p in partite if p.get('isResult')]
+        giocate = [p for p in partite if p.get("isResult")]
         if not giocate:
+            if debug:
+                st.warning(f"Debug {nome_squadra}: nessuna partita isResult=True nella stagione {stagione}")
             return None
 
         lista_mpg = []
         lista_mug = []
 
         for p in giocate:
-            match_id = p.get('id')
-            gol_h = int(p['goals']['h'])
-            gol_a = int(p['goals']['a'])
+            match_id = p.get("id")
+            gol_h = int(p["goals"]["h"])
+            gol_a = int(p["goals"]["a"])
 
-            # Se 0-0 non c'è primo né ultimo gol
             if gol_h + gol_a == 0:
                 continue
 
             url_match = f"https://understat.com/match/{match_id}"
-            rm = requests.get(url_match, headers=headers, timeout=8)
+            rm = requests.get(url_match, headers=headers, timeout=10)
             if rm.status_code == 200:
-                match_shots = re.search(r"var shotsData\s*=\s*JSON\.parse\('(.*?)'\);", rm.text)
+                match_shots = re.search(r"var\s+shotsData\s*=\s*JSON\.parse\((['\"])(.*?)\1\);", rm.text, re.DOTALL)
                 if match_shots:
-                    raw_shots = match_shots.group(1).encode('utf-8').decode('unicode_escape')
+                    raw_shots = match_shots.group(2).encode("utf-8").decode("unicode_escape")
                     shots = json.loads(raw_shots)
-                    tutti_tiri = shots.get('h', []) + shots.get('a', [])
+                    tutti_tiri = shots.get("h", []) + shots.get("a", [])
                     minuti_gol = sorted([
-                        int(t['minute']) for t in tutti_tiri
-                        if t.get('result') in ('Goal', 'OwnGoal')
+                        int(float(t["minute"])) for t in tutti_tiri
+                        if t.get("result") in ("Goal", "OwnGoal")
                     ])
                     if minuti_gol:
                         lista_mpg.append(minuti_gol[0])
                         lista_mug.append(minuti_gol[-1])
-            time.sleep(0.35)  # Pausa anti-blocco
+            time.sleep(0.35)
 
         if not lista_mpg:
+            if debug:
+                st.warning(f"Debug {nome_squadra}: trovati {len(giocate)} match ma 0 minuti gol estratti")
             return None
 
         return {
@@ -192,7 +200,9 @@ def estrai_minuti_gol_understat_squadra(nome_squadra, stagione="2026"):
             "Media_MPG": round(sum(lista_mpg) / len(lista_mpg), 1),
             "Media_MUG": round(sum(lista_mug) / len(lista_mug), 1),
         }
-    except Exception:
+    except Exception as e:
+        if debug:
+            st.error(f"Debug {nome_squadra} eccezione: {type(e).__name__}: {e}")
         return None
 
 def aggiorna_database_minuti_gol(stagione="2026"):
