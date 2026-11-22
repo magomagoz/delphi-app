@@ -203,6 +203,185 @@ def estrai_minuti_gol_understat_squadra(nome_squadra, stagione="2026", debug=Fal
             st.error(f"Diagnostica [{nome_squadra}]: {type(e).__name__} - {e}")
         return None
 
+APIFOOTBALL_LEAGUE_IDS = {
+    'SA': 135,   # Serie A
+    'PL': 39,    # Premier League
+    'ELC': 40,   # Championship
+    'PD': 140,   # La Liga
+    'BL1': 78,   # Bundesliga
+    'FL1': 61,   # Ligue 1
+    'CL': 2,     # UEFA Champions League
+    'PPL': 94,   # Primeira Liga
+    'DED': 88,   # Eredivisie
+    'BSA': 71,   # Serie A Brasile
+}
+
+def _get_apifootball_key():
+    try:
+        if "APIFOOTBALL_KEY" in st.secrets:
+            return str(st.secrets["APIFOOTBALL_KEY"]).strip()
+    except Exception:
+        pass
+    return os.environ.get("APIFOOTBALL_KEY", "").strip()
+
+def _normalizza_nome_squadra(nome):
+    s = str(nome).lower().strip()
+    for pref in ["fc ", "ac ", "as ", "sc ", "cf ", "rc ", "rcd ", "cd ", "ud ", "sv ", "vfb ", "vfl ", "tsg ", "1. "]:
+        if s.startswith(pref):
+            s = s[len(pref):]
+    return s
+
+def _squadra_corrisponde(nome_db, nome_api):
+    a = _normalizza_nome_squadra(nome_db)
+    b = _normalizza_nome_squadra(nome_api)
+    if not a or not b:
+        return False
+    return a == b or (len(a) >= 4 and a in b) or (len(b) >= 4 and b in a)
+
+def aggiorna_database_minuti_apifootball(codice_lega="SA", stagione=2026, max_partite_eventi=40):
+    api_key = _get_apifootball_key()
+    if not api_key:
+        st.error("❌ Chiave `APIFOOTBALL_KEY` non trovata nei Secrets di Streamlit.")
+        return
+
+    league_id = APIFOOTBALL_LEAGUE_IDS.get(codice_lega)
+    if not league_id:
+        st.warning(f"Lega '{codice_lega}' non mappata su API-Football.")
+        return
+
+    headers = {"x-apisports-key": api_key}
+    base_url = "https://v3.football.api-sports.io"
+
+    try:
+        r_fix = requests.get(
+            f"{base_url}/fixtures",
+            headers=headers,
+            params={"league": league_id, "season": int(stagione), "status": "FT-AET-PEN"},
+            timeout=12,
+        )
+        if r_fix.status_code != 200:
+            st.error(f"❌ Errore API-Football fixtures: HTTP {r_fix.status_code}")
+            return
+
+        payload_fix = r_fix.json()
+        if payload_fix.get("errors"):
+            st.error(f"❌ API-Football errore: {payload_fix['errors']}")
+            return
+
+        fixtures = payload_fix.get("response", [])
+        if not fixtures:
+            st.warning(f"⚠️ Nessuna partita conclusa trovata per {LEAGUE_MAP.get(codice_lega, codice_lega)} (stagione {stagione}).")
+            return
+
+        # Se esiste il DB Calcio, filtriamo o allineiamo i nomi squadra con quelli del DB Calcio
+        squadre_calcio = set()
+        if os.path.exists(FILE_DB_CALCIO):
+            df_c = pd.read_csv(FILE_DB_CALCIO)
+            df_l = df_c[df_c["League"] == codice_lega]
+            squadre_calcio = set(df_l["HomeTeam"].dropna()).union(set(df_l["AwayTeam"].dropna()))
+
+        def mappa_nome_db(nome_api):
+            for sq_db in squadre_calcio:
+                if _squadra_corrisponde(sq_db, nome_api):
+                    return sq_db
+            return nome_api
+
+        # Prendiamo le partite concluse più recenti con almeno 1 gol
+        fixtures_con_gol = []
+        for fx in fixtures:
+            goals = fx.get("goals", {})
+            gh = goals.get("home") or 0
+            ga = goals.get("away") or 0
+            if (gh + ga) > 0 and fx.get("fixture", {}).get("id"):
+                fixtures_con_gol.append(fx)
+
+        fixtures_con_gol = fixtures_con_gol[-int(max_partite_eventi):]
+        if not fixtures_con_gol:
+            st.warning("⚠️ Nessun match concluso con gol trovato nel range selezionato.")
+            return
+
+        dati_per_squadra = {}
+        progress = st.progress(0)
+        status_txt = st.empty()
+
+        for idx, fx in enumerate(fixtures_con_gol):
+            fid = fx["fixture"]["id"]
+            h_name = mappa_nome_db(fx.get("teams", {}).get("home", {}).get("name", ""))
+            a_name = mappa_nome_db(fx.get("teams", {}).get("away", {}).get("name", ""))
+            status_txt.text(f"⚽ Eventi match {idx+1}/{len(fixtures_con_gol)}: {h_name} vs {a_name}...")
+
+            for sq in [h_name, a_name]:
+                if sq:
+                    dati_per_squadra.setdefault(sq, {"mpg": [], "mug": [], "partite": 0})
+                    dati_per_squadra[sq]["partite"] += 1
+
+            r_ev = requests.get(
+                f"{base_url}/fixtures/events",
+                headers=headers,
+                params={"fixture": fid},
+                timeout=12,
+            )
+            if r_ev.status_code == 200:
+                ev_json = r_ev.json()
+                if ev_json.get("errors"):
+                    st.warning(f"⚠️ Limite o errore su match {fid}: {ev_json['errors']}")
+                    break
+
+                minuti_gol_match = []
+                for ev in ev_json.get("response", []):
+                    if ev.get("type") == "Goal" and ev.get("detail") != "Missed Penalty":
+                        t = ev.get("time", {})
+                        elapsed = t.get("elapsed")
+                        extra = t.get("extra") or 0
+                        if elapsed is not None:
+                            minuti_gol_match.append(int(elapsed) + int(extra))
+
+                if minuti_gol_match:
+                    minuti_gol_match = sorted(minuti_gol_match)
+                    mpg_m = minuti_gol_match[0]
+                    mug_m = minuti_gol_match[-1]
+                    for sq in [h_name, a_name]:
+                        if sq:
+                            dati_per_squadra[sq]["mpg"].append(mpg_m)
+                            dati_per_squadra[sq]["mug"].append(mug_m)
+
+            time.sleep(0.2)
+            progress.progress((idx + 1) / len(fixtures_con_gol))
+
+        status_txt.empty()
+        nuove_righe = []
+        for sq, info in dati_per_squadra.items():
+            if info["mpg"] and info["mug"]:
+                nuove_righe.append({
+                    "Squadra": sq,
+                    "Partite_Analizzate": info["partite"],
+                    "Minuti_Primo_Gol": ",".join(map(str, info["mpg"])),
+                    "Minuti_Ultimo_Gol": ",".join(map(str, info["mug"])),
+                    "Media_MPG": round(sum(info["mpg"]) / len(info["mpg"]), 1),
+                    "Media_MUG": round(sum(info["mug"]) / len(info["mug"]), 1),
+                })
+
+        if not nuove_righe:
+            st.warning("⚠️ Nessun minuto gol estratto dagli eventi API-Football.")
+            return
+
+        df_nuovo = pd.DataFrame(nuove_righe)
+        if os.path.exists(FILE_DB_MINUTI):
+            try:
+                df_esistente = pd.read_csv(FILE_DB_MINUTI)
+                df_esistente = df_esistente[~df_esistente["Squadra"].isin(df_nuovo["Squadra"])]
+                df_finale = pd.concat([df_esistente, df_nuovo], ignore_index=True)
+            except Exception:
+                df_finale = df_nuovo
+        else:
+            df_finale = df_nuovo
+
+        df_finale.to_csv(FILE_DB_MINUTI, index=False)
+        st.success(f"✅ Aggiornati minuti gol per {len(nuove_righe)} squadre ({codice_lega}, stagione {stagione})!")
+
+    except Exception as e:
+        st.error(f"❌ Errore durante l'aggiornamento da API-Football: {e}")
+
 def aggiorna_database_minuti_gol(stagione="2026"):
     """
     Popola o aggiorna database_minuti_gol.csv per tutte le squadre presenti
@@ -2226,9 +2405,29 @@ with tab4:
         with st.spinner("Aggiornamento database in corso..."):
             aggiorna_database_calcio()
 
-    if st.button("⏱️ Aggiorna Storico Minuti Gol (Understat 2026)"):
-        with st.spinner("Scaricamento minuti esatti dei gol della stagione in corso..."):
-            aggiorna_database_minuti_gol(stagione="2026")
+    #if st.button("⏱️ Aggiorna Storico Minuti Gol (Understat 2026)"):
+        #with st.spinner("Scaricamento minuti esatti dei gol della stagione in corso..."):
+            #aggiorna_database_minuti_gol(stagione="2026")
+
+    st.markdown("---")
+    st.subheader("⏱️ Storico Minuti Gol (API-Football)")
+    st.caption("Scarica i minuti reali del primo e dell'ultimo gol (MPG/MUG) per una lega alla volta senza sprecare richieste giornaliere.")
+
+    c_af1, c_af2, c_af3 = st.columns(3)
+    with c_af1:
+        lega_af = st.selectbox(
+            "Lega API-Football",
+            list(APIFOOTBALL_LEAGUE_IDS.keys()),
+            format_func=lambda x: LEAGUE_MAP.get(x, x),
+            key="af_lega"
+        )
+    with c_af2:
+        stagione_af = st.number_input("Stagione (anno inizio)", min_value=2020, max_value=2030, value=2026, key="af_stagione")
+    with c_af3:
+        max_ev_af = st.number_input("Max match (eventi)", min_value=5, max_value=90, value=30, step=5, key="af_max_ev")
+
+    if st.button("⚽ Aggiorna Minuti Gol da API-Football", use_container_width=True):
+        aggiorna_database_minuti_apifootball(codice_lega=lega_af, stagione=stagione_af, max_partite_eventi=max_ev_af)
     
     st.markdown("---")
     
