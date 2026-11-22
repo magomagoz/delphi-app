@@ -226,7 +226,7 @@ def aggiorna_database_minuti_gol(stagione="2026"):
 
     for i, sq in enumerate(squadre_target):
         status_text.text(f"⏱️ Scarico minuti gol {stagione}: {sq} ({i+1}/{len(squadre_target)})...")
-        dati_sq = estrai_minuti_gol_understat_squadra(sq, stagione=stagione)
+        dati_sq = estrai_minuti_gol_understat_squadra(sq, stagione=stagione, debug=(i == 0))
         if dati_sq:
             righe.append(dati_sq)
         progress_bar.progress((i + 1) / len(squadre_target))
@@ -2011,6 +2011,18 @@ with tab1:
                     if label not in kelly_options:
                         kelly_options[label] = v
 
+            # Aggiungiamo le Top 3 fasce MPG (Minuto Primo Gol)
+            if 'raw_mpg' in d and d['raw_mpg']:
+                top_3_mpg = sorted(d['raw_mpg'].items(), key=lambda x: x[1], reverse=True)[:3]
+                for k, v in top_3_mpg:
+                    kelly_options[f"MPG (Primo Gol) {k}"] = v
+
+            # Aggiungiamo le Top 3 fasce MUG (Minuto Ultimo Gol)
+            if 'raw_mug' in d and d['raw_mug']:
+                top_3_mug = sorted(d['raw_mug'].items(), key=lambda x: x[1], reverse=True)[:3]
+                for k, v in top_3_mug:
+                    kelly_options[f"MUG (Ultimo Gol) {k}"] = v
+            
             col_k1, col_k2, col_k3 = st.columns(3)
             with col_k1:
                 mercato_scelto = st.selectbox(
