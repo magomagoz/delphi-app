@@ -74,7 +74,7 @@ MAPPA_UNDERSTAT = {
     'Montpellier': 'Montpellier', 'Strasbourg': 'Strasbourg',
     'Nantes': 'Nantes', 'Le Havre': 'Le_Havre', 'Havre': 'Le_Havre',
     'Lorient': 'Lorient', 'Metz': 'Metz', 'Clermont': 'Clermont_Foot',
-    'Auxerre': 'Auxerre', 'Angers': 'Angers', 'Saint-Etienne': 'Saint-Etienne'
+    'Auxerre': 'Auxerre', 'Angers': 'Angers', 'Saint-Etienne': 'Saint-Etienne',
 
     # Varianti extra comuni da API / report
     'AC Milan': 'AC_Milan',
@@ -98,7 +98,7 @@ MAPPA_UNDERSTAT = {
     'RCD Espanyol': 'Espanyol',
     'Deportivo Alavés': 'Alaves',
     'CD Leganés': 'Leganes',
-    'UD Las Palmas': 'Las_Palmas',
+    'UD Las Palmas': 'Las_Palmas'
 }
 
 def ottieni_xg_understat(nome_squadra):
@@ -403,6 +403,22 @@ def genera_pdf_pronostico(d):
     pdf.multi_cell(0, 6, f"TOP 6 RE FINALI:\n{pulisci_per_pdf(d.get('Top 6 RE Finali', 'N.D.'))}", border=1)
     pdf.ln(3)
     pdf.multi_cell(0, 6, f"TOP 3 RE 1°T:\n{pulisci_per_pdf(d.get('Top 3 RE 1°T', 'N.D.'))}", border=1)
+
+    pdf.ln(5)
+
+    # --- 6. MPG E MUG ---
+    pdf.set_font("Arial", 'B', 12)
+    pdf.set_fill_color(0, 96, 156)
+    pdf.set_text_color(255, 255, 255)
+    pdf.cell(190, 10, " MINUTO PRIMO GOL (MPG) E ULTIMO GOL (MUG)", ln=True, fill=True)
+
+    pdf.set_text_color(0, 0, 0)
+    pdf.set_font("Arial", '', 9)
+    pdf.multi_cell(0, 6, f"TOP 3 FASCE MPG (Primo Gol): {pulisci_per_pdf(d.get('mpg_top3', 'N.D.'))}", border=1)
+    pdf.ln(2)
+    pdf.multi_cell(0, 6, f"TOP 3 FASCE MUG (Ultimo Gol): {pulisci_per_pdf(d.get('mug_top3', 'N.D.'))}", border=1)
+    pdf.ln(2)
+    pdf.cell(0, 6, f"Fonte: {pulisci_per_pdf(d.get('fonte_minuti', 'N.D.'))} | Media MPG: {pulisci_per_pdf(d.get('media_mpg_str', 'N.D.'))} | Media MUG: {pulisci_per_pdf(d.get('media_mug_str', 'N.D.'))}", border=1, ln=True)
     
     return pdf.output(dest='S').encode('latin-1', errors='replace')
     
@@ -770,6 +786,109 @@ def controlla_fatica(df, squadra, data_match_str):
 def calcola_late_goal_index(casa, fuori):
     val = (len(str(casa)) + len(str(fuori))) % 10
     return round(val * 0.10 + 0.5, 2)
+
+def carica_db_minuti():
+    if os.path.exists(FILE_DB_MINUTI):
+        try:
+            return pd.read_csv(FILE_DB_MINUTI)
+        except Exception:
+            return None
+    return None
+
+def calcola_mpg_mug_da_db(casa, fuori, exp_h, exp_a, dist_1t_h=50.0, dist_2t_h=50.0, dist_1t_a=50.0, dist_2t_a=50.0, fatica=False, df_minuti=None):
+    fasce = [(0, 15), (15, 30), (30, 45), (45, 60), (60, 75), (75, 90)]
+    labels = [f"{a+1}-{b}'" for a, b in fasce]
+
+    mpg_counts = {lbl: 0.0 for lbl in labels}
+    mug_counts = {lbl: 0.0 for lbl in labels}
+    ha_dati_reali = False
+    medie_mpg = []
+    medie_mug = []
+
+    if df_minuti is not None and not df_minuti.empty:
+        for sq in [casa, fuori]:
+            row = df_minuti[df_minuti['Squadra'].astype(str).str.lower() == str(sq).lower()]
+            if not row.empty:
+                r = row.iloc[0]
+                raw_mpg = str(r.get('Minuti_Primo_Gol', ''))
+                raw_mug = str(r.get('Minuti_Ultimo_Gol', ''))
+
+                min_mpg = [int(float(x.strip())) for x in raw_mpg.split(',') if x.strip().replace('.', '', 1).isdigit()]
+                min_mug = [int(float(x.strip())) for x in raw_mug.split(',') if x.strip().replace('.', '', 1).isdigit()]
+
+                for m_val in min_mpg:
+                    for (a, b), lbl in zip(fasce, labels):
+                        if a < m_val <= b or (a == 0 and m_val == 0) or (b == 90 and m_val > 90):
+                            mpg_counts[lbl] += 1.0
+                            break
+
+                for m_val in min_mug:
+                    for (a, b), lbl in zip(fasce, labels):
+                        if a < m_val <= b or (a == 0 and m_val == 0) or (b == 90 and m_val > 90):
+                            mug_counts[lbl] += 1.0
+                            break
+
+                if min_mpg or min_mug:
+                    ha_dati_reali = True
+
+                if pd.notnull(r.get('Media_MPG')):
+                    medie_mpg.append(float(r['Media_MPG']))
+                if pd.notnull(r.get('Media_MUG')):
+                    medie_mug.append(float(r['Media_MUG']))
+
+    lam_tot = max(0.05, float(exp_h) + float(exp_a))
+    rate_min = lam_tot / 90.0
+    p_no_gol = math.exp(-lam_tot)
+
+    mpg_prior = {
+        lbl: math.exp(-rate_min * a) - math.exp(-rate_min * b)
+        for (a, b), lbl in zip(fasce, labels)
+    }
+    somma_prior_mpg = sum(mpg_prior.values())
+    mpg_prior = {k: v / somma_prior_mpg for k, v in mpg_prior.items()}
+
+    peso_2t = ((float(dist_2t_h) + float(dist_2t_a)) / 200.0) if (float(dist_2t_h) + float(dist_2t_a)) > 0 else 0.5
+    fatica_boost = 1.12 if fatica else 1.0
+    pesi_mug_base = [0.06, 0.10, 0.14, 0.16, 0.22, 0.32 * fatica_boost]
+    fattore_tardivo = max(0.75, min(1.35, peso_2t * 2.0))
+    pesi_mug = []
+    for idx, w in enumerate(pesi_mug_base):
+        if idx >= 4:
+            pesi_mug.append(w * fattore_tardivo)
+        else:
+            pesi_mug.append(w * (2.0 - fattore_tardivo * 0.5))
+    somma_w_mug = sum(pesi_mug)
+    mug_prior = {lbl: pesi_mug[i] / somma_w_mug for i, lbl in enumerate(labels)}
+
+    tot_c_mpg = sum(mpg_counts.values())
+    tot_c_mug = sum(mug_counts.values())
+
+    mpg_cond = {}
+    mug_cond = {}
+    for lbl in labels:
+        p_emp_mpg = (mpg_counts[lbl] + 0.5) / (tot_c_mpg + 3.0) if tot_c_mpg > 0 else mpg_prior[lbl]
+        p_emp_mug = (mug_counts[lbl] + 0.5) / (tot_c_mug + 3.0) if tot_c_mug > 0 else mug_prior[lbl]
+
+        mpg_cond[lbl] = (0.65 * p_emp_mpg + 0.35 * mpg_prior[lbl]) if tot_c_mpg > 0 else mpg_prior[lbl]
+        mug_cond[lbl] = (0.65 * p_emp_mug + 0.35 * mug_prior[lbl]) if tot_c_mug > 0 else mug_prior[lbl]
+
+    s_mpg = sum(mpg_cond.values())
+    s_mug = sum(mug_cond.values())
+    mpg_probs = {k: (v / s_mpg) * (1.0 - p_no_gol) for k, v in mpg_cond.items()}
+    mug_probs = {k: (v / s_mug) * (1.0 - p_no_gol) for k, v in mug_cond.items()}
+
+    top_mpg = sorted(mpg_probs.items(), key=lambda x: x[1], reverse=True)[:3]
+    top_mug = sorted(mug_probs.items(), key=lambda x: x[1], reverse=True)[:3]
+
+    return {
+        "mpg_top3": ", ".join([f"{k} (Q: {stima_quota(v):.2f})" for k, v in top_mpg]),
+        "mug_top3": ", ".join([f"{k} (Q: {stima_quota(v):.2f})" for k, v in top_mug]),
+        "mpg_raw": mpg_probs,
+        "mug_raw": mug_probs,
+        "fonte_minuti": "Storico Understat" if ha_dati_reali else "Stima Modello (Fallback)",
+        "media_mpg_str": f"{sum(medie_mpg)/len(medie_mpg):.1f}'" if medie_mpg else "N.D.",
+        "media_mug_str": f"{sum(medie_mug)/len(medie_mug):.1f}'" if medie_mug else "N.D.",
+    }
 
 def calcola_criterio_kelly(prob_modello, quota_bookmaker, frazione=0.30):
     """
@@ -1400,6 +1519,15 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False, match_i
     if 'dt_event_ita' not in locals():
         dt_event_ita = m['Date'].tz_convert('Europe/Rome')
 
+    df_minuti = carica_db_minuti()
+    fatica_match = controlla_fatica(df, casa, dt_event_ita.strftime("%d/%m/%Y")) or controlla_fatica(df, fuori, dt_event_ita.strftime("%d/%m/%Y"))
+    mpg_mug_res = calcola_mpg_mug_da_db(
+        casa, fuori, exp_h, exp_a,
+        dist_1t_h, dist_2t_h, dist_1t_a, dist_2t_a,
+        fatica=fatica_match,
+        df_minuti=df_minuti
+    )
+
     def formatta_somma_con_quote(diz, limite, top_n):
         items = sorted(diz.items(), key=lambda x: x[1], reverse=True)[:top_n]
         return ", ".join([f"{str(k) if k < limite else '>'+str(limite-1)} (Q: {stima_quota(v):.2f})" for k, v in items])
@@ -1468,7 +1596,14 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False, match_i
         "raw_htft": pf_final_dict,
         "raw_sgf": sgf,
         "raw_sgc": sgc,
-        "raw_sgo": sgo
+        "raw_sgo": sgo,
+        "mpg_top3": mpg_mug_res["mpg_top3"],
+        "mug_top3": mpg_mug_res["mug_top3"],
+        "fonte_minuti": mpg_mug_res["fonte_minuti"],
+        "media_mpg_str": mpg_mug_res["media_mpg_str"],
+        "media_mug_str": mpg_mug_res["media_mug_str"],
+        "raw_mpg": mpg_mug_res["mpg_raw"],
+        "raw_mug": mpg_mug_res["mug_raw"]
     }
 
 def scansiona_segnali_gold(giorni_anticipo=3):
@@ -1801,6 +1936,15 @@ with tab1:
             with cfe1: st.success(f"🏁 **RE FINALI (Top 6)**\n\n{d['Top 6 RE Finali']}")
             with cfe2: st.success(f"⏱️ **RE 1° TEMPO (Top 3)**\n\n{d['Top 3 RE 1°T']}")
 
+            st.divider()
+            st.subheader("⏱️ Minuto Primo Gol (MPG) & Minuto Ultimo Gol (MUG)")
+            st.caption(f"Fonte dati: **{d.get('fonte_minuti', 'Stima Modello')}** | Media storica MPG: **{d.get('media_mpg_str', 'N.D.')}** | Media storica MUG: **{d.get('media_mug_str', 'N.D.')}**")
+            c_mpg, c_mug = st.columns(2)
+            with c_mpg:
+                st.info(f"⚡ **MPG - PRIMO GOL (Top 3 Fasce)**\n\n{d.get('mpg_top3', 'N.D.')}")
+            with c_mug:
+                st.info(f"🏁 **MUG - ULTIMO GOL (Top 3 Fasce)**\n\n{d.get('mug_top3', 'N.D.')}")
+            
             # --- INIZIO BLOCCO KELLY POTENZIATO ---
             st.divider()
             st.subheader("🧮 Calcolatore Criterio di Kelly (Value Bet)")
