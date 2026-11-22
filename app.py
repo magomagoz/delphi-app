@@ -75,6 +75,30 @@ MAPPA_UNDERSTAT = {
     'Nantes': 'Nantes', 'Le Havre': 'Le_Havre', 'Havre': 'Le_Havre',
     'Lorient': 'Lorient', 'Metz': 'Metz', 'Clermont': 'Clermont_Foot',
     'Auxerre': 'Auxerre', 'Angers': 'Angers', 'Saint-Etienne': 'Saint-Etienne'
+
+    # Varianti extra comuni da API / report
+    'AC Milan': 'AC_Milan',
+    'FC Barcelona': 'Barcelona',
+    'Barça': 'Barcelona',
+    'Atlético Madrid': 'Atletico_Madrid',
+    'Atletico de Madrid': 'Atletico_Madrid',
+    'FC Bayern München': 'Bayern_Munich',
+    '1. FC Köln': 'FC_Cologne',
+    '1. FC Heidenheim 1846': 'Heidenheim',
+    'SV Werder Bremen': 'Werder_Bremen',
+    'VfB Stuttgart': 'Stuttgart',
+    'VfL Wolfsburg': 'Wolfsburg',
+    'VfL Bochum 1848': 'Bochum',
+    'TSG 1899 Hoffenheim': 'Hoffenheim',
+    '1. FSV Mainz 05': 'Mainz_05',
+    'FC St. Pauli': 'St_Pauli',
+    'Holstein Kiel': 'Holstein_Kiel',
+    'RCD Mallorca': 'Mallorca',
+    'RC Celta de Vigo': 'Celta_Vigo',
+    'RCD Espanyol': 'Espanyol',
+    'Deportivo Alavés': 'Alaves',
+    'CD Leganés': 'Leganes',
+    'UD Las Palmas': 'Las_Palmas',
 }
 
 def ottieni_xg_understat(nome_squadra):
@@ -100,6 +124,112 @@ def ottieni_xg_understat(nome_squadra):
         
     return None, None
 
+FILE_DB_MINUTI = 'database_minuti_gol.csv'
+
+def estrai_minuti_gol_understat_squadra(nome_squadra, stagione="2026"):
+    """
+    Scarica da Understat le partite della stagione in corso per la squadra
+    e ricava i minuti del primo e dell'ultimo gol di ogni match disputato.
+    """
+    nome_url = MAPPA_UNDERSTAT.get(nome_squadra, nome_squadra.replace(" ", "_"))
+    url = f"https://understat.com/team/{nome_url}/{stagione}"
+    headers = {"User-Agent": "Mozilla/5.0"}
+
+    try:
+        r = requests.get(url, headers=headers, timeout=8)
+        if r.status_code != 200:
+            return None
+
+        match_dates = re.search(r"var datesData\s*=\s*JSON\.parse\('(.*?)'\);", r.text)
+        if not match_dates:
+            return None
+
+        raw_dates = match_dates.group(1).encode('utf-8').decode('unicode_escape')
+        partite = json.loads(raw_dates)
+
+        # Filtriamo solo le partite già giocate (isResult == True)
+        giocate = [p for p in partite if p.get('isResult')]
+        if not giocate:
+            return None
+
+        lista_mpg = []
+        lista_mug = []
+
+        for p in giocate:
+            match_id = p.get('id')
+            gol_h = int(p['goals']['h'])
+            gol_a = int(p['goals']['a'])
+
+            # Se 0-0 non c'è primo né ultimo gol
+            if gol_h + gol_a == 0:
+                continue
+
+            url_match = f"https://understat.com/match/{match_id}"
+            rm = requests.get(url_match, headers=headers, timeout=8)
+            if rm.status_code == 200:
+                match_shots = re.search(r"var shotsData\s*=\s*JSON\.parse\('(.*?)'\);", rm.text)
+                if match_shots:
+                    raw_shots = match_shots.group(1).encode('utf-8').decode('unicode_escape')
+                    shots = json.loads(raw_shots)
+                    tutti_tiri = shots.get('h', []) + shots.get('a', [])
+                    minuti_gol = sorted([
+                        int(t['minute']) for t in tutti_tiri
+                        if t.get('result') in ('Goal', 'OwnGoal')
+                    ])
+                    if minuti_gol:
+                        lista_mpg.append(minuti_gol[0])
+                        lista_mug.append(minuti_gol[-1])
+            time.sleep(0.35)  # Pausa anti-blocco
+
+        if not lista_mpg:
+            return None
+
+        return {
+            "Squadra": nome_squadra,
+            "Partite_Analizzate": len(giocate),
+            "Minuti_Primo_Gol": ",".join(map(str, lista_mpg)),
+            "Minuti_Ultimo_Gol": ",".join(map(str, lista_mug)),
+            "Media_MPG": round(sum(lista_mpg) / len(lista_mpg), 1),
+            "Media_MUG": round(sum(lista_mug) / len(lista_mug), 1),
+        }
+    except Exception:
+        return None
+
+def aggiorna_database_minuti_gol(stagione="2026"):
+    """
+    Popola o aggiorna database_minuti_gol.csv per tutte le squadre presenti
+    nel database calcio corrente e mappate su Understat.
+    """
+    if not os.path.exists(FILE_DB_CALCIO):
+        st.error("❌ Aggiorna prima il DB Calcio principale!")
+        return
+
+    df_calcio = pd.read_csv(FILE_DB_CALCIO)
+    squadre_db = sorted(set(df_calcio['HomeTeam'].dropna()).union(set(df_calcio['AwayTeam'].dropna())))
+    squadre_target = [s for s in squadre_db if s in MAPPA_UNDERSTAT]
+
+    if not squadre_target:
+        st.warning("Nessuna squadra compatibile trovata nel DB Calcio.")
+        return
+
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    righe = []
+
+    for i, sq in enumerate(squadre_target):
+        status_text.text(f"⏱️ Scarico minuti gol {stagione}: {sq} ({i+1}/{len(squadre_target)})...")
+        dati_sq = estrai_minuti_gol_understat_squadra(sq, stagione=stagione)
+        if dati_sq:
+            righe.append(dati_sq)
+        progress_bar.progress((i + 1) / len(squadre_target))
+
+    status_text.empty()
+    if righe:
+        df_minuti = pd.DataFrame(righe)
+        df_minuti.to_csv(FILE_DB_MINUTI, index=False)
+        st.success(f"✅ Database Minuti Gol aggiornato per {len(righe)} squadre ({stagione})!")
+    else:
+        st.warning("⚠️ Nessun dato minuti recuperato. Controlla la connessione o l'anno stagione su Understat.")
 
 # --- 1. CONFIGURAZIONE ---
 st.set_page_config(page_title="Delphi Predictor Pro", layout="wide") 
@@ -1931,6 +2061,10 @@ with tab4:
     if st.button("🌐 Aggiorna tutti i Dati"):
         with st.spinner("Aggiornamento database in corso..."):
             aggiorna_database_calcio()
+
+    if st.button("⏱️ Aggiorna Storico Minuti Gol (Understat 2026)"):
+        with st.spinner("Scaricamento minuti esatti dei gol della stagione in corso..."):
+            aggiorna_database_minuti_gol(stagione="2026")
     
     st.markdown("---")
     
