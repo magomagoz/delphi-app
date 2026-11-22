@@ -129,49 +129,47 @@ FILE_DB_MINUTI = 'database_minuti_gol.csv'
 def estrai_minuti_gol_understat_squadra(nome_squadra, stagione="2026", debug=False):
     nome_url = MAPPA_UNDERSTAT.get(nome_squadra, nome_squadra.replace(" ", "_"))
     url = f"https://understat.com/team/{nome_url}/{stagione}"
+
+    session = requests.Session()
     headers = {
-        "User-Agent": "Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9,it;q=0.8",
-        "Referer": "https://understat.com/",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9,it-IT;q=0.8,it;q=0.7",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
     }
 
     try:
-        r = requests.get(url, headers=headers, timeout=10)
+        r = session.get(url, headers=headers, timeout=10)
         if r.status_code != 200:
             if debug:
-                st.warning(f"Debug {nome_squadra}: HTTP {r.status_code} su {url}")
+                st.warning(f"Diagnostica [{nome_squadra}]: stato HTTP {r.status_code} su {url}")
             return None
 
-        # Supporta var datesData = JSON.parse('...') oppure JSON.parse("...")
         match_dates = re.search(r"var\s+datesData\s*=\s*JSON\.parse\((['\"])(.*?)\1\);", r.text, re.DOTALL)
         if not match_dates:
             if debug:
-                st.warning(f"Debug {nome_squadra}: regex datesData non trovata (lunghezza HTML: {len(r.text)})")
+                st.warning(f"Diagnostica [{nome_squadra}]: 'datesData' non trovato nell'HTML (byte: {len(r.text)})")
             return None
 
         raw_dates = match_dates.group(2).encode("utf-8").decode("unicode_escape")
         partite = json.loads(raw_dates)
-
         giocate = [p for p in partite if p.get("isResult")]
         if not giocate:
             if debug:
-                st.warning(f"Debug {nome_squadra}: nessuna partita isResult=True nella stagione {stagione}")
+                st.warning(f"Diagnostica [{nome_squadra}]: nessuna partita conclusa per stagione '{stagione}'")
             return None
 
-        lista_mpg = []
-        lista_mug = []
-
+        lista_mpg, lista_mug = [], []
         for p in giocate:
             match_id = p.get("id")
             gol_h = int(p["goals"]["h"])
             gol_a = int(p["goals"]["a"])
-
-            if gol_h + gol_a == 0:
+            if gol_h + gol_a == 0 or not match_id:
                 continue
 
             url_match = f"https://understat.com/match/{match_id}"
-            rm = requests.get(url_match, headers=headers, timeout=10)
+            rm = session.get(url_match, headers=headers, timeout=10)
             if rm.status_code == 200:
                 match_shots = re.search(r"var\s+shotsData\s*=\s*JSON\.parse\((['\"])(.*?)\1\);", rm.text, re.DOTALL)
                 if match_shots:
@@ -185,11 +183,11 @@ def estrai_minuti_gol_understat_squadra(nome_squadra, stagione="2026", debug=Fal
                     if minuti_gol:
                         lista_mpg.append(minuti_gol[0])
                         lista_mug.append(minuti_gol[-1])
-            time.sleep(0.35)
+            time.sleep(0.25)
 
         if not lista_mpg:
             if debug:
-                st.warning(f"Debug {nome_squadra}: trovati {len(giocate)} match ma 0 minuti gol estratti")
+                st.warning(f"Diagnostica [{nome_squadra}]: {len(giocate)} match trovati ma nessun minuto gol estratto")
             return None
 
         return {
@@ -202,7 +200,7 @@ def estrai_minuti_gol_understat_squadra(nome_squadra, stagione="2026", debug=Fal
         }
     except Exception as e:
         if debug:
-            st.error(f"Debug {nome_squadra} eccezione: {type(e).__name__}: {e}")
+            st.error(f"Diagnostica [{nome_squadra}]: {type(e).__name__} - {e}")
         return None
 
 def aggiorna_database_minuti_gol(stagione="2026"):
