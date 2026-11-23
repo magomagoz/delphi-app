@@ -2299,7 +2299,14 @@ with tab4:
     if st.button("⏱️ Aggiorna Storico Minuti Gol (Understat 2026)"):
         with st.spinner("Scaricamento minuti esatti dei gol della stagione in corso in memoria..."):
             aggiorna_database_minuti_gol(stagione="2026", forza_aggiornamento=True, mostra_anteprima=True)
-    
+
+    with st.expander("🔍 Diagnostica Understat (1 squadra)"):
+    sq_diag = st.text_input("Squadra per test rapido", value="Milan", key="sq_understat_diag")
+    stg_diag = st.text_input("Stagione (anno inizio)", value="2026", key="stg_understat_diag")
+    if st.button("Esegui Test Singolo", key="btn_understat_diag"):
+        res_diag = estrai_minuti_gol_understat_squadra(sq_diag, stagione=stg_diag, max_match_sq=3, debug=True)
+        st.write("Risultato:", res_diag)
+
     st.markdown("---")
     
     st.subheader("🤖 Autopilota: Generazione Massiva")
