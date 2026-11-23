@@ -2308,7 +2308,7 @@ with tab4:
             st.write("Risultato:", res_diag)
 
 
-st.markdown("---")
+    st.markdown("---")
     
     st.subheader("🤖 Autopilota: Generazione Massiva")
     st.info("Esegue l'algoritmo per TUTTE le partite in programma e popola la Cronologia in automatico.")
