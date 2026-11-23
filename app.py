@@ -101,198 +101,279 @@ MAPPA_UNDERSTAT = {
     'UD Las Palmas': 'Las_Palmas'
 }
 
-def ottieni_xg_understat(nome_squadra):
-    nome_url = MAPPA_UNDERSTAT.get(nome_squadra, nome_squadra.replace(" ", "_"))
-    url = f"https://understat.com/team/{nome_url}/2026"
-    
-    try:
-        r = requests.get(url, timeout=5)
-        if r.status_code == 200:
-            match = re.search(r"var datesData \s*=\s* JSON\.parse\('(.*?)'\);", r.text)
-            if match:
-                raw_data = match.group(1).encode('utf-8').decode('unicode_escape')
-                dati_partite = json.loads(raw_data)
-                
-                xg_f = [float(p['xG']['h'] if p['h']['title'] == nome_url else p['xG']['a']) for p in dati_partite[-4:]]
-                xg_s = [float(p['xG']['a'] if p['h']['title'] == nome_url else p['xG']['h']) for p in dati_partite[-4:]]
-                
-                media_xg_f = sum(xg_f) / len(xg_f) if xg_f else 1.0
-                media_xg_s = sum(xg_s) / len(xg_s) if xg_s else 1.0
-                return media_xg_f, media_xg_s
-    except Exception:
-        pass # In caso di errore di rete, silente
-        
-    return None, None
-
 COLONNE_MINUTI_GOL = [
     "Squadra",
     "Partite_Analizzate",
-    "Minuti_Primo_Gol",
-    "Minuti_Ultimo_Gol",
+    "Gol_Fatti_1T",
+    "Gol_Fatti_2T",
+    "Perc_1T",
+    "Perc_2T",
     "Media_MPG",
     "Media_MUG",
 ]
 
-def _estrai_json_flessibile(html: str, nome_var: str):
-    """Estrae e decodifica JSON da script Understat supportando vari formati di assegnazione."""
-    pattern_parse = re.compile(
-        rf"{re.escape(nome_var)}\s*=\s*JSON\.parse\((['\"])(.*?)\1\)",
-        re.DOTALL,
-    )
-    m = pattern_parse.search(html)
-    if m:
-        raw = m.group(2).encode("utf-8").decode("unicode_escape")
-        return json.loads(raw)
 
-    pattern_direct = re.compile(
-        rf"{re.escape(nome_var)}\s*=\s*(\{{.*?\}}|\[.*?\])\s*;",
-        re.DOTALL,
-    )
-    m2 = pattern_direct.search(html)
-    if m2:
-        return json.loads(m2.group(1))
-
-    return None
+def ottieni_xg_understat(nome_squadra):
+    """Disattivato per evitare chiamate HTML senza datesData su Understat; usa le statistiche del DB."""
+    return None, None
 
 
-def estrai_minuti_gol_understat_squadra(nome_squadra, stagione="2026", max_match_sq=12, debug=False):
-    nome_url = MAPPA_UNDERSTAT.get(nome_squadra, nome_squadra.replace(" ", "_"))
-    url = f"https://understat.com/team/{nome_url}/{stagione}"
+@st.cache_data(ttl=900, show_spinner=False)
+def _costruisci_statistiche_minuti_memoria(df_giocate_records, squadre_tuple, refresh_token=0):
+    """Calcola in memoria il profilo temporale (1T/2T, MPG/MUG stimati) per ogni squadra."""
+    if not df_giocate_records or not squadre_tuple:
+        return pd.DataFrame(columns=COLONNE_MINUTI_GOL)
 
-    headers = {
-        "User-Agent": (
-            "Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) "
-            "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"
-        ),
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9,it-IT;q=0.8,it;q=0.7",
-        "Referer": "https://understat.com/",
-    }
-
-    try:
-        with requests.Session() as session:
-            r = session.get(url, headers=headers, timeout=12)
-            if r.status_code != 200:
-                if debug:
-                    st.warning(f"[{nome_squadra}] HTTP {r.status_code} su {url}")
-                return None
-
-            partite = _estrai_json_flessibile(r.text, "datesData")
-            if not partite:
-                if debug:
-                    st.warning(f"[{nome_squadra}] datesData assente o vuoto su {url}")
-                return None
-
-            giocate = [p for p in partite if p.get("isResult")]
-            if not giocate:
-                if debug:
-                    st.warning(f"[{nome_squadra}] nessuna partita con isResult=True per stagione {stagione}")
-                return None
-
-            giocate.sort(key=lambda x: x.get("datetime", ""), reverse=True)
-            giocate = giocate[:max_match_sq]
-
-            lista_mpg, lista_mug = [], []
-            for p in giocate:
-                match_id = p.get("id")
-                gol_h = int(p.get("goals", {}).get("h", 0))
-                gol_a = int(p.get("goals", {}).get("a", 0))
-                if gol_h + gol_a == 0 or not match_id:
-                    continue
-
-                url_match = f"https://understat.com/match/{match_id}"
-                rm = session.get(url_match, headers=headers, timeout=12)
-                if rm.status_code == 200:
-                    shots = _estrai_json_flessibile(rm.text, "shotsData")
-                    if shots:
-                        tutti_tiri = shots.get("h", []) + shots.get("a", [])
-                        minuti_gol = sorted([
-                            int(float(t["minute"]))
-                            for t in tutti_tiri
-                            if t.get("result") in ("Goal", "OwnGoal")
-                        ])
-                        if minuti_gol:
-                            lista_mpg.append(minuti_gol[0])
-                            lista_mug.append(minuti_gol[-1])
-
-                time.sleep(0.35)
-
-            if not lista_mpg:
-                if debug:
-                    st.warning(f"[{nome_squadra}] {len(giocate)} match controllati ma nessun gol estratto")
-                return None
-
-            return {
-                "Squadra": nome_squadra,
-                "Partite_Analizzate": len(giocate),
-                "Minuti_Primo_Gol": ",".join(map(str, lista_mpg)),
-                "Minuti_Ultimo_Gol": ",".join(map(str, lista_mug)),
-                "Media_MPG": round(sum(lista_mpg) / len(lista_mpg), 1),
-                "Media_MUG": round(sum(lista_mug) / len(lista_mug), 1),
-            }
-    except Exception as e:
-        if debug:
-            st.error(f"[{nome_squadra}] {type(e).__name__}: {e}")
-        return None
-
-def carica_minuti_gol_understat_memoria(stagione="2026", squadre_tuple=(), refresh_token=0):
-    """
-    Scarica e mantiene in memoria (cache Streamlit) MPG e MUG per le squadre indicate.
-    """
+    df_g = pd.DataFrame(df_giocate_records)
     righe = []
+
     for sq in squadre_tuple:
-        dati_sq = estrai_minuti_gol_understat_squadra(sq, stagione=stagione)
-        if dati_sq:
-            righe.append(dati_sq)
+        sub = df_g[(df_g["HomeTeam"] == sq) | (df_g["AwayTeam"] == sq)].tail(15)
+        n_match = len(sub)
+        if n_match == 0:
+            continue
+
+        gol_1t = 0.0
+        gol_2t = 0.0
+        tot_gol = 0.0
+
+        for _, r in sub.iterrows():
+            is_h = r["HomeTeam"] == sq
+            ft = float(r["FTHG"] if is_h else r["FTAG"]) if pd.notnull(r["FTHG"] if is_h else r["FTAG"]) else 0.0
+            ht_raw = r["HTHG"] if is_h else r["HTAG"]
+            tot_gol += ft
+
+            if pd.notnull(ht_raw):
+                ht = float(ht_raw)
+                gol_1t += ht
+                gol_2t += max(0.0, ft - ht)
+            else:
+                gol_1t += ft * 0.45
+                gol_2t += ft * 0.55
+
+        tot_tempi = gol_1t + gol_2t
+        perc_1t = round((gol_1t / tot_tempi) * 100.0, 1) if tot_tempi > 0 else 45.0
+        perc_2t = round(100.0 - perc_1t, 1) if tot_tempi > 0 else 55.0
+
+        # Stima media minuto primo gol (MPG) e ultimo gol (MUG) in base alla ripartizione 1T/2T e media gol/partita
+        media_gol_match = tot_gol / n_match
+        ratio_1t = perc_1t / 100.0
+        media_mpg = round(max(12.0, min(48.0, 34.0 - (ratio_1t - 0.45) * 28.0 - min(6.0, media_gol_match * 1.8))), 1)
+        media_mug = round(max(55.0, min(88.0, 74.0 + (1.0 - ratio_1t - 0.55) * 24.0 + min(5.0, media_gol_match * 1.5))), 1)
+
+        righe.append({
+            "Squadra": sq,
+            "Partite_Analizzate": n_match,
+            "Gol_Fatti_1T": int(round(gol_1t)),
+            "Gol_Fatti_2T": int(round(gol_2t)),
+            "Perc_1T": perc_1t,
+            "Perc_2T": perc_2t,
+            "Media_MPG": media_mpg,
+            "Media_MUG": media_mug,
+        })
+
     return pd.DataFrame(righe, columns=COLONNE_MINUTI_GOL)
 
+
 def aggiorna_database_minuti_gol(stagione="2026", forza_aggiornamento=True, mostra_anteprima=True):
-    """
-    Popola o aggiorna in memoria lo storico minuti gol per le squadre presenti
-    nel database calcio corrente e mappate su Understat.
-    """
+    """Popola o aggiorna in memoria lo storico minuti gol derivato dal DB calcio."""
     if not os.path.exists(FILE_DB_CALCIO):
         st.error("❌ Aggiorna prima il DB Calcio principale!")
         return None
 
     df_calcio = pd.read_csv(FILE_DB_CALCIO)
-    squadre_db = sorted(set(df_calcio['HomeTeam'].dropna()).union(set(df_calcio['AwayTeam'].dropna())))
-    squadre_target = tuple(s for s in squadre_db if s in MAPPA_UNDERSTAT)
+    giocate = df_calcio[df_calcio["Status"] == "FINISHED"].copy()
+    if giocate.empty:
+        st.warning("⚠️ Nessuna partita conclusa trovata nel DB Calcio per calcolare i tempi.")
+        return None
 
+    squadre_target = tuple(
+        sorted(set(df_calcio["HomeTeam"].dropna()).union(set(df_calcio["AwayTeam"].dropna())))
+    )
     if not squadre_target:
-        st.warning("Nessuna squadra compatibile trovata nel DB Calcio.")
+        st.warning("⚠️ Nessuna squadra trovata nel DB Calcio.")
         return None
 
-    if "understat_minuti_refresh_token" not in st.session_state:
-        st.session_state["understat_minuti_refresh_token"] = 0
+    if "minuti_memoria_refresh_token" not in st.session_state:
+        st.session_state["minuti_memoria_refresh_token"] = 0
     if forza_aggiornamento:
-        st.session_state["understat_minuti_refresh_token"] += 1
+        st.session_state["minuti_memoria_refresh_token"] += 1
 
-    progress_bar = st.progress(0)
-    status_text = st.empty()
+    cols_needed = [c for c in ["HomeTeam", "AwayTeam", "FTHG", "FTAG", "HTHG", "HTAG"] if c in giocate.columns]
+    records = giocate[cols_needed].tail(600).to_dict("records")
+
+    df_minuti = _costruisci_statistiche_minuti_memoria(
+        df_giocate_records=tuple(json.dumps(r, default=str) for r in records),
+        squadre_tuple=squadre_target,
+        refresh_token=st.session_state["minuti_memoria_refresh_token"],
+    )
+    # Converte records in modo pulito senza json.dumps su tupla
     righe = []
+    for sq in squadre_target:
+        sub = giocate[(giocate["HomeTeam"] == sq) | (giocate["AwayTeam"] == sq)].tail(15)
+        n_match = len(sub)
+        if n_match == 0:
+            continue
 
-    for i, sq in enumerate(squadre_target):
-        status_text.text(f"⏱️ Scarico minuti gol {stagione} in memoria: {sq} ({i+1}/{len(squadre_target)})...")
-        dati_sq = estrai_minuti_gol_understat_squadra(sq, stagione=stagione)
-        if dati_sq:
-            righe.append(dati_sq)
-        progress_bar.progress((i + 1) / len(squadre_target))
+        gol_1t = 0.0
+        gol_2t = 0.0
+        tot_gol = 0.0
 
-    status_text.empty()
-    progress_bar.empty()
+        for _, r in sub.iterrows():
+            is_h = r["HomeTeam"] == sq
+            ft = float(r["FTHG"] if is_h else r["FTAG"]) if pd.notnull(r["FTHG"] if is_h else r["FTAG"]) else 0.0
+            ht_raw = r.get("HTHG") if is_h else r.get("HTAG")
+            tot_gol += ft
 
-    if righe:
-        df_minuti = pd.DataFrame(righe, columns=COLONNE_MINUTI_GOL)
-        st.session_state["df_minuti_gol_understat"] = df_minuti
-        st.session_state["understat_minuti_stagione"] = str(stagione)
-        st.success(f"✅ Storico Minuti Gol caricato in memoria per {len(righe)} squadre ({stagione})!")
-        if mostra_anteprima:
-            st.dataframe(df_minuti, use_container_width=True, hide_index=True)
-        return df_minuti
-    else:
-        st.warning("⚠️ Nessun dato minuti recuperato. Controlla la connessione o l'anno stagione su Understat.")
-        return None
+            if pd.notnull(ht_raw):
+                ht = float(ht_raw)
+                gol_1t += ht
+                gol_2t += max(0.0, ft - ht)
+            else:
+                gol_1t += ft * 0.45
+                gol_2t += ft * 0.55
+
+        tot_tempi = gol_1t + gol_2t
+        perc_1t = round((gol_1t / tot_tempi) * 100.0, 1) if tot_tempi > 0 else 45.0
+        perc_2t = round(100.0 - perc_1t, 1) if tot_tempi > 0 else 55.0
+
+        media_gol_match = tot_gol / n_match
+        ratio_1t = perc_1t / 100.0
+        media_mpg = round(max(12.0, min(48.0, 34.0 - (ratio_1t - 0.45) * 28.0 - min(6.0, media_gol_match * 1.8))), 1)
+        media_mug = round(max(55.0, min(88.0, 74.0 + (1.0 - ratio_1t - 0.55) * 24.0 + min(5.0, media_gol_match * 1.5))), 1)
+
+        righe.append({
+            "Squadra": sq,
+            "Partite_Analizzate": n_match,
+            "Gol_Fatti_1T": int(round(gol_1t)),
+            "Gol_Fatti_2T": int(round(gol_2t)),
+            "Perc_1T": perc_1t,
+            "Perc_2T": perc_2t,
+            "Media_MPG": media_mpg,
+            "Media_MUG": media_mug,
+        })
+
+    df_minuti = pd.DataFrame(righe, columns=COLONNE_MINUTI_GOL)
+    st.session_state["df_minuti_gol_understat"] = df_minuti
+    st.session_state["minuti_memoria_aggiornato"] = True
+    st.success(f"✅ Storico Minuti Gol calcolato in memoria per {len(df_minuti)} squadre ({stagione})!")
+    if mostra_anteprima and not df_minuti.empty:
+        st.dataframe(df_minuti, use_container_width=True, hide_index=True)
+    return df_minuti
+
+
+def carica_minuti_in_memoria(stagione="2026", squadre_coinvolte=None, df_giocate=None):
+    """Restituisce il DataFrame in memoria senza leggere o scrivere file CSV."""
+    if "df_minuti_gol_understat" in st.session_state and isinstance(st.session_state["df_minuti_gol_understat"], pd.DataFrame):
+        if not st.session_state["df_minuti_gol_understat"].empty:
+            return st.session_state["df_minuti_gol_understat"]
+
+    if df_giocate is not None and not df_giocate.empty and squadre_coinvolte:
+        righe = []
+        for sq in squadre_coinvolte:
+            sub = df_giocate[(df_giocate["HomeTeam"] == sq) | (df_giocate["AwayTeam"] == sq)].tail(15)
+            if sub.empty:
+                continue
+            gol_1t = 0.0
+            gol_2t = 0.0
+            tot_gol = 0.0
+            for _, r in sub.iterrows():
+                is_h = r["HomeTeam"] == sq
+                ft = float(r["FTHG"] if is_h else r["FTAG"]) if pd.notnull(r["FTHG"] if is_h else r["FTAG"]) else 0.0
+                ht_raw = r.get("HTHG") if is_h else r.get("HTAG")
+                tot_gol += ft
+                if pd.notnull(ht_raw):
+                    ht = float(ht_raw)
+                    gol_1t += ht
+                    gol_2t += max(0.0, ft - ht)
+                else:
+                    gol_1t += ft * 0.45
+                    gol_2t += ft * 0.55
+            tot_tempi = gol_1t + gol_2t
+            perc_1t = round((gol_1t / tot_tempi) * 100.0, 1) if tot_tempi > 0 else 45.0
+            perc_2t = round(100.0 - perc_1t, 1) if tot_tempi > 0 else 55.0
+            media_gol_match = tot_gol / len(sub)
+            ratio_1t = perc_1t / 100.0
+            media_mpg = round(max(12.0, min(48.0, 34.0 - (ratio_1t - 0.45) * 28.0 - min(6.0, media_gol_match * 1.8))), 1)
+            media_mug = round(max(55.0, min(88.0, 74.0 + (1.0 - ratio_1t - 0.55) * 24.0 + min(5.0, media_gol_match * 1.5))), 1)
+            righe.append({
+                "Squadra": sq,
+                "Partite_Analizzate": len(sub),
+                "Gol_Fatti_1T": int(round(gol_1t)),
+                "Gol_Fatti_2T": int(round(gol_2t)),
+                "Perc_1T": perc_1t,
+                "Perc_2T": perc_2t,
+                "Media_MPG": media_mpg,
+                "Media_MUG": media_mug,
+            })
+        if righe:
+            df_out = pd.DataFrame(righe, columns=COLONNE_MINUTI_GOL)
+            st.session_state["df_minuti_gol_understat"] = df_out
+            return df_out
+
+    return None
+
+
+def calcola_mpg_mug_da_db(casa, fuori, exp_h, exp_a, dist_1t_h=50.0, dist_2t_h=50.0, dist_1t_a=50.0, dist_2t_a=50.0, fatica=False, df_minuti=None):
+    fasce = [(0, 15), (15, 30), (30, 45), (45, 60), (60, 75), (75, 90)]
+    labels = [f"{a+1}-{b}'" for a, b in fasce]
+
+    lam_tot = max(0.05, float(exp_h) + float(exp_a))
+    rate_min = lam_tot / 90.0
+    p_no_gol = math.exp(-lam_tot)
+
+    # Peso 1T vs 2T combinando distribuzione match e eventuale tabella in memoria
+    w_1t_h = float(dist_1t_h) if float(dist_1t_h) > 0 else 45.0
+    w_1t_a = float(dist_1t_a) if float(dist_1t_a) > 0 else 45.0
+    w_2t_h = float(dist_2t_h) if float(dist_2t_h) > 0 else 55.0
+    w_2t_a = float(dist_2t_a) if float(dist_2t_a) > 0 else 55.0
+
+    medie_mpg = []
+    medie_mug = []
+    ha_dati_reali = False
+
+    if df_minuti is not None and not df_minuti.empty:
+        for sq in [casa, fuori]:
+            row = df_minuti[df_minuti["Squadra"].astype(str).str.lower() == str(sq).lower()]
+            if not row.empty:
+                r = row.iloc[0]
+                ha_dati_reali = True
+                if pd.notnull(r.get("Media_MPG")):
+                    medie_mpg.append(float(r["Media_MPG"]))
+                if pd.notnull(r.get("Media_MUG")):
+                    medie_mug.append(float(r["Media_MUG"]))
+
+    # Distribuzione MPG: peso maggiore alle fasce del 1° tempo se le squadre partono forte
+    quota_1t = ((w_1t_h + w_1t_a) / 200.0)
+    quota_1t = max(0.25, min(0.65, quota_1t))
+    pesi_mpg_1t = [0.28, 0.36, 0.36]
+    pesi_mpg_2t = [0.45, 0.35, 0.20]
+    pesi_mpg = [p * quota_1t for p in pesi_mpg_1t] + [p * (1.0 - quota_1t) for p in pesi_mpg_2t]
+    som_mpg = sum(pesi_mpg)
+    mpg_probs = {lbl: (pesi_mpg[i] / som_mpg) * (1.0 - p_no_gol) for i, lbl in enumerate(labels)}
+
+    # Distribuzione MUG: peso maggiore alle fasce finali del 2° tempo, spinto da 2T e fatica
+    quota_2t = ((w_2t_h + w_2t_a) / 200.0)
+    quota_2t = max(0.35, min(0.78, quota_2t))
+    fatica_boost = 1.15 if fatica else 1.0
+    pesi_mug_1t = [0.15, 0.30, 0.55]
+    pesi_mug_2t = [0.18, 0.32, 0.50 * fatica_boost]
+    pesi_mug = [p * (1.0 - quota_2t) for p in pesi_mug_1t] + [p * quota_2t for p in pesi_mug_2t]
+    som_mug = sum(pesi_mug)
+    mug_probs = {lbl: (pesi_mug[i] / som_mug) * (1.0 - p_no_gol) for i, lbl in enumerate(labels)}
+
+    top_mpg = sorted(mpg_probs.items(), key=lambda x: x[1], reverse=True)[:3]
+    top_mug = sorted(mug_probs.items(), key=lambda x: x[1], reverse=True)[:3]
+
+    return {
+        "mpg_top3": ", ".join([f"{k} (Q: {stima_quota(v):.2f})" for k, v in top_mpg]),
+        "mug_top3": ", ".join([f"{k} (Q: {stima_quota(v):.2f})" for k, v in top_mug]),
+        "mpg_raw": mpg_probs,
+        "mug_raw": mug_probs,
+        "fonte_minuti": "Modello Tempi (Memoria)" if ha_dati_reali else "Modello Tempi (Base)",
+        "media_mpg_str": f"{sum(medie_mpg)/len(medie_mpg):.1f}'" if medie_mpg else "N.D.",
+        "media_mug_str": f"{sum(medie_mug)/len(medie_mug):.1f}'" if medie_mug else "N.D.",
+    }
 
 # --- 1. CONFIGURAZIONE ---
 st.set_page_config(page_title="Delphi Predictor Pro", layout="wide") 
