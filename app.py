@@ -330,6 +330,8 @@ LEAGUE_MAP = {
     'BSA': 'Serie A Brasile'
 }
 
+LEGHE_EUROPEE = ['SA', 'PL', 'ELC', 'PD', 'BL1', 'FL1', 'CL', 'PPL', 'DED']
+
 # --- 1.1. BANNER ---
 if os.path.exists("banner.png"):
     st.image("banner.png", use_container_width=True)
@@ -384,7 +386,7 @@ def genera_pdf_pronostico(d):
         pdf.cell(0, 5, "ATTENZIONE: Big Match/Derby - Probabile partita molto tattica", ln=True, align='C')
 
     pdf.set_text_color(0, 0, 0)
-    pdf.ln(4)
+    pdf.ln(1.5)
 
     # --- 3. INFO TECNICHE ---
     pdf.set_fill_color(240, 240, 240)
@@ -401,7 +403,7 @@ def genera_pdf_pronostico(d):
     tempi_tec = f"Tempo con + gol: {pulisci_per_pdf(d['tempo_top'])}\nCasa: {d['dist_1t_h']}% 1T / {d['dist_2t_h']}% 2T  |  Ospite: {d['dist_1t_a']}% 1T / {d['dist_2t_a']}% 2T"
     pdf.multi_cell(95, 5, tempi_tec, border=1)
 
-    pdf.ln(4)
+    pdf.ln(2.5)
 
     # --- SEZIONE FORMA SQUADRE (Trend ultime 4) ---
     pdf.set_fill_color(240, 240, 240)
@@ -422,7 +424,7 @@ def genera_pdf_pronostico(d):
     pdf.cell(95, 6, f"Ultime 4: {trend_h}  |  xG: {d.get('xg_casa', 'N/D')}", border=1, align='C')
     pdf.cell(95, 6, f"Ultime 4: {trend_a}  |  xG: {d.get('xg_fuori', 'N/D')}", border=1, ln=True, align='C')
 
-    pdf.ln(8)
+    pdf.ln(2.5)
 
     # --- 4. PRONOSTICI PRINCIPALI ---
     pdf.set_font("Arial", 'B', 10.5)
@@ -437,7 +439,7 @@ def genera_pdf_pronostico(d):
     pdf.cell(63, 7, f"1° Tempo: {pulisci_per_pdf(d.get('1X2 1°T', 'N.D.'))}", border=1, align='C')
     pdf.cell(64, 7, f"HT/FT: {pulisci_per_pdf(d.get('Esito HT/FT', 'N.D.'))}", border=1, ln=True, align='C')
 
-    pdf.ln(6)
+    pdf.ln(2.5)
 
     pdf.set_font("Arial", 'B', 10)
     pdf.set_fill_color(0, 96, 156)
@@ -456,7 +458,7 @@ def genera_pdf_pronostico(d):
     pdf.cell(95, 7, esito_uo, border=1, align='C')
     pdf.cell(95, 7, esito_gng, border=1, ln=True, align='C')
 
-    pdf.ln(6)
+    pdf.ln(2.5)
 
     # --- SOMMA GOL ---
     pdf.set_font("Arial", 'B', 10)
@@ -471,7 +473,7 @@ def genera_pdf_pronostico(d):
     pdf.cell(190, 5.5, f"SOMMA GOL CASA: {pulisci_per_pdf(d.get('SGC', 'N.D.'))}", border=1, ln=True)
     pdf.cell(190, 5.5, f"SOMMA GOL OSPITE: {pulisci_per_pdf(d.get('SGO', 'N.D.'))}", border=1, ln=True)
 
-    pdf.ln(6)
+    pdf.ln(2.5)
 
     # --- 5. RISULTATI ESATTI ---
     pdf.set_font("Arial", 'B', 10)
@@ -485,7 +487,7 @@ def genera_pdf_pronostico(d):
     pdf.multi_cell(190, 5, f"TOP 6 RE FINALI: {pulisci_per_pdf(d.get('Top 6 RE Finali', 'N.D.'))}", border=1)
     pdf.cell(190, 5.5, f"TOP 3 RE 1°T: {pulisci_per_pdf(d.get('Top 3 RE 1°T', 'N.D.'))}", border=1, ln=True)
 
-    pdf.ln(6)
+    pdf.ln(2.5)
 
     # --- 6. MPG E MUG ---
     pdf.set_font("Arial", 'B', 10)
@@ -1546,6 +1548,183 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False, match_i
         "raw_mug": mpg_mug_res["mug_raw"]
     }
 
+def estrai_top_10_europa(giorni_anticipo=5, top_n=10):
+    """Restituisce i pronostici più probabili per le prime N squadre d'Europa."""
+    if not os.path.exists(FILE_DB_CALCIO):
+        return []
+
+    df = pd.read_csv(FILE_DB_CALCIO)
+    if df.empty or 'League' not in df.columns:
+        return []
+
+    df['Date'] = pd.to_datetime(df['Date'], utc=True)
+    today = pd.Timestamp.now(tz='UTC').normalize()
+    limite = today + pd.Timedelta(days=giorni_anticipo)
+
+    matches_eu = df[
+        (df['League'].isin(LEGHE_EUROPEE)) &
+        (df['Status'].isin(['TIMED', 'SCHEDULED'])) &
+        (df['Date'].dt.normalize() >= today) &
+        (df['Date'].dt.normalize() <= limite)
+    ].sort_values(by='Date')
+
+    if matches_eu.empty:
+        return []
+
+    giocate = df[df['Status'] == 'FINISHED'].copy()
+    avg_g = max(1.1, pd.to_numeric(giocate['FTHG'], errors='coerce').mean())
+    squadre_eu = sorted(set(matches_eu['HomeTeam'].dropna()).union(set(matches_eu['AwayTeam'].dropna())))
+    df_minuti = carica_minuti_in_memoria(stagione="2026", squadre_coinvolte=squadre_eu, df_giocate=giocate)
+
+    migliori_per_squadra = {}
+
+    for _, m in matches_eu.iterrows():
+        casa, fuori = m['HomeTeam'], m['AwayTeam']
+        nome_lega = LEAGUE_MAP.get(m['League'], m['League'])
+        dt_ita = m['Date'].tz_convert('Europe/Rome')
+
+        att_h, dif_h = get_stats(casa, True, giocate)
+        att_a, dif_a = get_stats(fuori, False, giocate)
+
+        xg_fatti_h, xg_subiti_h = ottieni_xg_understat(casa)
+        xg_fatti_a, xg_subiti_a = ottieni_xg_understat(fuori)
+        if xg_fatti_h is not None and xg_fatti_a is not None:
+            att_h = (att_h * 0.4) + (xg_fatti_h * 0.6)
+            dif_h = (dif_h * 0.4) + (xg_subiti_h * 0.6)
+            att_a = (att_a * 0.4) + (xg_fatti_a * 0.6)
+            dif_a = (dif_a * 0.4) + (xg_subiti_a * 0.6)
+
+        _, molt_h = calcola_trend_forma(giocate, casa)
+        _, molt_a = calcola_trend_forma(giocate, fuori)
+        m_h2h_h, m_h2h_a, _ = analizza_h2h(giocate, casa, fuori)
+        molt_arb = analizza_severita_arbitro(giocate, str(m.get('Referee', 'N.D.')))
+
+        exp_h = max(0.05, (att_h * dif_a / avg_g) * molt_h * (2 - molt_arb) * m_h2h_h)
+        exp_a = max(0.05, (att_a * dif_h / avg_g) * molt_a * (2 - molt_arb) * m_h2h_a)
+
+        rho = calcola_rho_dinamico(casa, fuori, giocate)
+        tasso_00_h = calcola_tasso_zero_zero(giocate, casa)
+        tasso_00_a = calcola_tasso_zero_zero(giocate, fuori)
+        zip_mult = 1.30 if (tasso_00_h >= 0.20 or tasso_00_a >= 0.20) else 1.0
+
+        p1 = px = p2 = pu = pg = tot = 0.0
+        sgc = {i: 0.0 for i in range(6)}
+        sgo = {i: 0.0 for i in range(6)}
+
+        for i in range(6):
+            for j in range(6):
+                prob = poisson_probability(i, exp_h) * poisson_probability(j, exp_a)
+                if i == 0 and j == 0:
+                    prob *= max(0.0, 1.0 - exp_h * exp_a * rho) * zip_mult
+                elif i == 0 and j == 1:
+                    prob *= max(0.0, 1.0 + exp_h * rho)
+                elif i == 1 and j == 0:
+                    prob *= max(0.0, 1.0 + exp_a * rho)
+                elif i == 1 and j == 1:
+                    prob *= max(0.0, 1.0 - rho)
+
+                tot += prob
+                if i > j:
+                    p1 += prob
+                elif i == j:
+                    px += prob
+                else:
+                    p2 += prob
+
+                if i + j < 2.5:
+                    pu += prob
+                if i > 0 and j > 0:
+                    pg += prob
+
+                sgc[i] += prob
+                sgo[j] += prob
+
+        if tot <= 0:
+            continue
+
+        p1 /= tot
+        px /= tot
+        p2 /= tot
+        pu /= tot
+        pg /= tot
+        p_over = max(0.0, 1.0 - pu)
+        p_nogol = max(0.0, 1.0 - pg)
+
+        for k in sgc:
+            sgc[k] /= tot
+        for k in sgo:
+            sgo[k] /= tot
+
+        p_sgc_gt2 = sum(v for k, v in sgc.items() if k > 2)
+        p_sgo_gt2 = sum(v for k, v in sgo.items() if k > 2)
+
+        d_1t_h, d_2t_h = analizza_pericolosita_tempi(giocate, casa)
+        d_1t_a, d_2t_a = analizza_pericolosita_tempi(giocate, fuori)
+        fatica_r = controlla_fatica(df, casa, dt_ita.strftime("%d/%m/%Y")) or controlla_fatica(df, fuori, dt_ita.strftime("%d/%m/%Y"))
+        mpg_mug_r = calcola_mpg_mug_da_db(
+            casa, fuori, exp_h, exp_a,
+            d_1t_h, d_2t_h, d_1t_a, d_2t_a,
+            fatica=fatica_r,
+            df_minuti=df_minuti
+        )
+
+        top_mpg_lbl, top_mpg_p = sorted(mpg_mug_r["mpg_raw"].items(), key=lambda x: x[1], reverse=True)[0]
+        top_mug_lbl, top_mug_p = sorted(mpg_mug_r["mug_raw"].items(), key=lambda x: x[1], reverse=True)[0]
+
+        candidati_casa = [
+            (f"{casa} 1", p1),
+            (f"{casa} Over 2.5", p_over),
+            (f"{casa} Under 2.5", pu),
+            (f"{casa} Gol", pg),
+            (f"{casa} NoGol", p_nogol),
+            (f"{casa} SGC > 2", p_sgc_gt2),
+            (f"{casa} MPG {top_mpg_lbl}", top_mpg_p),
+            (f"{casa} MUG {top_mug_lbl}", top_mug_p),
+        ]
+
+        candidati_fuori = [
+            (f"{fuori} 2", p2),
+            (f"{fuori} Over 2.5", p_over),
+            (f"{fuori} Under 2.5", pu),
+            (f"{fuori} Gol", pg),
+            (f"{fuori} NoGol", p_nogol),
+            (f"{fuori} SGO > 2", p_sgo_gt2),
+            (f"{fuori} MPG {top_mpg_lbl}", top_mpg_p),
+            (f"{fuori} MUG {top_mug_lbl}", top_mug_p),
+        ]
+
+        for sq, cands in [(casa, candidati_casa), (fuori, candidati_fuori)]:
+            best_label, best_prob = max(cands, key=lambda item: item[1])
+            record = {
+                "Squadra": sq,
+                "Pronostico": best_label,
+                "Prob_Num": best_prob,
+                "Probabilità": f"{best_prob:.1%}",
+                "Quota Stimata": stima_quota(best_prob),
+                "Partita": f"{casa} vs {fuori}",
+                "Lega": nome_lega,
+                "Data": dt_ita.strftime("%d/%m/%Y"),
+                "Ora": dt_ita.strftime("%H:%M"),
+            }
+            if sq not in migliori_per_squadra or best_prob > migliori_per_squadra[sq]["Prob_Num"]:
+                migliori_per_squadra[sq] = record
+
+    ordinati = sorted(migliori_per_squadra.values(), key=lambda x: x["Prob_Num"], reverse=True)[:top_n]
+    righe_finali = []
+    for idx, item in enumerate(ordinati, start=1):
+        righe_finali.append({
+            "#": idx,
+            "Squadra": item["Squadra"],
+            "Pronostico": item["Pronostico"],
+            "Probabilità": item["Probabilità"],
+            "Quota Stimata": item["Quota Stimata"],
+            "Partita": item["Partita"],
+            "Lega": item["Lega"],
+            "Data": item["Data"],
+            "Ora": item["Ora"],
+        })
+    return righe_finali
+
 def scansiona_segnali_gold(giorni_anticipo=3):
     if not os.path.exists(FILE_DB_CALCIO): return []
 
@@ -1725,6 +1904,36 @@ with tab1:
             )
         else:
             st.info(f"🧊 Il palinsesto dei prossimi {giorni_radar} giorni non presenta match >60% nei campionati Gold.")
+
+    st.divider()
+    st.subheader("🌍 Top 10 Europa (Pronostici Più Probabili)")
+    st.caption("Seleziona i 10 pronostici più probabili tra le squadre europee in programma nei prossimi giorni.")
+
+    col_eu1, col_eu2 = st.columns([1, 2])
+    with col_eu1:
+        giorni_top10_eu = st.slider("Finestra temporale Top 10 Europa (giorni)", min_value=1, max_value=10, value=5, key="top10_eu_giorni")
+    with col_eu2:
+        st.write("")
+        st.write("")
+        if st.button("🏆 Top 10 Europa (Pronostici Più Probabili)", type="primary", use_container_width=True):
+            with st.spinner("Calcolo pronostici più probabili per le squadre d'Europa..."):
+                st.session_state["top_10_europa_risultati"] = estrai_top_10_europa(giorni_anticipo=giorni_top10_eu, top_n=10)
+
+    if "top_10_europa_risultati" in st.session_state:
+        top10_eu = st.session_state["top_10_europa_risultati"]
+        if top10_eu:
+            df_top10_eu = pd.DataFrame(top10_eu)
+            st.dataframe(df_top10_eu, use_container_width=True, hide_index=True)
+            csv_top10_eu = df_top10_eu.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="📥 Esporta Top 10 Europa (CSV)",
+                data=csv_top10_eu,
+                file_name=f"Delphi_Top10_Europa_{date.today()}.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+        else:
+            st.info("Nessun match europeo trovato nella finestra selezionata. Aggiorna il DB Calcio o amplia i giorni.")
 
     st.divider()
     st.header("🎯 Analisi Singolo Match")
