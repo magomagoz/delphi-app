@@ -345,70 +345,68 @@ def pulisci_per_pdf(testo):
 
 def genera_pdf_pronostico(d):
     pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=8)
     pdf.add_page()
 
     # --- 1. INTESTAZIONE E LOGHI ---
     pdf.set_fill_color(0, 96, 156)
-    pdf.rect(0, 0, 210, 40, 'F')
+    pdf.rect(0, 0, 210, 30, 'F')
 
     try:
-        pdf.image(d['logo_casa'], 15, 10, 20)
-        pdf.image(d['logo_fuori'], 175, 10, 20)
+        pdf.image(d['logo_casa'], 15, 6, 18)
+        pdf.image(d['logo_fuori'], 175, 6, 18)
     except:
         pass
 
-    pdf.set_y(15)
+    pdf.set_y(6)
     pdf.set_text_color(255, 255, 255)
-    pdf.set_font("Arial", 'B', 20)
-    pdf.cell(0, 10, "DELPHI PREDICTOR PRO", ln=True, align='C')
     pdf.set_font("Arial", 'B', 16)
-    pdf.cell(0, 10, "PRONOSTICI PARTITA", ln=True, align='C')
-    pdf.set_font("Arial", '', 10)
+    pdf.cell(0, 8, "DELPHI PREDICTOR PRO", ln=True, align='C')
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(0, 7, "PRONOSTICI PARTITA", ln=True, align='C')
 
     pdf.set_text_color(0, 0, 0)
-    pdf.set_y(45)
+    pdf.set_y(33)
 
     # --- 2. DETTAGLI MATCH ---
-    pdf.set_font("Arial", 'B', 16)
-    pdf.cell(0, 10, pulisci_per_pdf(d['Partita']), ln=True, align='C')
+    pdf.set_font("Arial", 'B', 14)
+    pdf.cell(0, 7, pulisci_per_pdf(d['Partita']), ln=True, align='C')
 
-    pdf.set_font("Arial", 'I', 11)
-    pdf.cell(0, 8, f"Campionato: {pulisci_per_pdf(d.get('League', 'N.D.'))}", ln=True, align='C')
-    pdf.cell(0, 8, f"Evento del {d['Data']} - Ore {d['Ora']}", ln=True, align='C')
+    pdf.set_font("Arial", 'I', 9.5)
+    pdf.cell(0, 5.5, f"Campionato: {pulisci_per_pdf(d.get('League', 'N.D.'))}  |  Evento del {d['Data']} - Ore {d['Ora']}", ln=True, align='C')
 
-    pdf.ln(2)
     if d.get('is_big_match'):
-        pdf.set_font("Arial", 'B', 10)
+        pdf.set_font("Arial", 'B', 8.5)
         pdf.set_text_color(200, 0, 0)
-        pdf.cell(0, 6, "ATTENZIONE: Big Match/Derby - Probabile partita molto tattica", ln=True, align='C')
+        pdf.cell(0, 5, "ATTENZIONE: Big Match/Derby - Probabile partita molto tattica", ln=True, align='C')
 
     pdf.set_text_color(0, 0, 0)
-    pdf.ln(2)
+    pdf.ln(1.5)
 
     # --- 3. INFO TECNICHE ---
     pdf.set_fill_color(240, 240, 240)
-    pdf.set_font("Arial", 'B', 11)
-    pdf.cell(95, 8, " Dettagli Tecnici", border=1, fill=True)
-    pdf.cell(95, 8, " Analisi Distribuzione Gol", border=1, ln=True, fill=True)
+    pdf.set_font("Arial", 'B', 9.5)
+    pdf.cell(95, 6, " Dettagli Tecnici", border=1, fill=True)
+    pdf.cell(95, 6, " Analisi Distribuzione Gol", border=1, ln=True, fill=True)
 
-    pdf.set_font("Arial", '', 10)
+    pdf.set_font("Arial", '', 8.5)
     y_start = pdf.get_y()
-    info_tec = f"Arbitro: {pulisci_per_pdf(d.get('arbitro', 'N.D.'))}\nImpatto: {d.get('molt_arbitro', 1.0)}x\nGol Finale (LG): {d['lg']:.2f}"
-    pdf.multi_cell(95, 7, info_tec, border=1)
+    info_tec = f"Arbitro: {pulisci_per_pdf(d.get('arbitro', 'N.D.'))} (Impatto: {d.get('molt_arbitro', 1.0)}x)\nGol Finale (LG): {d['lg']:.2f}"
+    pdf.multi_cell(95, 5, info_tec, border=1)
 
     pdf.set_xy(105, y_start)
-    tempi_tec = f"Tempo con + gol: {pulisci_per_pdf(d['tempo_top'])}\nDistribuzione tempi Casa: {d['dist_1t_h']}% / {d['dist_2t_h']}%\nDistribuzione tempi Ospite: {d['dist_1t_a']}% / {d['dist_2t_a']}%"
-    pdf.multi_cell(95, 7, tempi_tec, border=1)
+    tempi_tec = f"Tempo con + gol: {pulisci_per_pdf(d['tempo_top'])}\nCasa: {d['dist_1t_h']}% 1T / {d['dist_2t_h']}% 2T  |  Ospite: {d['dist_1t_a']}% 1T / {d['dist_2t_a']}% 2T"
+    pdf.multi_cell(95, 5, tempi_tec, border=1)
 
-    pdf.ln(5)
+    pdf.ln(2.5)
 
     # --- SEZIONE FORMA SQUADRE (Trend ultime 4) ---
     pdf.set_fill_color(240, 240, 240)
-    pdf.set_font("Arial", 'B', 11)
-    pdf.cell(95, 8, f" Forma {pulisci_per_pdf(d['casa_nome'])}", border=1, fill=True)
-    pdf.cell(95, 8, f" Forma {pulisci_per_pdf(d['fuori_nome'])}", border=1, ln=True, fill=True)
+    pdf.set_font("Arial", 'B', 9.5)
+    pdf.cell(95, 6, f" Forma {pulisci_per_pdf(d['casa_nome'])}", border=1, fill=True)
+    pdf.cell(95, 6, f" Forma {pulisci_per_pdf(d['fuori_nome'])}", border=1, ln=True, fill=True)
 
-    pdf.set_font("Arial", '', 10)
+    pdf.set_font("Arial", '', 8.5)
 
     def converti_forma(trend_emoji):
         if not trend_emoji: return "N.D."
@@ -418,36 +416,33 @@ def genera_pdf_pronostico(d):
     trend_h = converti_forma(d.get('Trend_Casa', ''))
     trend_a = converti_forma(d.get('Trend_Fuori', ''))
 
-    pdf.cell(95, 10, f"Ultime 4 partite giocate: {trend_h}", border=1, align='C')
-    pdf.cell(95, 10, f"Ultime 4 partite giocate: {trend_a}", border=1, ln=True, align='C')
+    pdf.cell(95, 6, f"Ultime 4: {trend_h}  |  xG: {d.get('xg_casa', 'N/D')}", border=1, align='C')
+    pdf.cell(95, 6, f"Ultime 4: {trend_a}  |  xG: {d.get('xg_fuori', 'N/D')}", border=1, ln=True, align='C')
 
-    pdf.cell(95, 8, f"xG (ultime 4): {d.get('xg_casa', 'N/D')}", border=1, align='C')
-    pdf.cell(95, 8, f"xG (ultime 4): {d.get('xg_fuori', 'N/D')}", border=1, ln=True, align='C')
-
-    pdf.ln(5)
+    pdf.ln(2.5)
 
     # --- 4. PRONOSTICI PRINCIPALI ---
-    pdf.set_font("Arial", 'B', 14)
+    pdf.set_font("Arial", 'B', 10.5)
     pdf.set_fill_color(0, 96, 156)
     pdf.set_text_color(255, 255, 255)
-    pdf.cell(190, 10, " PRONOSTICI PRINCIPALI", ln=True, fill=True)
+    pdf.cell(190, 7, " PRONOSTICI PRINCIPALI", ln=True, fill=True)
 
     pdf.set_text_color(0, 0, 0)
-    pdf.set_font("Arial", 'B', 11)
+    pdf.set_font("Arial", 'B', 9.5)
 
-    pdf.cell(63, 10, f"Finale: {pulisci_per_pdf(d.get('1X2', 'N.D.'))}", border=1, align='C')
-    pdf.cell(63, 10, f"1° Tempo: {pulisci_per_pdf(d.get('1X2 1°T', 'N.D.'))}", border=1, align='C')
-    pdf.cell(64, 10, f"HT/FT: {pulisci_per_pdf(d.get('Esito HT/FT', 'N.D.'))}", border=1, ln=True, align='C')
+    pdf.cell(63, 7, f"Finale: {pulisci_per_pdf(d.get('1X2', 'N.D.'))}", border=1, align='C')
+    pdf.cell(63, 7, f"1° Tempo: {pulisci_per_pdf(d.get('1X2 1°T', 'N.D.'))}", border=1, align='C')
+    pdf.cell(64, 7, f"HT/FT: {pulisci_per_pdf(d.get('Esito HT/FT', 'N.D.'))}", border=1, ln=True, align='C')
 
-    pdf.ln(5)
+    pdf.ln(2.5)
 
-    pdf.set_font("Arial", 'B', 12)
+    pdf.set_font("Arial", 'B', 10)
     pdf.set_fill_color(0, 96, 156)
     pdf.set_text_color(255, 255, 255)
-    pdf.cell(190, 10, " UNDER/OVER E GOL/NOGOL", ln=True, fill=True)
+    pdf.cell(190, 7, " UNDER/OVER E GOL/NOGOL", ln=True, fill=True)
 
     pdf.set_text_color(0, 0, 0)
-    pdf.set_font("Arial", 'B', 12)
+    pdf.set_font("Arial", 'B', 9.5)
 
     p_over = 1 - d['pu']
     p_nogol = 1 - d['pg']
@@ -455,55 +450,51 @@ def genera_pdf_pronostico(d):
     esito_uo = "UNDER 2.5" if d['pu'] >= p_over else "OVER 2.5"
     esito_gng = "GOL" if d['pg'] >= p_nogol else "NO GOL"
 
-    pdf.cell(95, 10, esito_uo, border=1, align='C')
-    pdf.cell(95, 10, esito_gng, border=1, ln=True, align='C')
+    pdf.cell(95, 7, esito_uo, border=1, align='C')
+    pdf.cell(95, 7, esito_gng, border=1, ln=True, align='C')
 
-    pdf.ln(5)
+    pdf.ln(2.5)
 
     # --- SOMMA GOL ---
-    pdf.set_font("Arial", 'B', 12)
+    pdf.set_font("Arial", 'B', 10)
     pdf.set_fill_color(0, 96, 156)
     pdf.set_text_color(255, 255, 255)
-    pdf.cell(190, 10, " SOMMA GOL", ln=True, fill=True)
+    pdf.cell(190, 7, " SOMMA GOL", ln=True, fill=True)
 
     pdf.set_text_color(0, 0, 0)
-    pdf.set_font("Arial", '', 10)
+    pdf.set_font("Arial", '', 8.5)
 
-    pdf.multi_cell(0, 6, f"SOMMA GOL FINALE: {pulisci_per_pdf(d.get('SGF', 'N.D.'))}", border=1)
-    pdf.ln(3)
-    pdf.multi_cell(0, 6, f"SOMMA GOL CASA: {pulisci_per_pdf(d.get('SGC', 'N.D.'))}", border=1)
-    pdf.multi_cell(0, 6, f"SOMMA GOL OSPITE: {pulisci_per_pdf(d.get('SGO', 'N.D.'))}", border=1)
+    pdf.cell(190, 5.5, f"SOMMA GOL FINALE: {pulisci_per_pdf(d.get('SGF', 'N.D.'))}", border=1, ln=True)
+    pdf.cell(190, 5.5, f"SOMMA GOL CASA: {pulisci_per_pdf(d.get('SGC', 'N.D.'))}", border=1, ln=True)
+    pdf.cell(190, 5.5, f"SOMMA GOL OSPITE: {pulisci_per_pdf(d.get('SGO', 'N.D.'))}", border=1, ln=True)
 
-    pdf.ln(5)
+    pdf.ln(2.5)
 
     # --- 5. RISULTATI ESATTI ---
-    pdf.set_font("Arial", 'B', 12)
+    pdf.set_font("Arial", 'B', 10)
     pdf.set_fill_color(0, 96, 156)
     pdf.set_text_color(255, 255, 255)
-    pdf.cell(190, 10, " RISULTATI ESATTI", ln=True, fill=True)
+    pdf.cell(190, 7, " RISULTATI ESATTI", ln=True, fill=True)
 
     pdf.set_text_color(0, 0, 0)
-    pdf.set_font("Arial", '', 9)
+    pdf.set_font("Arial", '', 8.5)
 
-    pdf.multi_cell(0, 6, f"TOP 6 RE FINALI:\n{pulisci_per_pdf(d.get('Top 6 RE Finali', 'N.D.'))}", border=1)
-    pdf.ln(3)
-    pdf.multi_cell(0, 6, f"TOP 3 RE 1°T:\n{pulisci_per_pdf(d.get('Top 3 RE 1°T', 'N.D.'))}", border=1)
+    pdf.multi_cell(190, 5, f"TOP 6 RE FINALI: {pulisci_per_pdf(d.get('Top 6 RE Finali', 'N.D.'))}", border=1)
+    pdf.cell(190, 5.5, f"TOP 3 RE 1°T: {pulisci_per_pdf(d.get('Top 3 RE 1°T', 'N.D.'))}", border=1, ln=True)
 
-    pdf.ln(5)
+    pdf.ln(2.5)
 
     # --- 6. MPG E MUG ---
-    pdf.set_font("Arial", 'B', 12)
+    pdf.set_font("Arial", 'B', 10)
     pdf.set_fill_color(0, 96, 156)
     pdf.set_text_color(255, 255, 255)
-    pdf.cell(190, 10, " MINUTO PRIMO GOL (MPG) E ULTIMO GOL (MUG)", ln=True, fill=True)
+    pdf.cell(190, 7, " MINUTO PRIMO GOL (MPG) E ULTIMO GOL (MUG)", ln=True, fill=True)
 
     pdf.set_text_color(0, 0, 0)
-    pdf.set_font("Arial", '', 9)
-    pdf.multi_cell(0, 6, f"TOP 2 FASCE MPG (Primo Gol): {pulisci_per_pdf(d.get('mpg_top2', d.get('mpg_top3', 'N.D.')))}", border=1)
-    pdf.ln(2)
-    pdf.multi_cell(0, 6, f"TOP 2 FASCE MUG (Ultimo Gol): {pulisci_per_pdf(d.get('mug_top2', d.get('mug_top3', 'N.D.')))}", border=1)
-    pdf.ln(2)
-    pdf.cell(0, 6, f"Fonte: {pulisci_per_pdf(d.get('fonte_minuti', 'N.D.'))} | Media MPG: {pulisci_per_pdf(d.get('media_mpg_str', 'N.D.'))} | Media MUG: {pulisci_per_pdf(d.get('media_mug_str', 'N.D.'))}", border=1, ln=True)
+    pdf.set_font("Arial", '', 8.5)
+    pdf.cell(190, 5.5, f"TOP 2 FASCE MPG (Primo Gol): {pulisci_per_pdf(d.get('mpg_top2', d.get('mpg_top3', 'N.D.')))}", border=1, ln=True)
+    pdf.cell(190, 5.5, f"TOP 2 FASCE MUG (Ultimo Gol): {pulisci_per_pdf(d.get('mug_top2', d.get('mug_top3', 'N.D.')))}", border=1, ln=True)
+    pdf.cell(190, 5.5, f"Fonte: {pulisci_per_pdf(d.get('fonte_minuti', 'N.D.'))} | Media MPG: {pulisci_per_pdf(d.get('media_mpg_str', 'N.D.'))} | Media MUG: {pulisci_per_pdf(d.get('media_mug_str', 'N.D.'))}", border=1, ln=True)
 
     return pdf.output(dest='S').encode('latin-1', errors='replace')
 
@@ -2149,11 +2140,8 @@ with tab4:
     st.info(f"⏰  Aggiorna Serie A, Premier League, Championship, Liga, Bundesliga, Ligue 1, Primeira Liga, Eredivisie, Brasileirao Betano, UEFA CL e FIFA WC")
 
     if st.button("🌐 Aggiorna tutti i Dati"):
-        with st.spinner("Aggiornamento database in corso..."):
+        with st.spinner("Aggiornamento database calcio e storico minuti gol in corso..."):
             aggiorna_database_calcio()
-
-    if st.button("⏱️ Aggiorna Storico Minuti Gol (Memoria)"):
-        with st.spinner("Calcolo minuti gol in memoria dai dati del DB..."):
             aggiorna_database_minuti_gol(stagione="2026", forza_aggiornamento=True, mostra_anteprima=True)
 
     st.markdown("---")
