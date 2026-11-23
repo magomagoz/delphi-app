@@ -1,4 +1,4 @@
-import streamlit as st
+ìimport streamlit as st
 import pandas as pd
 import math
 import requests
@@ -133,84 +133,108 @@ COLONNE_MINUTI_GOL = [
     "Media_MUG",
 ]
 
-def estrai_minuti_gol_understat_squadra(nome_squadra, stagione="2026", debug=False):
+def _estrai_json_flessibile(html: str, nome_var: str):
+    """Estrae e decodifica JSON da script Understat supportando vari formati di assegnazione."""
+    pattern_parse = re.compile(
+        rf"{re.escape(nome_var)}\s*=\s*JSON\.parse\((['\"])(.*?)\1\)",
+        re.DOTALL,
+    )
+    m = pattern_parse.search(html)
+    if m:
+        raw = m.group(2).encode("utf-8").decode("unicode_escape")
+        return json.loads(raw)
+
+    pattern_direct = re.compile(
+        rf"{re.escape(nome_var)}\s*=\s*(\{{.*?\}}|\[.*?\])\s*;",
+        re.DOTALL,
+    )
+    m2 = pattern_direct.search(html)
+    if m2:
+        return json.loads(m2.group(1))
+
+    return None
+
+
+def estrai_minuti_gol_understat_squadra(nome_squadra, stagione="2026", max_match_sq=12, debug=False):
     nome_url = MAPPA_UNDERSTAT.get(nome_squadra, nome_squadra.replace(" ", "_"))
     url = f"https://understat.com/team/{nome_url}/{stagione}"
 
-    session = requests.Session()
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "User-Agent": (
+            "Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) "
+            "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"
+        ),
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.9,it-IT;q=0.8,it;q=0.7",
-        "Connection": "keep-alive",
-        "Upgrade-Insecure-Requests": "1",
+        "Referer": "https://understat.com/",
     }
 
     try:
-        r = session.get(url, headers=headers, timeout=10)
-        if r.status_code != 200:
-            if debug:
-                st.warning(f"Diagnostica [{nome_squadra}]: stato HTTP {r.status_code} su {url}")
-            return None
+        with requests.Session() as session:
+            r = session.get(url, headers=headers, timeout=12)
+            if r.status_code != 200:
+                if debug:
+                    st.warning(f"[{nome_squadra}] HTTP {r.status_code} su {url}")
+                return None
 
-        match_dates = re.search(r"var\s+datesData\s*=\s*JSON\.parse\((['\"])(.*?)\1\);", r.text, re.DOTALL)
-        if not match_dates:
-            if debug:
-                st.warning(f"Diagnostica [{nome_squadra}]: 'datesData' non trovato nell'HTML (byte: {len(r.text)})")
-            return None
+            partite = _estrai_json_flessibile(r.text, "datesData")
+            if not partite:
+                if debug:
+                    st.warning(f"[{nome_squadra}] datesData assente o vuoto su {url}")
+                return None
 
-        raw_dates = match_dates.group(2).encode("utf-8").decode("unicode_escape")
-        partite = json.loads(raw_dates)
-        giocate = [p for p in partite if p.get("isResult")]
-        if not giocate:
-            if debug:
-                st.warning(f"Diagnostica [{nome_squadra}]: nessuna partita conclusa per stagione '{stagione}'")
-            return None
+            giocate = [p for p in partite if p.get("isResult")]
+            if not giocate:
+                if debug:
+                    st.warning(f"[{nome_squadra}] nessuna partita con isResult=True per stagione {stagione}")
+                return None
 
-        lista_mpg, lista_mug = [], []
-        for p in giocate:
-            match_id = p.get("id")
-            gol_h = int(p["goals"]["h"])
-            gol_a = int(p["goals"]["a"])
-            if gol_h + gol_a == 0 or not match_id:
-                continue
+            giocate.sort(key=lambda x: x.get("datetime", ""), reverse=True)
+            giocate = giocate[:max_match_sq]
 
-            url_match = f"https://understat.com/match/{match_id}"
-            rm = session.get(url_match, headers=headers, timeout=10)
-            if rm.status_code == 200:
-                match_shots = re.search(r"var\s+shotsData\s*=\s*JSON\.parse\((['\"])(.*?)\1\);", rm.text, re.DOTALL)
-                if match_shots:
-                    raw_shots = match_shots.group(2).encode("utf-8").decode("unicode_escape")
-                    shots = json.loads(raw_shots)
-                    tutti_tiri = shots.get("h", []) + shots.get("a", [])
-                    minuti_gol = sorted([
-                        int(float(t["minute"])) for t in tutti_tiri
-                        if t.get("result") in ("Goal", "OwnGoal")
-                    ])
-                    if minuti_gol:
-                        lista_mpg.append(minuti_gol[0])
-                        lista_mug.append(minuti_gol[-1])
-            time.sleep(0.25)
+            lista_mpg, lista_mug = [], []
+            for p in giocate:
+                match_id = p.get("id")
+                gol_h = int(p.get("goals", {}).get("h", 0))
+                gol_a = int(p.get("goals", {}).get("a", 0))
+                if gol_h + gol_a == 0 or not match_id:
+                    continue
 
-        if not lista_mpg:
-            if debug:
-                st.warning(f"Diagnostica [{nome_squadra}]: {len(giocate)} match trovati ma nessun minuto gol estratto")
-            return None
+                url_match = f"https://understat.com/match/{match_id}"
+                rm = session.get(url_match, headers=headers, timeout=12)
+                if rm.status_code == 200:
+                    shots = _estrai_json_flessibile(rm.text, "shotsData")
+                    if shots:
+                        tutti_tiri = shots.get("h", []) + shots.get("a", [])
+                        minuti_gol = sorted([
+                            int(float(t["minute"]))
+                            for t in tutti_tiri
+                            if t.get("result") in ("Goal", "OwnGoal")
+                        ])
+                        if minuti_gol:
+                            lista_mpg.append(minuti_gol[0])
+                            lista_mug.append(minuti_gol[-1])
 
-        return {
-            "Squadra": nome_squadra,
-            "Partite_Analizzate": len(giocate),
-            "Minuti_Primo_Gol": ",".join(map(str, lista_mpg)),
-            "Minuti_Ultimo_Gol": ",".join(map(str, lista_mug)),
-            "Media_MPG": round(sum(lista_mpg) / len(lista_mpg), 1),
-            "Media_MUG": round(sum(lista_mug) / len(lista_mug), 1),
-        }
+                time.sleep(0.35)
+
+            if not lista_mpg:
+                if debug:
+                    st.warning(f"[{nome_squadra}] {len(giocate)} match controllati ma nessun gol estratto")
+                return None
+
+            return {
+                "Squadra": nome_squadra,
+                "Partite_Analizzate": len(giocate),
+                "Minuti_Primo_Gol": ",".join(map(str, lista_mpg)),
+                "Minuti_Ultimo_Gol": ",".join(map(str, lista_mug)),
+                "Media_MPG": round(sum(lista_mpg) / len(lista_mpg), 1),
+                "Media_MUG": round(sum(lista_mug) / len(lista_mug), 1),
+            }
     except Exception as e:
         if debug:
-            st.error(f"Diagnostica [{nome_squadra}]: {type(e).__name__} - {e}")
+            st.error(f"[{nome_squadra}] {type(e).__name__}: {e}")
         return None
 
-@st.cache_data(ttl=900, show_spinner=False)
 def carica_minuti_gol_understat_memoria(stagione="2026", squadre_tuple=(), refresh_token=0):
     """
     Scarica e mantiene in memoria (cache Streamlit) MPG e MUG per le squadre indicate.
