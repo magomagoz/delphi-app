@@ -178,7 +178,6 @@ def _costruisci_statistiche_minuti_memoria(df_giocate_json_tuple, squadre_tuple,
 
     return pd.DataFrame(righe, columns=COLONNE_MINUTI_GOL)
 
-
 def aggiorna_database_minuti_gol(stagione="2026", forza_aggiornamento=True, mostra_anteprima=True):
     """Popola o aggiorna in memoria lo storico minuti gol derivato dal DB calcio."""
     if not os.path.exists(FILE_DB_CALCIO):
@@ -275,7 +274,6 @@ def carica_minuti_in_memoria(stagione="2026", squadre_coinvolte=None, df_giocate
 
     return None
 
-
 def calcola_mpg_mug_da_db(casa, fuori, exp_h, exp_a, dist_1t_h=50.0, dist_2t_h=50.0, dist_1t_a=50.0, dist_2t_a=50.0, fatica=False, df_minuti=None):
     fasce = [(0, 15), (15, 30), (30, 45), (45, 60), (60, 75), (75, 90)]
     labels = [f"{a+1}-{b}'" for a, b in fasce]
@@ -324,8 +322,8 @@ def calcola_mpg_mug_da_db(casa, fuori, exp_h, exp_a, dist_1t_h=50.0, dist_2t_h=5
     som_mug = sum(pesi_mug)
     mug_probs = {lbl: (pesi_mug[i] / som_mug) * (1.0 - p_no_gol) for i, lbl in enumerate(labels)}
 
-    top_mpg = sorted(mpg_probs.items(), key=lambda x: x[1], reverse=True)[:3]
-    top_mug = sorted(mug_probs.items(), key=lambda x: x[1], reverse=True)[:3]
+    top_mpg = sorted(mpg_probs.items(), key=lambda x: x[1], reverse=True)[:2]
+    top_mug = sorted(mug_probs.items(), key=lambda x: x[1], reverse=True)[:2]
 
     return {
         "mpg_top3": ", ".join([f"{k} (Q: {stima_quota(v):.2f})" for k, v in top_mpg]),
@@ -2062,9 +2060,9 @@ with tab1:
             st.caption(f"Fonte dati: **{d.get('fonte_minuti', 'Stima Modello')}** | Media storica MPG: **{d.get('media_mpg_str', 'N.D.')}** | Media storica MUG: **{d.get('media_mug_str', 'N.D.')}**")
             c_mpg, c_mug = st.columns(2)
             with c_mpg:
-                st.info(f"⚡ **MPG - PRIMO GOL (Top 3 Fasce)**\n\n{d.get('mpg_top3', 'N.D.')}")
+                st.info(f"⚡ **MPG - MINUTO PRIMO GOL (Top 2 Fasce)**\n\n{d.get('mpg_top2', 'N.D.')}")
             with c_mug:
-                st.info(f"🏁 **MUG - ULTIMO GOL (Top 3 Fasce)**\n\n{d.get('mug_top3', 'N.D.')}")
+                st.info(f"🏁 **MUG - MINUTO ULTIMO GOL (Top 2 Fasce)**\n\n{d.get('mug_top2', 'N.D.')}")
             
             # --- INIZIO BLOCCO KELLY POTENZIATO ---
             st.divider()
@@ -2126,13 +2124,13 @@ with tab1:
 
             # Aggiungiamo le Top 3 fasce MPG (Minuto Primo Gol)
             if 'raw_mpg' in d and d['raw_mpg']:
-                top_3_mpg = sorted(d['raw_mpg'].items(), key=lambda x: x[1], reverse=True)[:3]
+                top_2_mpg = sorted(d['raw_mpg'].items(), key=lambda x: x[1], reverse=True)[:2]
                 for k, v in top_3_mpg:
                     kelly_options[f"MPG (Primo Gol) {k}"] = v
 
             # Aggiungiamo le Top 3 fasce MUG (Minuto Ultimo Gol)
             if 'raw_mug' in d and d['raw_mug']:
-                top_3_mug = sorted(d['raw_mug'].items(), key=lambda x: x[1], reverse=True)[:3]
+                top_2_mug = sorted(d['raw_mug'].items(), key=lambda x: x[1], reverse=True)[:2]
                 for k, v in top_3_mug:
                     kelly_options[f"MUG (Ultimo Gol) {k}"] = v
             
