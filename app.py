@@ -112,6 +112,9 @@ COLONNE_MINUTI_GOL = [
     "Media_MUG",
 ]
 
+FASCE_1T = {"1-15'", "16-30'", "31-45'"}
+FASCE_2T = {"46-60'", "61-75'", "76-90'"}
+
 
 def ottieni_xg_understat(nome_squadra):
     """Disattivato per evitare chiamate HTML senza datesData su Understat; usa le statistiche del DB."""
@@ -381,7 +384,7 @@ def genera_pdf_pronostico(d):
         pdf.cell(0, 5, "ATTENZIONE: Big Match/Derby - Probabile partita molto tattica", ln=True, align='C')
 
     pdf.set_text_color(0, 0, 0)
-    pdf.ln(3.5)
+    pdf.ln(1.5)
 
     # --- 3. INFO TECNICHE ---
     pdf.set_fill_color(240, 240, 240)
@@ -398,7 +401,7 @@ def genera_pdf_pronostico(d):
     tempi_tec = f"Tempo con + gol: {pulisci_per_pdf(d['tempo_top'])}\nCasa: {d['dist_1t_h']}% 1T / {d['dist_2t_h']}% 2T  |  Ospite: {d['dist_1t_a']}% 1T / {d['dist_2t_a']}% 2T"
     pdf.multi_cell(95, 5, tempi_tec, border=1)
 
-    pdf.ln(3.5)
+    pdf.ln(2.5)
 
     # --- SEZIONE FORMA SQUADRE (Trend ultime 4) ---
     pdf.set_fill_color(240, 240, 240)
@@ -419,22 +422,22 @@ def genera_pdf_pronostico(d):
     pdf.cell(95, 6, f"Ultime 4: {trend_h}  |  xG: {d.get('xg_casa', 'N/D')}", border=1, align='C')
     pdf.cell(95, 6, f"Ultime 4: {trend_a}  |  xG: {d.get('xg_fuori', 'N/D')}", border=1, ln=True, align='C')
 
-    pdf.ln(8)
+    pdf.ln(2.5)
 
     # --- 4. PRONOSTICI PRINCIPALI ---
     pdf.set_font("Arial", 'B', 10.5)
     pdf.set_fill_color(0, 96, 156)
     pdf.set_text_color(255, 255, 255)
-    pdf.cell(190, 7, " PRONOSTICI 1X2", ln=True, fill=True)
+    pdf.cell(190, 7, " PRONOSTICI PRINCIPALI", ln=True, fill=True)
 
     pdf.set_text_color(0, 0, 0)
     pdf.set_font("Arial", 'B', 9.5)
 
-    pdf.cell(63, 7, f"1X2 Finale: {pulisci_per_pdf(d.get('1X2', 'N.D.'))}", border=1, align='C')
-    pdf.cell(63, 7, f"1X2 - 1° Tempo: {pulisci_per_pdf(d.get('1X2 1°T', 'N.D.'))}", border=1, align='C')
+    pdf.cell(63, 7, f"Finale: {pulisci_per_pdf(d.get('1X2', 'N.D.'))}", border=1, align='C')
+    pdf.cell(63, 7, f"1° Tempo: {pulisci_per_pdf(d.get('1X2 1°T', 'N.D.'))}", border=1, align='C')
     pdf.cell(64, 7, f"HT/FT: {pulisci_per_pdf(d.get('Esito HT/FT', 'N.D.'))}", border=1, ln=True, align='C')
 
-    pdf.ln(6)
+    pdf.ln(2.5)
 
     pdf.set_font("Arial", 'B', 10)
     pdf.set_fill_color(0, 96, 156)
@@ -453,7 +456,7 @@ def genera_pdf_pronostico(d):
     pdf.cell(95, 7, esito_uo, border=1, align='C')
     pdf.cell(95, 7, esito_gng, border=1, ln=True, align='C')
 
-    pdf.ln(6)
+    pdf.ln(2.5)
 
     # --- SOMMA GOL ---
     pdf.set_font("Arial", 'B', 10)
@@ -468,7 +471,7 @@ def genera_pdf_pronostico(d):
     pdf.cell(190, 5.5, f"SOMMA GOL CASA: {pulisci_per_pdf(d.get('SGC', 'N.D.'))}", border=1, ln=True)
     pdf.cell(190, 5.5, f"SOMMA GOL OSPITE: {pulisci_per_pdf(d.get('SGO', 'N.D.'))}", border=1, ln=True)
 
-    pdf.ln(6)
+    pdf.ln(2.5)
 
     # --- 5. RISULTATI ESATTI ---
     pdf.set_font("Arial", 'B', 10)
@@ -482,7 +485,7 @@ def genera_pdf_pronostico(d):
     pdf.multi_cell(190, 5, f"TOP 6 RE FINALI: {pulisci_per_pdf(d.get('Top 6 RE Finali', 'N.D.'))}", border=1)
     pdf.cell(190, 5.5, f"TOP 3 RE 1°T: {pulisci_per_pdf(d.get('Top 3 RE 1°T', 'N.D.'))}", border=1, ln=True)
 
-    pdf.ln(6)
+    pdf.ln(2.5)
 
     # --- 6. MPG E MUG ---
     pdf.set_font("Arial", 'B', 10)
@@ -517,12 +520,47 @@ def check_in_list(pred_string, value_to_find):
     preds = [p.strip() for p in str(pred_string).split(",")]
     return str(value_to_find).strip() in [p.strip() for p in preds]
 
+def estrai_fasce_da_stringa(pred_string):
+    if not pred_string or str(pred_string).strip() in ["", "N/D", "nan", "None"]:
+        return []
+    fasce = []
+    for parte in str(pred_string).split(","):
+        pulita = re.sub(r'\s*\(Q:\s*[^)]+\)', '', parte).strip()
+        if pulita:
+            fasce.append(pulita)
+    return fasce
+
+def check_mpg_top2(pred_mpg_str, h, a, ph, pa):
+    fasce = estrai_fasce_da_stringa(pred_mpg_str)
+    if not fasce:
+        return False
+    gol_1t = (ph + pa) > 0
+    gol_2t = ((h - ph) + (a - pa)) > 0
+    if not gol_1t and not gol_2t:
+        return False
+    ha_1t = any(f in FASCE_1T for f in fasce)
+    ha_2t = any(f in FASCE_2T for f in fasce)
+    return (gol_1t and ha_1t) or (not gol_1t and gol_2t and ha_2t)
+
+def check_mug_top2(pred_mug_str, h, a, ph, pa):
+    fasce = estrai_fasce_da_stringa(pred_mug_str)
+    if not fasce:
+        return False
+    gol_1t = (ph + pa) > 0
+    gol_2t = ((h - ph) + (a - pa)) > 0
+    if not gol_1t and not gol_2t:
+        return False
+    if gol_2t:
+        return any(f in FASCE_2T for f in fasce)
+    return any(f in FASCE_1T for f in fasce)
+
 # --- 3. FUNZIONI DATABASE ---
 def get_db_columns():
     return [
         "Data", "Ora", "League", "Partita", "Fiducia", "Affidabilità", "Categoria",
         "1X2", "1X2 1°T", "Esito HT/FT", "U/O 2.5", "G/NG", "SGF", "SGC", "SGO",
-        "Top 6 RE Finali", "Top 3 RE 1°T", "Top 3 HT/FT", "Fatica", "Match_ID", "Risultato_Reale", "PT_Reale"
+        "Top 6 RE Finali", "Top 3 RE 1°T", "Top 3 HT/FT", "MPG Top 2", "MUG Top 2",
+        "Fatica", "Match_ID", "Risultato_Reale", "PT_Reale"
     ]
 
 def inizializza_db():
@@ -588,7 +626,7 @@ def salva_completo_in_locale(d_dict):
         columns = get_db_columns()
         df_old = pd.read_csv(FILE_DB_PRONOSTICI) if os.path.exists(FILE_DB_PRONOSTICI) else pd.DataFrame(columns=columns)
         dati_puliti = d_dict.copy()
-        campi_da_pulire = ["SGF", "SGC", "SGO", "Top 6 RE Finali", "Top 3 RE 1°T", "Top 3 HT/FT"]
+        campi_da_pulire = ["SGF", "SGC", "SGO", "Top 6 RE Finali", "Top 3 RE 1°T", "Top 3 HT/FT", "MPG Top 2", "MUG Top 2"]
         for campo in campi_da_pulire:
             if campo in dati_puliti:
                 dati_puliti[campo] = re.sub(r'\s\(Q:\s\d+\.\d+\)', '', str(dati_puliti[campo]))
@@ -782,7 +820,7 @@ def genera_pronostici_massivi(giorni_anticipo=7):
             res = esegui_analisi(row['HomeTeam'], match_id_target=row['ID'])
             if res and str(res.get('Match_ID')) == str(row['ID']):
                 dati_puliti = res.copy()
-                campi_da_pulire = ["SGF", "SGC", "SGO", "Top 6 RE Finali", "Top 3 RE 1°T", "Top 3 HT/FT"]
+                campi_da_pulire = ["SGF", "SGC", "SGO", "Top 6 RE Finali", "Top 3 RE 1°T", "Top 3 HT/FT", "MPG Top 2", "MUG Top 2"]
 
                 for campo in campi_da_pulire:
                     if campo in dati_puliti:
@@ -956,6 +994,30 @@ def get_stats(team, is_home_side, df_giocate):
 
     return max(0.5, gf), max(0.5, gs)
 
+MERCATI_STATISTICHE = [
+    '1X2', '1X2 1°T', 'Esito HT/FT',
+    'U/O 2.5', 'G/NG', 'SGF',
+    'SGC (Casa)', 'SGO (Ospite)', 'RE Finali',
+    'RE 1°T', 'Top 3 HT/FT', 'MPG (Top 2)', 'MUG (Top 2)'
+]
+
+def valuta_mercati_riga(row, h, a, ph, pa, real_htft):
+    return {
+        '1X2': check_1x2(row['1X2'], h, a),
+        '1X2 1°T': check_1x2(row.get('1X2 1°T', 'N/D'), ph, pa),
+        'Esito HT/FT': str(row.get('Esito HT/FT', 'N/D')).replace("/", "-") == real_htft,
+        'U/O 2.5': check_uo(row['U/O 2.5'], h, a),
+        'G/NG': check_gng(row['G/NG'], h, a),
+        'SGF': check_in_list(row['SGF'], h+a),
+        'SGC (Casa)': check_in_list(row['SGC'], h),
+        'SGO (Ospite)': check_in_list(row['SGO'], a),
+        'RE Finali': check_in_list(row['Top 6 RE Finali'], row['Risultato_Reale']),
+        'RE 1°T': check_in_list(row['Top 3 RE 1°T'], f"{ph}-{pa}"),
+        'Top 3 HT/FT': check_in_list(row['Top 3 HT/FT'], real_htft),
+        'MPG (Top 2)': check_mpg_top2(row.get('MPG Top 2', 'N/D'), h, a, ph, pa),
+        'MUG (Top 2)': check_mug_top2(row.get('MUG Top 2', 'N/D'), h, a, ph, pa),
+    }
+
 def analizza_performance_campionato(camp_filtro, solo_gold=False):
     if not os.path.exists(FILE_DB_PRONOSTICI):
         st.warning("Cronologia pronostici non trovata.")
@@ -982,13 +1044,9 @@ def analizza_performance_campionato(camp_filtro, solo_gold=False):
 
         match_contati = len(df_v)
         st.success(f"Analisi completata su {match_contati} match per {camp_filtro}")
+        st.caption("ℹ️ MPG (Top 2) e MUG (Top 2) vengono verificati sulla coerenza tra la presenza di gol nel 1°/2° tempo e le fasce predette.")
 
-        stats = {k: [0, 0] for k in [
-            '1X2', '1X2 1°T', 'Esito HT/FT',
-            'U/O 2.5', 'G/NG', 'SGF',
-            'SGC (Casa)', 'SGO (Ospite)', 'RE Finali',
-            'RE 1°T', 'Top 3 HT/FT'
-        ]}
+        stats = {k: [0, 0] for k in MERCATI_STATISTICHE}
 
         for _, row in df_v.iterrows():
             try:
@@ -998,28 +1056,11 @@ def analizza_performance_campionato(camp_filtro, solo_gold=False):
                 real_ft = "1" if h > a else ("2" if a > h else "X")
                 real_htft = f"{real_1t}-{real_ft}"
 
-                stats['1X2'][1] += 1
-                if check_1x2(row['1X2'], h, a): stats['1X2'][0] += 1
-                stats['1X2 1°T'][1] += 1
-                if check_1x2(row.get('1X2 1°T', 'N/D'), ph, pa): stats['1X2 1°T'][0] += 1
-                stats['Esito HT/FT'][1] += 1
-                if str(row.get('Esito HT/FT', 'N/D')).replace("/", "-") == real_htft: stats['Esito HT/FT'][0] += 1
-                stats['U/O 2.5'][1] += 1
-                if check_uo(row['U/O 2.5'], h, a): stats['U/O 2.5'][0] += 1
-                stats['G/NG'][1] += 1
-                if check_gng(row['G/NG'], h, a): stats['G/NG'][0] += 1
-                stats['SGF'][1] += 1
-                if check_in_list(row['SGF'], h+a): stats['SGF'][0] += 1
-                stats['SGC (Casa)'][1] += 1
-                if check_in_list(row['SGC'], h): stats['SGC (Casa)'][0] += 1
-                stats['SGO (Ospite)'][1] += 1
-                if check_in_list(row['SGO'], a): stats['SGO (Ospite)'][0] += 1
-                stats['RE Finali'][1] += 1
-                if check_in_list(row['Top 6 RE Finali'], row['Risultato_Reale']): stats['RE Finali'][0] += 1
-                stats['RE 1°T'][1] += 1
-                if check_in_list(row['Top 3 RE 1°T'], f"{ph}-{pa}"): stats['RE 1°T'][0] += 1
-                stats['Top 3 HT/FT'][1] += 1
-                if check_in_list(row['Top 3 HT/FT'], real_htft): stats['Top 3 HT/FT'][0] += 1
+                esiti = valuta_mercati_riga(row, h, a, ph, pa, real_htft)
+                for mercato, preso in esiti.items():
+                    stats[mercato][1] += 1
+                    if preso:
+                        stats[mercato][0] += 1
             except Exception:
                 continue
 
@@ -1076,12 +1117,7 @@ def analizza_performance_squadra_gold(squadra_target, solo_gold=False):
         match_contati = len(df_v)
         st.markdown(f"### 📊 Report: **{squadra_target}** ({match_contati} match)")
 
-        stats = {k: [0, 0] for k in [
-            '1X2', '1X2 1°T', 'Esito HT/FT',
-            'U/O 2.5', 'G/NG', 'SGF',
-            'SGC (Casa)', 'SGO (Ospite)', 'RE Finali',
-            'RE 1°T', 'Top 3 HT/FT'
-        ]}
+        stats = {k: [0, 0] for k in MERCATI_STATISTICHE}
 
         for _, row in df_v.iterrows():
             try:
@@ -1091,28 +1127,11 @@ def analizza_performance_squadra_gold(squadra_target, solo_gold=False):
                 real_ft = "1" if h > a else ("2" if a > h else "X")
                 real_htft = f"{real_1t}-{real_ft}"
 
-                stats['1X2'][1] += 1
-                if check_1x2(row['1X2'], h, a): stats['1X2'][0] += 1
-                stats['1X2 1°T'][1] += 1
-                if check_1x2(row.get('1X2 1°T', 'N/D'), ph, pa): stats['1X2 1°T'][0] += 1
-                stats['Esito HT/FT'][1] += 1
-                if str(row.get('Esito HT/FT', 'N/D')).replace("/", "-") == real_htft: stats['Esito HT/FT'][0] += 1
-                stats['U/O 2.5'][1] += 1
-                if check_uo(row['U/O 2.5'], h, a): stats['U/O 2.5'][0] += 1
-                stats['G/NG'][1] += 1
-                if check_gng(row['G/NG'], h, a): stats['G/NG'][0] += 1
-                stats['SGF'][1] += 1
-                if check_in_list(row['SGF'], h+a): stats['SGF'][0] += 1
-                stats['SGC (Casa)'][1] += 1
-                if check_in_list(row['SGC'], h): stats['SGC (Casa)'][0] += 1
-                stats['SGO (Ospite)'][1] += 1
-                if check_in_list(row['SGO'], a): stats['SGO (Ospite)'][0] += 1
-                stats['RE Finali'][1] += 1
-                if check_in_list(row['Top 6 RE Finali'], row['Risultato_Reale']): stats['RE Finali'][0] += 1
-                stats['RE 1°T'][1] += 1
-                if check_in_list(row['Top 3 RE 1°T'], f"{ph}-{pa}"): stats['RE 1°T'][0] += 1
-                stats['Top 3 HT/FT'][1] += 1
-                if check_in_list(row['Top 3 HT/FT'], real_htft): stats['Top 3 HT/FT'][0] += 1
+                esiti = valuta_mercati_riga(row, h, a, ph, pa, real_htft)
+                for mercato, preso in esiti.items():
+                    stats[mercato][1] += 1
+                    if preso:
+                        stats[mercato][0] += 1
             except Exception:
                 continue
 
@@ -1174,12 +1193,7 @@ def trova_super_squadre(soglia=0.85, min_match=2, mercato_filtro="Tutti", solo_g
                     if team not in stats_squadre:
                         stats_squadre[team] = {
                             'Lega': lega,
-                            'Stats': {k: [0, 0] for k in [
-                                '1X2', '1X2 1°T', 'Esito HT/FT',
-                                'U/O 2.5', 'G/NG', 'SGF',
-                                'SGC (Casa)', 'SGO (Ospite)', 'RE Finali',
-                                'RE 1°T', 'Top 3 HT/FT'
-                            ]}
+                            'Stats': {k: [0, 0] for k in MERCATI_STATISTICHE}
                         }
 
                 h, a = map(int, str(row['Risultato_Reale']).split('-'))
@@ -1188,35 +1202,13 @@ def trova_super_squadre(soglia=0.85, min_match=2, mercato_filtro="Tutti", solo_g
                 real_ft = "1" if h > a else ("2" if a > h else "X")
                 real_htft = f"{real_1t}-{real_ft}"
 
-                def update_team_stats(team, market, is_won):
-                    stats_squadre[team]['Stats'][market][1] += 1
-                    if is_won:
-                        stats_squadre[team]['Stats'][market][0] += 1
-
-                win_1x2 = check_1x2(row['1X2'], h, a)
-                win_1x2_1t = check_1x2(row.get('1X2 1°T', 'N/D'), ph, pa)
-                win_htft = str(row.get('Esito HT/FT', 'N/D')).replace("/", "-") == real_htft
-                win_uo = check_uo(row['U/O 2.5'], h, a)
-                win_gng = check_gng(row['G/NG'], h, a)
-                win_sgf = check_in_list(row['SGF'], h+a)
-                win_sgc = check_in_list(row['SGC'], h)
-                win_sgo = check_in_list(row['SGO'], a)
-                win_re = check_in_list(row['Top 6 RE Finali'], row['Risultato_Reale'])
-                win_re_1t = check_in_list(row['Top 3 RE 1°T'], f"{ph}-{pa}")
-                win_top3_htft = check_in_list(row['Top 3 HT/FT'], real_htft)
+                esiti = valuta_mercati_riga(row, h, a, ph, pa, real_htft)
 
                 for t in [casa, fuori]:
-                    update_team_stats(t, '1X2', win_1x2)
-                    update_team_stats(t, '1X2 1°T', win_1x2_1t)
-                    update_team_stats(t, 'Esito HT/FT', win_htft)
-                    update_team_stats(t, 'U/O 2.5', win_uo)
-                    update_team_stats(t, 'G/NG', win_gng)
-                    update_team_stats(t, 'SGF', win_sgf)
-                    update_team_stats(t, 'SGC (Casa)', win_sgc)
-                    update_team_stats(t, 'SGO (Ospite)', win_sgo)
-                    update_team_stats(t, 'RE Finali', win_re)
-                    update_team_stats(t, 'RE 1°T', win_re_1t)
-                    update_team_stats(t, 'Top 3 HT/FT', win_top3_htft)
+                    for market, is_won in esiti.items():
+                        stats_squadre[t]['Stats'][market][1] += 1
+                        if is_won:
+                            stats_squadre[t]['Stats'][market][0] += 1
 
             except Exception:
                 continue
@@ -1515,6 +1507,8 @@ def esegui_analisi(nome_input, pen_h=1.0, pen_a=1.0, is_big_match=False, match_i
         "Top 6 RE Finali": formatta_re_con_quote(re_fin, 6),
         "Top 3 RE 1°T": formatta_re_con_quote(re_1t, 3),
         "Top 3 HT/FT": top_pf_string,
+        "MPG Top 2": mpg_mug_res["mpg_top2"],
+        "MUG Top 2": mpg_mug_res["mug_top2"],
         "Match_ID": match_id, "Risultato_Reale": "N/D", "PT_Reale": "N/D",
         "p1": p1, "px": px, "p2": p2, "pu": pu, "pg": pg,
         "dist_1t_h": dist_1t_h, "dist_2t_h": dist_2t_h,
@@ -1572,6 +1566,8 @@ def scansiona_segnali_gold(giorni_anticipo=3):
 
     giocate = df[df['Status'] == 'FINISHED'].copy()
     avg_g = max(1.1, pd.to_numeric(giocate['FTHG'], errors='coerce').mean())
+    squadre_radar = sorted(set(matches_target['HomeTeam'].dropna()).union(set(matches_target['AwayTeam'].dropna())))
+    df_minuti = carica_minuti_in_memoria(stagione="2026", squadre_coinvolte=squadre_radar, df_giocate=giocate)
     segnali = []
 
     for _, m in matches_target.iterrows():
@@ -1634,12 +1630,24 @@ def scansiona_segnali_gold(giorni_anticipo=3):
             top_6_re = sorted(re_fin, key=lambda x: x['p'], reverse=True)[:6]
             stringa_re = ", ".join([f"{v['s']} (Q: {stima_quota(v['p']):.2f})" for v in top_6_re])
 
+            d_1t_h, d_2t_h = analizza_pericolosita_tempi(giocate, casa)
+            d_1t_a, d_2t_a = analizza_pericolosita_tempi(giocate, fuori)
+            fatica_r = controlla_fatica(df, casa, data_ora_ita.strftime("%d/%m/%Y")) or controlla_fatica(df, fuori, data_ora_ita.strftime("%d/%m/%Y"))
+            mpg_mug_r = calcola_mpg_mug_da_db(
+                casa, fuori, exp_h, exp_a,
+                d_1t_h, d_2t_h, d_1t_a, d_2t_a,
+                fatica=fatica_r,
+                df_minuti=df_minuti
+            )
+
             segnali.append({
                 'Data': data_ora_ita.strftime("%d/%m"),
                 'Ora': data_ora_ita.strftime("%H:%M"),
                 'Lega': nome_lega_radar,
                 'Partita': f"{casa} vs {fuori}",
                 'Fiducia': f"{int(fiducia_max*100)}%",
+                'Top 2 MPG': mpg_mug_r["mpg_top2"],
+                'Top 2 MUG': mpg_mug_r["mug_top2"],
                 'Top 6 RE': stringa_re
             })
 
@@ -1670,7 +1678,9 @@ def highlight_winners(row):
             ('SGO', lambda: check_in_list(row['SGO'], a)),
             ('Top 6 RE Finali', lambda: check_in_list(row['Top 6 RE Finali'], row['Risultato_Reale'])),
             ('Top 3 RE 1°T', lambda: check_in_list(row['Top 3 RE 1°T'], row['PT_Reale'])),
-            ('Top 3 HT/FT', lambda: check_in_list(row['Top 3 HT/FT'], real_htft))
+            ('Top 3 HT/FT', lambda: check_in_list(row['Top 3 HT/FT'], real_htft)),
+            ('MPG Top 2', lambda: check_mpg_top2(row.get('MPG Top 2', 'N/D'), h, a, ph, pa)),
+            ('MUG Top 2', lambda: check_mug_top2(row.get('MUG Top 2', 'N/D'), h, a, ph, pa))
         ]
         for col_name, condition_func in checks:
             if col_name in cols_list and condition_func():
@@ -2128,7 +2138,7 @@ with tab3:
         min_match_input = st.number_input("Minimo match salvati", min_value=1, max_value=40, value=5, step=1, help="Ignora chi ha giocato troppe poche partite")
 
     with col_mercato:
-        lista_mercati = ['Tutti', '1X2', '1X2 1°T', 'Esito HT/FT', 'U/O 2.5', 'G/NG', 'SGF', 'SGC (Casa)', 'SGO (Ospite)', 'RE Finali', 'RE 1°T', 'Top 3 HT/FT']
+        lista_mercati = ['Tutti'] + MERCATI_STATISTICHE
         mercato_input = st.selectbox("Filtra per Pronostico", lista_mercati)
 
     st.write("")
