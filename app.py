@@ -419,7 +419,7 @@ def genera_pdf_pronostico(d):
     pdf.cell(95, 6, f"Ultime 4: {trend_h}  |  xG: {d.get('xg_casa', 'N/D')}", border=1, align='C')
     pdf.cell(95, 6, f"Ultime 4: {trend_a}  |  xG: {d.get('xg_fuori', 'N/D')}", border=1, ln=True, align='C')
 
-    pdf.ln(5)
+    pdf.ln(8)
 
     # --- 4. PRONOSTICI PRINCIPALI ---
     pdf.set_font("Arial", 'B', 10.5)
@@ -434,7 +434,7 @@ def genera_pdf_pronostico(d):
     pdf.cell(63, 7, f"1X2 - 1° Tempo: {pulisci_per_pdf(d.get('1X2 1°T', 'N.D.'))}", border=1, align='C')
     pdf.cell(64, 7, f"HT/FT: {pulisci_per_pdf(d.get('Esito HT/FT', 'N.D.'))}", border=1, ln=True, align='C')
 
-    pdf.ln(4)
+    pdf.ln(6)
 
     pdf.set_font("Arial", 'B', 10)
     pdf.set_fill_color(0, 96, 156)
@@ -453,7 +453,7 @@ def genera_pdf_pronostico(d):
     pdf.cell(95, 7, esito_uo, border=1, align='C')
     pdf.cell(95, 7, esito_gng, border=1, ln=True, align='C')
 
-    pdf.ln(4)
+    pdf.ln(6)
 
     # --- SOMMA GOL ---
     pdf.set_font("Arial", 'B', 10)
@@ -468,7 +468,7 @@ def genera_pdf_pronostico(d):
     pdf.cell(190, 5.5, f"SOMMA GOL CASA: {pulisci_per_pdf(d.get('SGC', 'N.D.'))}", border=1, ln=True)
     pdf.cell(190, 5.5, f"SOMMA GOL OSPITE: {pulisci_per_pdf(d.get('SGO', 'N.D.'))}", border=1, ln=True)
 
-    pdf.ln(4)
+    pdf.ln(6)
 
     # --- 5. RISULTATI ESATTI ---
     pdf.set_font("Arial", 'B', 10)
@@ -482,7 +482,7 @@ def genera_pdf_pronostico(d):
     pdf.multi_cell(190, 5, f"TOP 6 RE FINALI: {pulisci_per_pdf(d.get('Top 6 RE Finali', 'N.D.'))}", border=1)
     pdf.cell(190, 5.5, f"TOP 3 RE 1°T: {pulisci_per_pdf(d.get('Top 3 RE 1°T', 'N.D.'))}", border=1, ln=True)
 
-    pdf.ln(4)
+    pdf.ln(6)
 
     # --- 6. MPG E MUG ---
     pdf.set_font("Arial", 'B', 10)
