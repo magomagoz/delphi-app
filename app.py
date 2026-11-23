@@ -2125,13 +2125,13 @@ with tab1:
             # Aggiungiamo le Top 3 fasce MPG (Minuto Primo Gol)
             if 'raw_mpg' in d and d['raw_mpg']:
                 top_2_mpg = sorted(d['raw_mpg'].items(), key=lambda x: x[1], reverse=True)[:2]
-                for k, v in top_3_mpg:
+                for k, v in top_2_mpg:
                     kelly_options[f"MPG (Primo Gol) {k}"] = v
 
             # Aggiungiamo le Top 3 fasce MUG (Minuto Ultimo Gol)
             if 'raw_mug' in d and d['raw_mug']:
                 top_2_mug = sorted(d['raw_mug'].items(), key=lambda x: x[1], reverse=True)[:2]
-                for k, v in top_3_mug:
+                for k, v in top_2_mug:
                     kelly_options[f"MUG (Ultimo Gol) {k}"] = v
             
             col_k1, col_k2, col_k3 = st.columns(3)
