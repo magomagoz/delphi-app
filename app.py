@@ -381,7 +381,7 @@ def genera_pdf_pronostico(d):
         pdf.cell(0, 5, "ATTENZIONE: Big Match/Derby - Probabile partita molto tattica", ln=True, align='C')
 
     pdf.set_text_color(0, 0, 0)
-    pdf.ln(1.5)
+    pdf.ln(3.5)
 
     # --- 3. INFO TECNICHE ---
     pdf.set_fill_color(240, 240, 240)
@@ -398,7 +398,7 @@ def genera_pdf_pronostico(d):
     tempi_tec = f"Tempo con + gol: {pulisci_per_pdf(d['tempo_top'])}\nCasa: {d['dist_1t_h']}% 1T / {d['dist_2t_h']}% 2T  |  Ospite: {d['dist_1t_a']}% 1T / {d['dist_2t_a']}% 2T"
     pdf.multi_cell(95, 5, tempi_tec, border=1)
 
-    pdf.ln(2.5)
+    pdf.ln(3.5)
 
     # --- SEZIONE FORMA SQUADRE (Trend ultime 4) ---
     pdf.set_fill_color(240, 240, 240)
@@ -419,7 +419,7 @@ def genera_pdf_pronostico(d):
     pdf.cell(95, 6, f"Ultime 4: {trend_h}  |  xG: {d.get('xg_casa', 'N/D')}", border=1, align='C')
     pdf.cell(95, 6, f"Ultime 4: {trend_a}  |  xG: {d.get('xg_fuori', 'N/D')}", border=1, ln=True, align='C')
 
-    pdf.ln(2.5)
+    pdf.ln(3.5)
 
     # --- 4. PRONOSTICI PRINCIPALI ---
     pdf.set_font("Arial", 'B', 10.5)
@@ -453,7 +453,7 @@ def genera_pdf_pronostico(d):
     pdf.cell(95, 7, esito_uo, border=1, align='C')
     pdf.cell(95, 7, esito_gng, border=1, ln=True, align='C')
 
-    pdf.ln(2.5)
+    pdf.ln(3.5)
 
     # --- SOMMA GOL ---
     pdf.set_font("Arial", 'B', 10)
@@ -468,7 +468,7 @@ def genera_pdf_pronostico(d):
     pdf.cell(190, 5.5, f"SOMMA GOL CASA: {pulisci_per_pdf(d.get('SGC', 'N.D.'))}", border=1, ln=True)
     pdf.cell(190, 5.5, f"SOMMA GOL OSPITE: {pulisci_per_pdf(d.get('SGO', 'N.D.'))}", border=1, ln=True)
 
-    pdf.ln(2.5)
+    pdf.ln(3.5)
 
     # --- 5. RISULTATI ESATTI ---
     pdf.set_font("Arial", 'B', 10)
@@ -482,7 +482,7 @@ def genera_pdf_pronostico(d):
     pdf.multi_cell(190, 5, f"TOP 6 RE FINALI: {pulisci_per_pdf(d.get('Top 6 RE Finali', 'N.D.'))}", border=1)
     pdf.cell(190, 5.5, f"TOP 3 RE 1°T: {pulisci_per_pdf(d.get('Top 3 RE 1°T', 'N.D.'))}", border=1, ln=True)
 
-    pdf.ln(2.5)
+    pdf.ln(3.5)
 
     # --- 6. MPG E MUG ---
     pdf.set_font("Arial", 'B', 10)
