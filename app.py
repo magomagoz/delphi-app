@@ -119,14 +119,17 @@ def ottieni_xg_understat(nome_squadra):
 
 
 @st.cache_data(ttl=900, show_spinner=False)
-def _costruisci_statistiche_minuti_memoria(df_giocate_records, squadre_tuple, refresh_token=0):
+def _costruisci_statistiche_minuti_memoria(df_giocate_json_tuple, squadre_tuple, refresh_token=0):
     """Calcola in memoria il profilo temporale (1T/2T, MPG/MUG stimati) per ogni squadra."""
-    if not df_giocate_records or not squadre_tuple:
+    if not df_giocate_json_tuple or not squadre_tuple:
         return pd.DataFrame(columns=COLONNE_MINUTI_GOL)
 
-    df_g = pd.DataFrame(df_giocate_records)
-    righe = []
+    records = [json.loads(item) for item in df_giocate_json_tuple]
+    df_g = pd.DataFrame(records)
+    if df_g.empty or "HomeTeam" not in df_g.columns or "AwayTeam" not in df_g.columns:
+        return pd.DataFrame(columns=COLONNE_MINUTI_GOL)
 
+    righe = []
     for sq in squadre_tuple:
         sub = df_g[(df_g["HomeTeam"] == sq) | (df_g["AwayTeam"] == sq)].tail(15)
         n_match = len(sub)
@@ -139,12 +142,14 @@ def _costruisci_statistiche_minuti_memoria(df_giocate_records, squadre_tuple, re
 
         for _, r in sub.iterrows():
             is_h = r["HomeTeam"] == sq
-            ft = float(r["FTHG"] if is_h else r["FTAG"]) if pd.notnull(r["FTHG"] if is_h else r["FTAG"]) else 0.0
-            ht_raw = r["HTHG"] if is_h else r["HTAG"]
+            ft_val = r.get("FTHG") if is_h else r.get("FTAG")
+            ht_val = r.get("HTHG") if is_h else r.get("HTAG")
+
+            ft = float(ft_val) if pd.notnull(ft_val) else 0.0
             tot_gol += ft
 
-            if pd.notnull(ht_raw):
-                ht = float(ht_raw)
+            if pd.notnull(ht_val):
+                ht = float(ht_val)
                 gol_1t += ht
                 gol_2t += max(0.0, ft - ht)
             else:
@@ -155,7 +160,6 @@ def _costruisci_statistiche_minuti_memoria(df_giocate_records, squadre_tuple, re
         perc_1t = round((gol_1t / tot_tempi) * 100.0, 1) if tot_tempi > 0 else 45.0
         perc_2t = round(100.0 - perc_1t, 1) if tot_tempi > 0 else 55.0
 
-        # Stima media minuto primo gol (MPG) e ultimo gol (MUG) in base alla ripartizione 1T/2T e media gol/partita
         media_gol_match = tot_gol / n_match
         ratio_1t = perc_1t / 100.0
         media_mpg = round(max(12.0, min(48.0, 34.0 - (ratio_1t - 0.45) * 28.0 - min(6.0, media_gol_match * 1.8))), 1)
@@ -200,67 +204,25 @@ def aggiorna_database_minuti_gol(stagione="2026", forza_aggiornamento=True, most
         st.session_state["minuti_memoria_refresh_token"] += 1
 
     cols_needed = [c for c in ["HomeTeam", "AwayTeam", "FTHG", "FTAG", "HTHG", "HTAG"] if c in giocate.columns]
-    records = giocate[cols_needed].tail(600).to_dict("records")
+    records = giocate[cols_needed].tail(800).to_dict("records")
+    json_tuple = tuple(json.dumps(r, default=str) for r in records)
 
     df_minuti = _costruisci_statistiche_minuti_memoria(
-        df_giocate_records=tuple(json.dumps(r, default=str) for r in records),
+        df_giocate_json_tuple=json_tuple,
         squadre_tuple=squadre_target,
         refresh_token=st.session_state["minuti_memoria_refresh_token"],
     )
-    # Converte records in modo pulito senza json.dumps su tupla
-    righe = []
-    for sq in squadre_target:
-        sub = giocate[(giocate["HomeTeam"] == sq) | (giocate["AwayTeam"] == sq)].tail(15)
-        n_match = len(sub)
-        if n_match == 0:
-            continue
 
-        gol_1t = 0.0
-        gol_2t = 0.0
-        tot_gol = 0.0
+    if not df_minuti.empty:
+        st.session_state["df_minuti_gol_understat"] = df_minuti
+        st.session_state["minuti_memoria_aggiornato"] = True
+        st.success(f"✅ Storico Minuti Gol calcolato in memoria per {len(df_minuti)} squadre ({stagione})!")
+        if mostra_anteprima:
+            st.dataframe(df_minuti, use_container_width=True, hide_index=True)
+        return df_minuti
 
-        for _, r in sub.iterrows():
-            is_h = r["HomeTeam"] == sq
-            ft = float(r["FTHG"] if is_h else r["FTAG"]) if pd.notnull(r["FTHG"] if is_h else r["FTAG"]) else 0.0
-            ht_raw = r.get("HTHG") if is_h else r.get("HTAG")
-            tot_gol += ft
-
-            if pd.notnull(ht_raw):
-                ht = float(ht_raw)
-                gol_1t += ht
-                gol_2t += max(0.0, ft - ht)
-            else:
-                gol_1t += ft * 0.45
-                gol_2t += ft * 0.55
-
-        tot_tempi = gol_1t + gol_2t
-        perc_1t = round((gol_1t / tot_tempi) * 100.0, 1) if tot_tempi > 0 else 45.0
-        perc_2t = round(100.0 - perc_1t, 1) if tot_tempi > 0 else 55.0
-
-        media_gol_match = tot_gol / n_match
-        ratio_1t = perc_1t / 100.0
-        media_mpg = round(max(12.0, min(48.0, 34.0 - (ratio_1t - 0.45) * 28.0 - min(6.0, media_gol_match * 1.8))), 1)
-        media_mug = round(max(55.0, min(88.0, 74.0 + (1.0 - ratio_1t - 0.55) * 24.0 + min(5.0, media_gol_match * 1.5))), 1)
-
-        righe.append({
-            "Squadra": sq,
-            "Partite_Analizzate": n_match,
-            "Gol_Fatti_1T": int(round(gol_1t)),
-            "Gol_Fatti_2T": int(round(gol_2t)),
-            "Perc_1T": perc_1t,
-            "Perc_2T": perc_2t,
-            "Media_MPG": media_mpg,
-            "Media_MUG": media_mug,
-        })
-
-    df_minuti = pd.DataFrame(righe, columns=COLONNE_MINUTI_GOL)
-    st.session_state["df_minuti_gol_understat"] = df_minuti
-    st.session_state["minuti_memoria_aggiornato"] = True
-    st.success(f"✅ Storico Minuti Gol calcolato in memoria per {len(df_minuti)} squadre ({stagione})!")
-    if mostra_anteprima and not df_minuti.empty:
-        st.dataframe(df_minuti, use_container_width=True, hide_index=True)
-    return df_minuti
-
+    st.warning("⚠️ Nessun dato minuti recuperato. Controlla le partite concluse nel DB Calcio.")
+    return None
 
 def carica_minuti_in_memoria(stagione="2026", squadre_coinvolte=None, df_giocate=None):
     """Restituisce il DataFrame in memoria senza leggere o scrivere file CSV."""
